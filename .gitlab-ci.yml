@@ -1,0 +1,24 @@
+# SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+stages:
+  - build
+  - test
+
+build:
+  stage: build
+  script:
+    - mkdir -p build && cd build
+    - cmake .. -DVAUCHI_CABI_DIR=${VAUCHI_CABI_DIR}
+    - cmake --build . --parallel
+  artifacts:
+    paths:
+      - build/vauchi-qt
+  tags: [linux]
+
+test:
+  stage: test
+  script:
+    - cd build
+    - ctest --output-on-failure
+  tags: [linux]
