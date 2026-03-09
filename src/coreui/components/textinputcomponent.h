@@ -4,8 +4,12 @@
 #pragma once
 #include <QWidget>
 #include <QJsonObject>
+#include <functional>
+
+using OnComponentChanged = std::function<void(const QString &, const QString &)>;
 
 class TextInputComponent {
 public:
-    static QWidget *render(const QJsonObject &data);
+    static QWidget *render(const QJsonObject &data,
+                           const OnComponentChanged &onChange = nullptr);
 };

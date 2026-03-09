@@ -4,17 +4,86 @@
 #include "app.h"
 #include "coreui/screenrenderer.h"
 
-VauchiApp::VauchiApp(QWidget *parent) : QMainWindow(parent) {
-    setWindowTitle("Vauchi");
-    resize(400, 700);
+#include <QHBoxLayout>
+#include <QListWidget>
+#include <QJsonDocument>
+#include <QJsonArray>
 
-    m_workflow = vauchi_workflow_create("onboarding");
-    m_renderer = new ScreenRenderer(m_workflow, this);
-    setCentralWidget(m_renderer);
+VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
+    setWindowTitle("Vauchi");
+    resize(700, 600);
+
+    m_app = vauchi_app_create();
+
+    auto *central = new QWidget(this);
+    auto *layout = new QHBoxLayout(central);
+
+    // Sidebar
+    m_sidebar = new QListWidget;
+    m_sidebar->setFixedWidth(200);
+    layout->addWidget(m_sidebar);
+
+    // Content
+    m_renderer = new ScreenRenderer(m_app, this);
+    layout->addWidget(m_renderer, 1);
+
+    setCentralWidget(central);
+
+    buildSidebar();
+
+    // Refresh sidebar when screen changes (e.g., after onboarding completes)
+    connect(m_renderer, &ScreenRenderer::screenChanged, this, [this]() {
+        refreshSidebar();
+    });
+
+    connect(m_sidebar, &QListWidget::currentRowChanged, this, [this](int row) {
+        if (row < 0 || !m_app) return;
+
+        // Get available screens
+        char *screensJson = vauchi_app_available_screens(m_app);
+        if (!screensJson) return;
+
+        QJsonArray screens = QJsonDocument::fromJson(screensJson).array();
+        vauchi_string_free(screensJson);
+
+        if (row < screens.size()) {
+            QString screenName = screens[row].toString();
+            char *resultJson = vauchi_app_navigate_to(m_app, screenName.toUtf8().constData());
+            if (resultJson) {
+                vauchi_string_free(resultJson);
+            }
+            m_renderer->refresh();
+        }
+    });
 }
 
-VauchiApp::~VauchiApp() {
-    if (m_workflow) {
-        vauchi_workflow_destroy(m_workflow);
+VauchiWindow::~VauchiWindow() {
+    if (m_app) {
+        vauchi_app_destroy(m_app);
+    }
+}
+
+void VauchiWindow::buildSidebar() {
+    refreshSidebar();
+}
+
+void VauchiWindow::refreshSidebar() {
+    m_sidebar->clear();
+    if (!m_app) return;
+
+    char *json = vauchi_app_available_screens(m_app);
+    if (!json) return;
+
+    QJsonArray screens = QJsonDocument::fromJson(json).array();
+    vauchi_string_free(json);
+
+    for (const auto &screen : screens) {
+        QString name = screen.toString();
+        // Capitalize first letter for display
+        if (!name.isEmpty()) {
+            name[0] = name[0].toUpper();
+        }
+        name.replace('_', ' ');
+        m_sidebar->addItem(name);
     }
 }

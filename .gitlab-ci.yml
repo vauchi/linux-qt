@@ -2,14 +2,34 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 stages:
+  - deps
   - build
   - test
 
+variables:
+  VAUCHI_CORE_REF: main
+
+build:cabi:
+  stage: deps
+  script:
+    - git clone --depth 1 --branch ${VAUCHI_CORE_REF}
+        https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/vauchi/core.git
+        vauchi-core
+    - cd vauchi-core
+    - cargo build --release -p vauchi-cabi
+    - mkdir -p ${CI_PROJECT_DIR}/cabi-lib
+    - cp target/release/libvauchi_cabi.so target/release/libvauchi_cabi.a ${CI_PROJECT_DIR}/cabi-lib/
+  artifacts:
+    paths:
+      - cabi-lib/
+  tags: [linux]
+
 build:
   stage: build
+  needs: [build:cabi]
   script:
     - mkdir -p build && cd build
-    - cmake .. -DVAUCHI_CABI_DIR=${VAUCHI_CABI_DIR}
+    - cmake .. -DVAUCHI_CABI_DIR=${CI_PROJECT_DIR}/cabi-lib
     - cmake --build . --parallel
   artifacts:
     paths:
@@ -18,6 +38,7 @@ build:
 
 test:
   stage: test
+  needs: [build]
   script:
     - cd build
     - ctest --output-on-failure
