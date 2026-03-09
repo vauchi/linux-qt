@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+[Desktop Entry]
+Name=Vauchi
+Comment=Privacy-focused updatable contact cards
+Exec=vauchi-qt
+Icon=vauchi
+Terminal=false
+Type=Application
+Categories=Network;Chat;
