@@ -19,10 +19,11 @@
 
 #include <QLabel>
 
-QWidget *ComponentRenderer::render(const QJsonObject &component) {
+QWidget *ComponentRenderer::render(const QJsonObject &component,
+                                   const OnComponentChanged &onChange) {
     // Component enum is serialized as { "VariantName": { ...fields } } or "Divider"
     if (component.contains("Text")) return TextComponent::render(component["Text"].toObject());
-    if (component.contains("TextInput")) return TextInputComponent::render(component["TextInput"].toObject());
+    if (component.contains("TextInput")) return TextInputComponent::render(component["TextInput"].toObject(), onChange);
     if (component.contains("ToggleList")) return ToggleListComponent::render(component["ToggleList"].toObject());
     if (component.contains("FieldList")) return FieldListComponent::render(component["FieldList"].toObject());
     if (component.contains("CardPreview")) return CardPreviewComponent::render(component["CardPreview"].toObject());

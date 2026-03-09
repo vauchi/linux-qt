@@ -5,9 +5,11 @@
 
 #include <QWidget>
 #include <QJsonObject>
+#include <QVector>
 #include "vauchi.h"
 
 class QVBoxLayout;
+class QPushButton;
 
 /// Renders a ScreenModel JSON into Qt widgets.
 class ScreenRenderer : public QWidget {
@@ -19,8 +21,11 @@ public:
 
 private:
     void renderScreen(const QJsonObject &screen);
+    void handleTextChanged(const QString &componentId, const QString &value);
+    void updateButtonStates();
     void handleAction(const QString &actionId);
 
     struct ::VauchiApp *m_app;
     QVBoxLayout *m_layout;
+    QVector<QPair<QString, QPushButton*>> m_buttons;
 };

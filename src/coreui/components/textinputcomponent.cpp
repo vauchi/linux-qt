@@ -6,7 +6,8 @@
 #include <QVBoxLayout>
 #include <QLabel>
 
-QWidget *TextInputComponent::render(const QJsonObject &data) {
+QWidget *TextInputComponent::render(const QJsonObject &data,
+                                    const OnComponentChanged &onChange) {
     auto *container = new QWidget;
     auto *layout = new QVBoxLayout(container);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -16,9 +17,20 @@ QWidget *TextInputComponent::render(const QJsonObject &data) {
     input->setPlaceholderText(data["placeholder"].toString());
     input->setText(data["value"].toString());
 
+    if (data.contains("max_length") && !data["max_length"].isNull()) {
+        input->setMaxLength(data["max_length"].toInt());
+    }
+
+    if (onChange) {
+        QString componentId = data["id"].toString();
+        QObject::connect(input, &QLineEdit::textChanged, input,
+                         [onChange, componentId](const QString &text) {
+                             onChange(componentId, text);
+                         });
+    }
+
     layout->addWidget(label);
     layout->addWidget(input);
 
-    // TODO: Emit value changes back to workflow
     return container;
 }

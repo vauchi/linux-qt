@@ -59,16 +59,20 @@ void ScreenRenderer::renderScreen(const QJsonObject &screen) {
         m_layout->addWidget(subtitle);
     }
 
-    // Components
+    // Components — pass callback for text/toggle changes
+    auto onChange = [this](const QString &componentId, const QString &value) {
+        handleTextChanged(componentId, value);
+    };
     QJsonArray components = screen["components"].toArray();
     for (const auto &comp : components) {
-        QWidget *widget = ComponentRenderer::render(comp.toObject());
+        QWidget *widget = ComponentRenderer::render(comp.toObject(), onChange);
         if (widget) {
             m_layout->addWidget(widget);
         }
     }
 
     // Action buttons
+    m_buttons.clear();
     auto *buttonLayout = new QHBoxLayout;
     QJsonArray actions = screen["actions"].toArray();
     for (const auto &action : actions) {
@@ -77,6 +81,7 @@ void ScreenRenderer::renderScreen(const QJsonObject &screen) {
         btn->setEnabled(actionObj["enabled"].toBool(true));
 
         QString actionId = actionObj["id"].toString();
+        m_buttons.append({actionId, btn});
         connect(btn, &QPushButton::clicked, this, [this, actionId]() {
             handleAction(actionId);
         });
@@ -85,6 +90,46 @@ void ScreenRenderer::renderScreen(const QJsonObject &screen) {
     }
     m_layout->addLayout(buttonLayout);
     m_layout->addStretch();
+}
+
+void ScreenRenderer::handleTextChanged(const QString &componentId,
+                                       const QString &value) {
+    QJsonObject action;
+    QJsonObject inner;
+    inner["component_id"] = componentId;
+    inner["value"] = value;
+    action["TextChanged"] = inner;
+
+    QByteArray json = QJsonDocument(action).toJson(QJsonDocument::Compact);
+    char *result = vauchi_app_handle_action(m_app, json.constData());
+    if (result) {
+        vauchi_string_free(result);
+    }
+
+    // Update button enabled states without rebuilding the widget tree
+    updateButtonStates();
+}
+
+void ScreenRenderer::updateButtonStates() {
+    if (!m_app) return;
+
+    char *jsonStr = vauchi_app_current_screen(m_app);
+    if (!jsonStr) return;
+
+    QJsonDocument doc = QJsonDocument::fromJson(jsonStr);
+    vauchi_string_free(jsonStr);
+
+    QJsonArray actions = doc.object()["actions"].toArray();
+    for (const auto &action : actions) {
+        QJsonObject actionObj = action.toObject();
+        QString id = actionObj["id"].toString();
+        bool enabled = actionObj["enabled"].toBool(true);
+        for (auto &pair : m_buttons) {
+            if (pair.first == id) {
+                pair.second->setEnabled(enabled);
+            }
+        }
+    }
 }
 
 void ScreenRenderer::handleAction(const QString &actionId) {
