@@ -35,7 +35,6 @@ build:
     paths:
       - build/vauchi-qt
   tags: [linux]
-  allow_failure: true  # cmake/Qt6 dev libs not on shell runner
 
 test:
   stage: test
@@ -44,4 +43,3 @@ test:
     - cd build
     - ctest --output-on-failure
   tags: [linux]
-  allow_failure: true  # cmake/Qt6 dev libs not on shell runner
