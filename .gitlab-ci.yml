@@ -14,13 +14,14 @@ build:cabi:
   script:
     - git clone --depth 1 --branch ${VAUCHI_CORE_REF}
         https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/vauchi/core.git
-        /tmp/vauchi-core
-    - cd /tmp/vauchi-core
+        vauchi-core
+    - cd vauchi-core
     - cargo build --release -p vauchi-cabi
+    - mkdir -p ${CI_PROJECT_DIR}/cabi-lib
+    - cp target/release/libvauchi_cabi.so target/release/libvauchi_cabi.a ${CI_PROJECT_DIR}/cabi-lib/
   artifacts:
     paths:
-      - /tmp/vauchi-core/target/release/libvauchi_cabi.so
-      - /tmp/vauchi-core/target/release/libvauchi_cabi.a
+      - cabi-lib/
   tags: [linux]
 
 build:
@@ -28,7 +29,7 @@ build:
   needs: [build:cabi]
   script:
     - mkdir -p build && cd build
-    - cmake .. -DVAUCHI_CABI_DIR=/tmp/vauchi-core/target/release
+    - cmake .. -DVAUCHI_CABI_DIR=${CI_PROJECT_DIR}/cabi-lib
     - cmake --build . --parallel
   artifacts:
     paths:
