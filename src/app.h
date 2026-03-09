@@ -7,15 +7,20 @@
 #include "vauchi.h"
 
 class ScreenRenderer;
+class QListWidget;
 
-class VauchiApp : public QMainWindow {
+class VauchiWindow : public QMainWindow {
     Q_OBJECT
 
 public:
-    explicit VauchiApp(QWidget *parent = nullptr);
-    ~VauchiApp() override;
+    explicit VauchiWindow(QWidget *parent = nullptr);
+    ~VauchiWindow() override;
 
 private:
-    VauchiWorkflow *m_workflow = nullptr;
+    void buildSidebar();
+    void refreshSidebar();
+
+    struct ::VauchiApp *m_app = nullptr;
     ScreenRenderer *m_renderer = nullptr;
+    QListWidget *m_sidebar = nullptr;
 };

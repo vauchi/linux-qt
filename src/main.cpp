@@ -12,8 +12,8 @@ int main(int argc, char *argv[]) {
     qtApp.setApplicationVersion("0.5.0");
     qtApp.setOrganizationName("vauchi");
 
-    VauchiApp app;
-    app.show();
+    VauchiWindow window;
+    window.show();
 
     return qtApp.exec();
 }

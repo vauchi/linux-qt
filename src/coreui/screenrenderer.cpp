@@ -11,16 +11,16 @@
 #include <QJsonDocument>
 #include <QJsonArray>
 
-ScreenRenderer::ScreenRenderer(VauchiWorkflow *workflow, QWidget *parent)
-    : QWidget(parent), m_workflow(workflow) {
+ScreenRenderer::ScreenRenderer(struct VauchiApp *app, QWidget *parent)
+    : QWidget(parent), m_app(app) {
     m_layout = new QVBoxLayout(this);
     refresh();
 }
 
 void ScreenRenderer::refresh() {
-    if (!m_workflow) return;
+    if (!m_app) return;
 
-    char *jsonStr = vauchi_workflow_current_screen(m_workflow);
+    char *jsonStr = vauchi_app_current_screen(m_app);
     if (!jsonStr) return;
 
     QJsonDocument doc = QJsonDocument::fromJson(jsonStr);
@@ -31,13 +31,21 @@ void ScreenRenderer::refresh() {
     }
 }
 
-void ScreenRenderer::renderScreen(const QJsonObject &screen) {
-    // Clear existing widgets
+static void clearLayout(QLayout *layout) {
     QLayoutItem *item;
-    while ((item = m_layout->takeAt(0)) != nullptr) {
-        delete item->widget();
+    while ((item = layout->takeAt(0)) != nullptr) {
+        if (QWidget *w = item->widget()) {
+            w->deleteLater();
+        } else if (QLayout *child = item->layout()) {
+            clearLayout(child);
+        }
         delete item;
     }
+}
+
+void ScreenRenderer::renderScreen(const QJsonObject &screen) {
+    // Clear existing widgets and nested layouts
+    clearLayout(m_layout);
 
     // Title
     auto *title = new QLabel(screen["title"].toString());
@@ -86,7 +94,7 @@ void ScreenRenderer::handleAction(const QString &actionId) {
     action["ActionPressed"] = inner;
 
     QByteArray json = QJsonDocument(action).toJson(QJsonDocument::Compact);
-    char *result = vauchi_workflow_handle_action(m_workflow, json.constData());
+    char *result = vauchi_app_handle_action(m_app, json.constData());
     if (result) {
         vauchi_string_free(result);
     }

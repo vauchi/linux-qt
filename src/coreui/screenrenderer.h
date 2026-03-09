@@ -14,13 +14,13 @@ class ScreenRenderer : public QWidget {
     Q_OBJECT
 
 public:
-    explicit ScreenRenderer(VauchiWorkflow *workflow, QWidget *parent = nullptr);
+    explicit ScreenRenderer(struct ::VauchiApp *app, QWidget *parent = nullptr);
     void refresh();
 
 private:
     void renderScreen(const QJsonObject &screen);
     void handleAction(const QString &actionId);
 
-    VauchiWorkflow *m_workflow;
+    struct ::VauchiApp *m_app;
     QVBoxLayout *m_layout;
 };
