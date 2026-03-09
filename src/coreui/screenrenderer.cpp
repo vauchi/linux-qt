@@ -145,4 +145,5 @@ void ScreenRenderer::handleAction(const QString &actionId) {
     }
 
     refresh();
+    emit screenChanged();
 }

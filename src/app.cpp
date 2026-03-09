@@ -31,6 +31,11 @@ VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
 
     buildSidebar();
 
+    // Refresh sidebar when screen changes (e.g., after onboarding completes)
+    connect(m_renderer, &ScreenRenderer::screenChanged, this, [this]() {
+        refreshSidebar();
+    });
+
     connect(m_sidebar, &QListWidget::currentRowChanged, this, [this](int row) {
         if (row < 0 || !m_app) return;
 

@@ -19,6 +19,9 @@ public:
     explicit ScreenRenderer(struct ::VauchiApp *app, QWidget *parent = nullptr);
     void refresh();
 
+signals:
+    void screenChanged();
+
 private:
     void renderScreen(const QJsonObject &screen);
     void handleTextChanged(const QString &componentId, const QString &value);
