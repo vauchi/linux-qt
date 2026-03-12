@@ -24,7 +24,8 @@ signals:
 
 private:
     void renderScreen(const QJsonObject &screen);
-    void handleTextChanged(const QString &componentId, const QString &value);
+    void handleComponentAction(const QJsonObject &action);
+    void processActionResult(const char *resultJson);
     void updateButtonStates();
     void handleAction(const QString &actionId);
 

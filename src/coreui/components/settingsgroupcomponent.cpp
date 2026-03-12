@@ -4,21 +4,76 @@
 #include "settingsgroupcomponent.h"
 #include <QGroupBox>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QLabel>
+#include <QCheckBox>
+#include <QPushButton>
 #include <QJsonArray>
 
-QWidget *SettingsGroupComponent::render(const QJsonObject &data) {
+QWidget *SettingsGroupComponent::render(const QJsonObject &data,
+                                        const OnAction &onAction) {
     auto *group = new QGroupBox(data["label"].toString());
     auto *layout = new QVBoxLayout(group);
+
+    QString componentId = data["id"].toString();
 
     QJsonArray items = data["items"].toArray();
     for (const auto &item : items) {
         QJsonObject itemObj = item.toObject();
-        // TODO: Parse kind object (Toggle/Value/Link/Destructive) for richer rendering
-        auto *label = new QLabel(itemObj["label"].toString());
-        layout->addWidget(label);
+        QString itemId = itemObj["id"].toString();
+        QString itemLabel = itemObj["label"].toString();
+        QJsonObject kind = itemObj["kind"].toObject();
+
+        if (kind.contains("Toggle")) {
+            // Toggle setting: render as checkbox
+            auto *row = new QHBoxLayout;
+            auto *label = new QLabel(itemLabel);
+            auto *checkbox = new QCheckBox;
+            checkbox->setChecked(kind["Toggle"].toObject()["enabled"].toBool());
+            row->addWidget(label);
+            row->addStretch();
+            row->addWidget(checkbox);
+
+            auto *rowWidget = new QWidget;
+            rowWidget->setLayout(row);
+            layout->addWidget(rowWidget);
+
+            if (onAction) {
+                QObject::connect(checkbox, &QCheckBox::toggled, checkbox,
+                                 [onAction, componentId, itemId](bool /*checked*/) {
+                                     QJsonObject action;
+                                     QJsonObject inner;
+                                     inner["component_id"] = componentId;
+                                     inner["item_id"] = itemId;
+                                     action["ItemToggled"] = inner;
+                                     onAction(action);
+                                 });
+            }
+        } else if (kind.contains("Link") || kind.contains("Destructive")) {
+            // Link or destructive setting: render as clickable button
+            auto *btn = new QPushButton(itemLabel);
+            if (kind.contains("Destructive")) {
+                btn->setStyleSheet("color: red;");
+            }
+            layout->addWidget(btn);
+
+            if (onAction) {
+                QObject::connect(btn, &QPushButton::clicked, btn,
+                                 [onAction, componentId, itemId]() {
+                                     QJsonObject action;
+                                     QJsonObject inner;
+                                     inner["component_id"] = componentId;
+                                     inner["item_id"] = itemId;
+                                     action["ListItemSelected"] = inner;
+                                     onAction(action);
+                                 });
+            }
+        } else {
+            // Value or unknown kind: render as label
+            auto *label = new QLabel(itemLabel);
+            layout->addWidget(label);
+        }
     }
 
-    // TODO: Support setting editing
     return group;
 }

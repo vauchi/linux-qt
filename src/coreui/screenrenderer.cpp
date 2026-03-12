@@ -10,6 +10,9 @@
 #include <QPushButton>
 #include <QJsonDocument>
 #include <QJsonArray>
+#include <QMessageBox>
+#include <QDesktopServices>
+#include <QUrl>
 
 ScreenRenderer::ScreenRenderer(struct VauchiApp *app, QWidget *parent)
     : QWidget(parent), m_app(app) {
@@ -59,13 +62,13 @@ void ScreenRenderer::renderScreen(const QJsonObject &screen) {
         m_layout->addWidget(subtitle);
     }
 
-    // Components — pass callback for text/toggle changes
-    auto onChange = [this](const QString &componentId, const QString &value) {
-        handleTextChanged(componentId, value);
+    // Components — pass unified action callback
+    auto onAction = [this](const QJsonObject &action) {
+        handleComponentAction(action);
     };
     QJsonArray components = screen["components"].toArray();
     for (const auto &comp : components) {
-        QWidget *widget = ComponentRenderer::render(comp.toObject(), onChange);
+        QWidget *widget = ComponentRenderer::render(comp.toObject(), onAction);
         if (widget) {
             m_layout->addWidget(widget);
         }
@@ -92,22 +95,52 @@ void ScreenRenderer::renderScreen(const QJsonObject &screen) {
     m_layout->addStretch();
 }
 
-void ScreenRenderer::handleTextChanged(const QString &componentId,
-                                       const QString &value) {
-    QJsonObject action;
-    QJsonObject inner;
-    inner["component_id"] = componentId;
-    inner["value"] = value;
-    action["TextChanged"] = inner;
-
+void ScreenRenderer::handleComponentAction(const QJsonObject &action) {
     QByteArray json = QJsonDocument(action).toJson(QJsonDocument::Compact);
     char *result = vauchi_app_handle_action(m_app, json.constData());
     if (result) {
+        processActionResult(result);
         vauchi_string_free(result);
     }
 
     // Update button enabled states without rebuilding the widget tree
     updateButtonStates();
+}
+
+void ScreenRenderer::processActionResult(const char *resultJson) {
+    QJsonDocument doc = QJsonDocument::fromJson(resultJson);
+    if (!doc.isObject()) {
+        refresh();
+        return;
+    }
+
+    QJsonObject result = doc.object();
+
+    if (result.contains("NavigateTo")) {
+        QString screen = result["NavigateTo"].toObject()["screen"].toString();
+        if (!screen.isEmpty()) {
+            QByteArray screenUtf8 = screen.toUtf8();
+            char *navResult = vauchi_app_navigate_to(m_app, screenUtf8.constData());
+            if (navResult) {
+                vauchi_string_free(navResult);
+            }
+        }
+        refresh();
+        emit screenChanged();
+    } else if (result.contains("ShowAlert")) {
+        QJsonObject alert = result["ShowAlert"].toObject();
+        QString alertTitle = alert["title"].toString();
+        QString alertMessage = alert["message"].toString();
+        QMessageBox::information(this, alertTitle, alertMessage);
+    } else if (result.contains("OpenUrl")) {
+        QString url = result["OpenUrl"].toObject()["url"].toString();
+        if (!url.isEmpty()) {
+            QDesktopServices::openUrl(QUrl(url));
+        }
+    } else {
+        // For Refresh, StateUpdated, or unknown variants — just refresh
+        refresh();
+    }
 }
 
 void ScreenRenderer::updateButtonStates() {
@@ -141,7 +174,9 @@ void ScreenRenderer::handleAction(const QString &actionId) {
     QByteArray json = QJsonDocument(action).toJson(QJsonDocument::Compact);
     char *result = vauchi_app_handle_action(m_app, json.constData());
     if (result) {
+        processActionResult(result);
         vauchi_string_free(result);
+        return;
     }
 
     refresh();
