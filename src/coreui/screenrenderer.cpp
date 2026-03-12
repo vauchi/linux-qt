@@ -116,29 +116,41 @@ void ScreenRenderer::processActionResult(const char *resultJson) {
 
     QJsonObject result = doc.object();
 
-    if (result.contains("NavigateTo")) {
-        QString screen = result["NavigateTo"].toObject()["screen"].toString();
-        if (!screen.isEmpty()) {
-            QByteArray screenUtf8 = screen.toUtf8();
-            char *navResult = vauchi_app_navigate_to(m_app, screenUtf8.constData());
-            if (navResult) {
-                vauchi_string_free(navResult);
-            }
-        }
+    if (result.contains("NavigateTo") || result.contains("UpdateScreen")) {
+        // Core already updated internal state; refresh to display the new screen
         refresh();
         emit screenChanged();
     } else if (result.contains("ShowAlert")) {
         QJsonObject alert = result["ShowAlert"].toObject();
-        QString alertTitle = alert["title"].toString();
-        QString alertMessage = alert["message"].toString();
-        QMessageBox::information(this, alertTitle, alertMessage);
+        QMessageBox::information(this, alert["title"].toString(), alert["message"].toString());
     } else if (result.contains("OpenUrl")) {
         QString url = result["OpenUrl"].toObject()["url"].toString();
         if (!url.isEmpty()) {
             QDesktopServices::openUrl(QUrl(url));
         }
+    } else if (result.contains("StartDeviceLink")) {
+        char *r = vauchi_app_navigate_to(m_app, "device_linking");
+        if (r) vauchi_string_free(r);
+        refresh();
+        emit screenChanged();
+    } else if (result.contains("StartBackupImport")) {
+        char *r = vauchi_app_navigate_to(m_app, "backup");
+        if (r) vauchi_string_free(r);
+        refresh();
+        emit screenChanged();
+    } else if (result.contains("OpenContact")) {
+        // CABI doesn't support parameterized navigation yet — refresh as fallback
+        refresh();
+        emit screenChanged();
+    } else if (result.contains("EditContact")) {
+        // CABI doesn't support parameterized navigation yet — refresh as fallback
+        refresh();
+        emit screenChanged();
+    } else if (result.contains("WipeComplete")) {
+        refresh();
+        emit screenChanged();
     } else {
-        // For Refresh, StateUpdated, or unknown variants — just refresh
+        // ValidationError, Complete, RequestCamera, OpenEntryDetail, etc.
         refresh();
     }
 }
