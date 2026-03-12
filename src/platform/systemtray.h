@@ -2,19 +2,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #pragma once
-
 #include <QSystemTrayIcon>
 
 class QMenu;
+class QAction;
 
-/// System tray icon and menu for Vauchi.
 class SystemTray : public QSystemTrayIcon {
     Q_OBJECT
-
 public:
     explicit SystemTray(QObject *parent = nullptr);
 
-private:
-    QMenu *m_menu = nullptr;
-    // TODO: Add tray icon, menu actions (show/hide, quit)
+signals:
+    void showWindowRequested();
+    void quitRequested();
 };

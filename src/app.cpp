@@ -3,7 +3,10 @@
 
 #include "app.h"
 #include "coreui/screenrenderer.h"
+#include "platform/menubar.h"
+#include "platform/systemtray.h"
 
+#include <QApplication>
 #include <QHBoxLayout>
 #include <QListWidget>
 #include <QJsonDocument>
@@ -38,6 +41,17 @@ VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
     layout->addWidget(m_renderer, 1);
 
     setCentralWidget(central);
+
+    // Menu bar
+    auto *menuBar = new VauchiMenuBar(this);
+    setMenuBar(menuBar);
+    connect(menuBar, &VauchiMenuBar::quitRequested, qApp, &QApplication::quit);
+
+    // System tray
+    auto *tray = new SystemTray(this);
+    connect(tray, &SystemTray::showWindowRequested, this, &QWidget::show);
+    connect(tray, &SystemTray::quitRequested, qApp, &QApplication::quit);
+    tray->show();
 
     buildSidebar();
 

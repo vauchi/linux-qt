@@ -2,16 +2,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #pragma once
-
 #include <QMenuBar>
 
-/// Application menu bar for Vauchi.
+class QAction;
+
 class VauchiMenuBar : public QMenuBar {
     Q_OBJECT
-
 public:
     explicit VauchiMenuBar(QWidget *parent = nullptr);
 
-private:
-    // TODO: Add File, Edit, Help menus
+signals:
+    void quitRequested();
+    void aboutRequested();
 };
