@@ -1,7 +1,14 @@
 # SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+include:
+  - project: 'vauchi/scripts'
+    ref: main
+    file:
+      - '/ci-templates/design-drift.yml'
+
 stages:
+  - lint
   - deps
   - build
   - test
@@ -43,3 +50,12 @@ test:
     - cd build
     - ctest --output-on-failure
   tags: [linux]
+
+# Design drift: verify all design-spec components are implemented
+check:design-drift:
+  extends: .design-drift-job
+  variables:
+    DESIGN_DRIFT_COMPONENT_DIR: "src/coreui/components"
+    DESIGN_DRIFT_FILE_EXT: ".cpp"
+    DESIGN_DRIFT_FILE_SUFFIX: "component"
+    DESIGN_DRIFT_CASE: "lower"
