@@ -15,6 +15,16 @@ VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
 
     m_app = vauchi_app_create();
 
+    // Navigate to dynamic default screen (MyInfo with 0 contacts, Contacts with >=1)
+    if (m_app) {
+        char *defaultScreen = vauchi_app_default_screen(m_app);
+        if (defaultScreen) {
+            char *resultJson = vauchi_app_navigate_to(m_app, defaultScreen);
+            if (resultJson) vauchi_string_free(resultJson);
+            vauchi_string_free(defaultScreen);
+        }
+    }
+
     auto *central = new QWidget(this);
     auto *layout = new QHBoxLayout(central);
 
