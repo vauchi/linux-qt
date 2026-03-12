@@ -135,6 +135,14 @@ char *vauchi_app_navigate_to(struct VauchiApp *handle, const char *screen_name);
  */
 char *vauchi_app_available_screens(struct VauchiApp *handle);
 
+/**
+ * Returns the default landing screen as a C string ("my_info" or "contacts").
+ *
+ * # Safety
+ * `handle` must be a valid app handle or null.
+ */
+char *vauchi_app_default_screen(struct VauchiApp *handle);
+
 #ifdef __cplusplus
 }
 #endif
