@@ -20,21 +20,21 @@
 #include <QLabel>
 
 QWidget *ComponentRenderer::render(const QJsonObject &component,
-                                   const OnComponentChanged &onChange) {
+                                   const OnAction &onAction) {
     // Component enum is serialized as { "VariantName": { ...fields } } or "Divider"
     if (component.contains("Text")) return TextComponent::render(component["Text"].toObject());
-    if (component.contains("TextInput")) return TextInputComponent::render(component["TextInput"].toObject(), onChange);
-    if (component.contains("ToggleList")) return ToggleListComponent::render(component["ToggleList"].toObject());
+    if (component.contains("TextInput")) return TextInputComponent::render(component["TextInput"].toObject(), onAction);
+    if (component.contains("ToggleList")) return ToggleListComponent::render(component["ToggleList"].toObject(), onAction);
     if (component.contains("FieldList")) return FieldListComponent::render(component["FieldList"].toObject());
     if (component.contains("CardPreview")) return CardPreviewComponent::render(component["CardPreview"].toObject());
     if (component.contains("InfoPanel")) return InfoPanelComponent::render(component["InfoPanel"].toObject());
-    if (component.contains("ContactList")) return ContactListComponent::render(component["ContactList"].toObject());
-    if (component.contains("SettingsGroup")) return SettingsGroupComponent::render(component["SettingsGroup"].toObject());
-    if (component.contains("ActionList")) return ActionListComponent::render(component["ActionList"].toObject());
+    if (component.contains("ContactList")) return ContactListComponent::render(component["ContactList"].toObject(), onAction);
+    if (component.contains("SettingsGroup")) return SettingsGroupComponent::render(component["SettingsGroup"].toObject(), onAction);
+    if (component.contains("ActionList")) return ActionListComponent::render(component["ActionList"].toObject(), onAction);
     if (component.contains("StatusIndicator")) return StatusIndicatorComponent::render(component["StatusIndicator"].toObject());
-    if (component.contains("PinInput")) return PinInputComponent::render(component["PinInput"].toObject());
+    if (component.contains("PinInput")) return PinInputComponent::render(component["PinInput"].toObject(), onAction);
     if (component.contains("QrCode")) return QrcodeComponent::render(component["QrCode"].toObject());
-    if (component.contains("ConfirmationDialog")) return ConfirmationDialogComponent::render(component["ConfirmationDialog"].toObject());
+    if (component.contains("ConfirmationDialog")) return ConfirmationDialogComponent::render(component["ConfirmationDialog"].toObject(), onAction);
 
     // Divider is serialized as just the string "Divider"
     return DividerComponent::render();

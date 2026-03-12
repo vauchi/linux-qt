@@ -6,7 +6,8 @@
 #include <QVBoxLayout>
 #include <QLabel>
 
-QWidget *PinInputComponent::render(const QJsonObject &data) {
+QWidget *PinInputComponent::render(const QJsonObject &data,
+                                   const OnAction &onAction) {
     auto *container = new QWidget;
     auto *layout = new QVBoxLayout(container);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -17,9 +18,21 @@ QWidget *PinInputComponent::render(const QJsonObject &data) {
     input->setMaxLength(data["length"].toInt(6));
     input->setAlignment(Qt::AlignCenter);
 
+    if (onAction) {
+        QString componentId = data["id"].toString();
+        QObject::connect(input, &QLineEdit::textChanged, input,
+                         [onAction, componentId](const QString &text) {
+                             QJsonObject action;
+                             QJsonObject inner;
+                             inner["component_id"] = componentId;
+                             inner["value"] = text;
+                             action["TextChanged"] = inner;
+                             onAction(action);
+                         });
+    }
+
     layout->addWidget(label);
     layout->addWidget(input);
 
-    // TODO: Emit PIN value changes back to workflow
     return container;
 }

@@ -4,8 +4,10 @@
 #pragma once
 #include <QWidget>
 #include <QJsonObject>
+#include "../componentrenderer.h"
 
 class ConfirmationDialogComponent {
 public:
-    static QWidget *render(const QJsonObject &data);
+    static QWidget *render(const QJsonObject &data,
+                           const OnAction &onAction = nullptr);
 };

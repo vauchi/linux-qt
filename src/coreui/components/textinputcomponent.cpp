@@ -7,7 +7,7 @@
 #include <QLabel>
 
 QWidget *TextInputComponent::render(const QJsonObject &data,
-                                    const OnComponentChanged &onChange) {
+                                    const OnAction &onAction) {
     auto *container = new QWidget;
     auto *layout = new QVBoxLayout(container);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -21,11 +21,16 @@ QWidget *TextInputComponent::render(const QJsonObject &data,
         input->setMaxLength(data["max_length"].toInt());
     }
 
-    if (onChange) {
+    if (onAction) {
         QString componentId = data["id"].toString();
         QObject::connect(input, &QLineEdit::textChanged, input,
-                         [onChange, componentId](const QString &text) {
-                             onChange(componentId, text);
+                         [onAction, componentId](const QString &text) {
+                             QJsonObject action;
+                             QJsonObject inner;
+                             inner["component_id"] = componentId;
+                             inner["value"] = text;
+                             action["TextChanged"] = inner;
+                             onAction(action);
                          });
     }
 

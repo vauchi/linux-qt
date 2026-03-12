@@ -7,7 +7,8 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 
-QWidget *ConfirmationDialogComponent::render(const QJsonObject &data) {
+QWidget *ConfirmationDialogComponent::render(const QJsonObject &data,
+                                             const OnAction &onAction) {
     auto *container = new QWidget;
     auto *layout = new QVBoxLayout(container);
 
@@ -22,6 +23,27 @@ QWidget *ConfirmationDialogComponent::render(const QJsonObject &data) {
     buttonLayout->addWidget(confirmBtn);
     layout->addLayout(buttonLayout);
 
-    // TODO: Connect buttons to workflow actions
+    if (onAction) {
+        QString dialogId = data["id"].toString();
+
+        QObject::connect(confirmBtn, &QPushButton::clicked, confirmBtn,
+                         [onAction, dialogId]() {
+                             QJsonObject action;
+                             QJsonObject inner;
+                             inner["action_id"] = dialogId + "_confirm";
+                             action["ActionPressed"] = inner;
+                             onAction(action);
+                         });
+
+        QObject::connect(cancelBtn, &QPushButton::clicked, cancelBtn,
+                         [onAction, dialogId]() {
+                             QJsonObject action;
+                             QJsonObject inner;
+                             inner["action_id"] = dialogId + "_cancel";
+                             action["ActionPressed"] = inner;
+                             onAction(action);
+                         });
+    }
+
     return container;
 }

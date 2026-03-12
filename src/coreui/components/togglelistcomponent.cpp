@@ -7,7 +7,8 @@
 #include <QLabel>
 #include <QJsonArray>
 
-QWidget *ToggleListComponent::render(const QJsonObject &data) {
+QWidget *ToggleListComponent::render(const QJsonObject &data,
+                                     const OnAction &onAction) {
     auto *container = new QWidget;
     auto *layout = new QVBoxLayout(container);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -15,14 +16,29 @@ QWidget *ToggleListComponent::render(const QJsonObject &data) {
     auto *label = new QLabel(data["label"].toString());
     layout->addWidget(label);
 
+    QString componentId = data["id"].toString();
+
     QJsonArray items = data["items"].toArray();
     for (const auto &item : items) {
         QJsonObject itemObj = item.toObject();
         auto *checkbox = new QCheckBox(itemObj["label"].toString());
         checkbox->setChecked(itemObj["selected"].toBool());
+
+        if (onAction) {
+            QString itemId = itemObj["id"].toString();
+            QObject::connect(checkbox, &QCheckBox::toggled, checkbox,
+                             [onAction, componentId, itemId](bool /*checked*/) {
+                                 QJsonObject action;
+                                 QJsonObject inner;
+                                 inner["component_id"] = componentId;
+                                 inner["item_id"] = itemId;
+                                 action["ItemToggled"] = inner;
+                                 onAction(action);
+                             });
+        }
+
         layout->addWidget(checkbox);
     }
 
-    // TODO: Emit toggle changes back to workflow
     return container;
 }
