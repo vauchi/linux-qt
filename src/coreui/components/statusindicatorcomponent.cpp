@@ -10,14 +10,33 @@ QWidget *StatusIndicatorComponent::render(const QJsonObject &data) {
     auto *layout = new QHBoxLayout(container);
     layout->setContentsMargins(0, 0, 0, 0);
 
-    auto *indicator = new QLabel;
+    // Status dot with color
+    auto *dot = new QLabel(QStringLiteral("\u25CF"));
     QString status = data["status"].toString();
-    // TODO: Use proper icons/colors for status states
-    indicator->setText(status);
+    if (status == "Success") {
+        dot->setStyleSheet("color: #2ecc71; font-size: 14px;");
+    } else if (status == "Failed") {
+        dot->setStyleSheet("color: #e74c3c; font-size: 14px;");
+    } else if (status == "Warning") {
+        dot->setStyleSheet("color: #f39c12; font-size: 14px;");
+    } else if (status == "InProgress") {
+        dot->setStyleSheet("color: #3498db; font-size: 14px;");
+    } else {
+        dot->setStyleSheet("color: #95a5a6; font-size: 14px;");
+    }
 
-    auto *label = new QLabel(data["title"].toString());
-    layout->addWidget(indicator);
-    layout->addWidget(label);
+    auto *title = new QLabel(data["title"].toString());
+    layout->addWidget(dot);
+    layout->addWidget(title);
+
+    // Optional detail text
+    QString detail = data["detail"].toString();
+    if (!detail.isEmpty()) {
+        auto *detailLabel = new QLabel(detail);
+        detailLabel->setStyleSheet("color: #888;");
+        layout->addWidget(detailLabel);
+    }
+
     layout->addStretch();
 
     return container;

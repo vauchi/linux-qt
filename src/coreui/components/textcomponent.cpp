@@ -6,6 +6,17 @@
 
 QWidget *TextComponent::render(const QJsonObject &data) {
     auto *label = new QLabel(data["content"].toString());
-    // TODO: Apply style based on data["style"]
+    label->setWordWrap(true);
+
+    QString style = data["style"].toString();
+    if (style == "Title") {
+        label->setStyleSheet("font-size: 20px; font-weight: bold;");
+    } else if (style == "Subtitle") {
+        label->setStyleSheet("font-size: 16px; color: #666;");
+    } else if (style == "Caption") {
+        label->setStyleSheet("font-size: 12px; color: #888;");
+    }
+    // Body is the default — no extra styling needed
+
     return label;
 }
