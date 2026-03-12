@@ -11,7 +11,7 @@ QWidget *ContactListComponent::render(const QJsonObject &data) {
     QJsonArray contacts = data["contacts"].toArray();
     for (const auto &contact : contacts) {
         QJsonObject contactObj = contact.toObject();
-        list->addItem(contactObj["display_name"].toString());
+        list->addItem(contactObj["name"].toString());
     }
 
     // TODO: Support contact selection and context menu

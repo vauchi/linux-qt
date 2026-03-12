@@ -16,8 +16,8 @@ QWidget *ConfirmationDialogComponent::render(const QJsonObject &data) {
     layout->addWidget(message);
 
     auto *buttonLayout = new QHBoxLayout;
-    auto *confirmBtn = new QPushButton(data["confirm_label"].toString("Confirm"));
-    auto *cancelBtn = new QPushButton(data["cancel_label"].toString("Cancel"));
+    auto *confirmBtn = new QPushButton(data["confirm_text"].toString("Confirm"));
+    auto *cancelBtn = new QPushButton(QStringLiteral("Cancel"));
     buttonLayout->addWidget(cancelBtn);
     buttonLayout->addWidget(confirmBtn);
     layout->addLayout(buttonLayout);

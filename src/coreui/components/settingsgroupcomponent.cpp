@@ -8,15 +8,14 @@
 #include <QJsonArray>
 
 QWidget *SettingsGroupComponent::render(const QJsonObject &data) {
-    auto *group = new QGroupBox(data["title"].toString());
+    auto *group = new QGroupBox(data["label"].toString());
     auto *layout = new QVBoxLayout(group);
 
-    QJsonArray settings = data["settings"].toArray();
-    for (const auto &setting : settings) {
-        QJsonObject settingObj = setting.toObject();
-        auto *label = new QLabel(
-            settingObj["label"].toString() + ": " + settingObj["value"].toString()
-        );
+    QJsonArray items = data["items"].toArray();
+    for (const auto &item : items) {
+        QJsonObject itemObj = item.toObject();
+        // TODO: Parse kind object (Toggle/Value/Link/Destructive) for richer rendering
+        auto *label = new QLabel(itemObj["label"].toString());
         layout->addWidget(label);
     }
 

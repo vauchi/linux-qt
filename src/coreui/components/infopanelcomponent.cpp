@@ -5,6 +5,7 @@
 #include <QLabel>
 #include <QVBoxLayout>
 #include <QFrame>
+#include <QJsonArray>
 
 QWidget *InfoPanelComponent::render(const QJsonObject &data) {
     auto *frame = new QFrame;
@@ -15,9 +16,17 @@ QWidget *InfoPanelComponent::render(const QJsonObject &data) {
     title->setStyleSheet("font-weight: bold;");
     layout->addWidget(title);
 
-    auto *body = new QLabel(data["body"].toString());
-    body->setWordWrap(true);
-    layout->addWidget(body);
+    QJsonArray items = data["items"].toArray();
+    for (const auto &item : items) {
+        QJsonObject itemObj = item.toObject();
+        auto *row = new QLabel(
+            itemObj["icon"].toString() + " " +
+            itemObj["title"].toString() + ": " +
+            itemObj["detail"].toString()
+        );
+        row->setWordWrap(true);
+        layout->addWidget(row);
+    }
 
     // TODO: Support info panel variants (info, warning, error)
     return frame;

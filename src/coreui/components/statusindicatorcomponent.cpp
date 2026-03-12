@@ -15,7 +15,7 @@ QWidget *StatusIndicatorComponent::render(const QJsonObject &data) {
     // TODO: Use proper icons/colors for status states
     indicator->setText(status);
 
-    auto *label = new QLabel(data["label"].toString());
+    auto *label = new QLabel(data["title"].toString());
     layout->addWidget(indicator);
     layout->addWidget(label);
     layout->addStretch();

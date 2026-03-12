@@ -11,7 +11,7 @@ QWidget *CardPreviewComponent::render(const QJsonObject &data) {
     frame->setFrameStyle(QFrame::Box | QFrame::Raised);
     auto *layout = new QVBoxLayout(frame);
 
-    auto *name = new QLabel(data["display_name"].toString());
+    auto *name = new QLabel(data["name"].toString());
     name->setStyleSheet("font-size: 18px; font-weight: bold;");
     layout->addWidget(name);
 

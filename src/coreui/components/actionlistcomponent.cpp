@@ -11,11 +11,10 @@ QWidget *ActionListComponent::render(const QJsonObject &data) {
     auto *layout = new QVBoxLayout(container);
     layout->setContentsMargins(0, 0, 0, 0);
 
-    QJsonArray actions = data["actions"].toArray();
-    for (const auto &action : actions) {
-        QJsonObject actionObj = action.toObject();
-        auto *btn = new QPushButton(actionObj["label"].toString());
-        btn->setEnabled(actionObj["enabled"].toBool(true));
+    QJsonArray items = data["items"].toArray();
+    for (const auto &item : items) {
+        QJsonObject itemObj = item.toObject();
+        auto *btn = new QPushButton(itemObj["label"].toString());
         layout->addWidget(btn);
     }
 

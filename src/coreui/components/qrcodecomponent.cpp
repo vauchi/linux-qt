@@ -16,6 +16,6 @@ QWidget *QrcodeComponent::render(const QJsonObject &data) {
     placeholder->setStyleSheet("border: 1px solid gray; background: white;");
     layout->addWidget(placeholder);
 
-    // TODO: Render actual QR code from data["payload"]
+    // TODO: Render actual QR code from data["data"]
     return container;
 }
