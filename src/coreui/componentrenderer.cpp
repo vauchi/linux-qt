@@ -26,7 +26,7 @@ QWidget *ComponentRenderer::render(const QJsonObject &component,
     if (component.contains("TextInput")) return TextInputComponent::render(component["TextInput"].toObject(), onAction);
     if (component.contains("ToggleList")) return ToggleListComponent::render(component["ToggleList"].toObject(), onAction);
     if (component.contains("FieldList")) return FieldListComponent::render(component["FieldList"].toObject());
-    if (component.contains("CardPreview")) return CardPreviewComponent::render(component["CardPreview"].toObject());
+    if (component.contains("CardPreview")) return CardPreviewComponent::render(component["CardPreview"].toObject(), onAction);
     if (component.contains("InfoPanel")) return InfoPanelComponent::render(component["InfoPanel"].toObject());
     if (component.contains("ContactList")) return ContactListComponent::render(component["ContactList"].toObject(), onAction);
     if (component.contains("SettingsGroup")) return SettingsGroupComponent::render(component["SettingsGroup"].toObject(), onAction);

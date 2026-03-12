@@ -9,7 +9,8 @@
 #include <QJsonArray>
 #include <QTabWidget>
 
-QWidget *CardPreviewComponent::render(const QJsonObject &data) {
+QWidget *CardPreviewComponent::render(const QJsonObject &data,
+                                      const OnAction &onAction) {
     auto *frame = new QFrame;
     frame->setFrameStyle(QFrame::Box | QFrame::Raised);
     auto *layout = new QVBoxLayout(frame);
@@ -65,6 +66,20 @@ QWidget *CardPreviewComponent::render(const QJsonObject &data) {
                 }
             }
         }
+        // Wire tab switch to emit GroupViewSelected
+        if (onAction) {
+            QObject::connect(tabs, &QTabWidget::currentChanged, tabs,
+                             [onAction, groups](int index) {
+                                 if (index < 0 || index >= groups.size()) return;
+                                 QString groupName = groups[index].toObject()["group_name"].toString();
+                                 QJsonObject action;
+                                 QJsonObject inner;
+                                 inner["group_name"] = groupName;
+                                 action["GroupViewSelected"] = inner;
+                                 onAction(action);
+                             });
+        }
+
         layout->addWidget(tabs);
     }
 

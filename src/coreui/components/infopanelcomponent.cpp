@@ -4,6 +4,7 @@
 #include "infopanelcomponent.h"
 #include <QLabel>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QFrame>
 #include <QJsonArray>
 
@@ -12,22 +13,31 @@ QWidget *InfoPanelComponent::render(const QJsonObject &data) {
     frame->setFrameStyle(QFrame::StyledPanel);
     auto *layout = new QVBoxLayout(frame);
 
-    auto *title = new QLabel(data["title"].toString());
+    // Optional icon + title row
+    QString icon = data["icon"].toString();
+    auto *title = new QLabel(
+        (icon.isEmpty() ? QString() : icon + " ") + data["title"].toString()
+    );
     title->setStyleSheet("font-weight: bold;");
     layout->addWidget(title);
 
     QJsonArray items = data["items"].toArray();
     for (const auto &item : items) {
         QJsonObject itemObj = item.toObject();
-        auto *row = new QLabel(
-            itemObj["icon"].toString() + " " +
-            itemObj["title"].toString() + ": " +
-            itemObj["detail"].toString()
-        );
-        row->setWordWrap(true);
-        layout->addWidget(row);
+        auto *row = new QHBoxLayout;
+        QString itemIcon = itemObj["icon"].toString();
+        if (!itemIcon.isEmpty()) {
+            auto *iconLabel = new QLabel(itemIcon);
+            row->addWidget(iconLabel);
+        }
+        auto *itemTitle = new QLabel(itemObj["title"].toString() + ":");
+        itemTitle->setStyleSheet("font-weight: bold;");
+        auto *detail = new QLabel(itemObj["detail"].toString());
+        detail->setWordWrap(true);
+        row->addWidget(itemTitle);
+        row->addWidget(detail, 1);
+        layout->addLayout(row);
     }
 
-    // TODO: Support info panel variants (info, warning, error)
     return frame;
 }
