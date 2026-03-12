@@ -4,18 +4,77 @@
 #include "qrcodecomponent.h"
 #include <QLabel>
 #include <QVBoxLayout>
+#include <QPainter>
+#include <QPixmap>
+#include <qrencode.h>
+
+static constexpr int QR_SIZE = 200;
 
 QWidget *QrcodeComponent::render(const QJsonObject &data) {
     auto *container = new QWidget;
     auto *layout = new QVBoxLayout(container);
     layout->setContentsMargins(0, 0, 0, 0);
 
-    auto *placeholder = new QLabel("[QR Code]");
-    placeholder->setAlignment(Qt::AlignCenter);
-    placeholder->setMinimumSize(200, 200);
-    placeholder->setStyleSheet("border: 1px solid gray; background: white;");
-    layout->addWidget(placeholder);
+    QString qrData = data["data"].toString();
+    QString mode = data["mode"].toString();
 
-    // TODO: Render actual QR code from data["data"]
+    if (mode == "Scan") {
+        auto *label = new QLabel("Camera not available on desktop");
+        label->setAlignment(Qt::AlignCenter);
+        layout->addWidget(label);
+        return container;
+    }
+
+    if (qrData.isEmpty()) {
+        auto *label = new QLabel("No QR data");
+        label->setAlignment(Qt::AlignCenter);
+        layout->addWidget(label);
+        return container;
+    }
+
+    QByteArray utf8 = qrData.toUtf8();
+    QRcode *code = QRcode_encodeString(utf8.constData(), 0, QR_ECLEVEL_M, QR_MODE_8, 1);
+    if (!code) {
+        auto *label = new QLabel("Failed to generate QR code");
+        label->setAlignment(Qt::AlignCenter);
+        layout->addWidget(label);
+        return container;
+    }
+
+    int moduleCount = code->width;
+    int scale = QR_SIZE / moduleCount;
+    if (scale < 1) scale = 1;
+    int imgSize = moduleCount * scale;
+
+    QPixmap pixmap(imgSize, imgSize);
+    pixmap.fill(Qt::white);
+    QPainter painter(&pixmap);
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(Qt::black);
+
+    for (int y = 0; y < moduleCount; ++y) {
+        for (int x = 0; x < moduleCount; ++x) {
+            if (code->data[y * moduleCount + x] & 1) {
+                painter.drawRect(x * scale, y * scale, scale, scale);
+            }
+        }
+    }
+    painter.end();
+    QRcode_free(code);
+
+    auto *qrLabel = new QLabel;
+    qrLabel->setPixmap(pixmap.scaled(QR_SIZE, QR_SIZE, Qt::KeepAspectRatio, Qt::FastTransformation));
+    qrLabel->setAlignment(Qt::AlignCenter);
+    layout->addWidget(qrLabel);
+
+    // Optional label below QR
+    QString labelText = data["label"].toString();
+    if (!labelText.isEmpty()) {
+        auto *textLabel = new QLabel(labelText);
+        textLabel->setAlignment(Qt::AlignCenter);
+        textLabel->setStyleSheet("color: #666; font-size: 12px;");
+        layout->addWidget(textLabel);
+    }
+
     return container;
 }

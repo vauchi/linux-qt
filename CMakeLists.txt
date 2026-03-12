@@ -10,6 +10,9 @@ set(CMAKE_AUTOMOC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets Core)
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(QRENCODE REQUIRED libqrencode)
+
 # vauchi-cabi shared library
 set(VAUCHI_CABI_DIR "" CACHE PATH "Path to vauchi-cabi build output")
 find_library(VAUCHI_CABI vauchi_cabi PATHS ${VAUCHI_CABI_DIR} REQUIRED)
@@ -37,8 +40,8 @@ add_executable(vauchi-qt
     src/platform/menubar.cpp
 )
 
-target_include_directories(vauchi-qt PRIVATE include)
-target_link_libraries(vauchi-qt PRIVATE Qt6::Widgets Qt6::Core ${VAUCHI_CABI})
+target_include_directories(vauchi-qt PRIVATE include ${QRENCODE_INCLUDE_DIRS})
+target_link_libraries(vauchi-qt PRIVATE Qt6::Widgets Qt6::Core ${VAUCHI_CABI} ${QRENCODE_LIBRARIES})
 
 install(TARGETS vauchi-qt DESTINATION bin)
 install(FILES packaging/vauchi-qt.desktop DESTINATION share/applications)
