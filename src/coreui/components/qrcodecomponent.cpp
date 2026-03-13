@@ -42,6 +42,13 @@ QWidget *QrcodeComponent::render(const QJsonObject &data) {
     }
 
     int moduleCount = code->width;
+    if (moduleCount <= 0) {
+        QRcode_free(code);
+        auto *label = new QLabel("Invalid QR code dimensions");
+        label->setAlignment(Qt::AlignCenter);
+        layout->addWidget(label);
+        return container;
+    }
     int scale = QR_SIZE / moduleCount;
     if (scale < 1) scale = 1;
     int imgSize = moduleCount * scale;

@@ -124,9 +124,12 @@ void ScreenRenderer::processActionResult(const char *resultJson) {
         QJsonObject alert = result["ShowAlert"].toObject();
         QMessageBox::information(this, alert["title"].toString(), alert["message"].toString());
     } else if (result.contains("OpenUrl")) {
-        QString url = result["OpenUrl"].toObject()["url"].toString();
-        if (!url.isEmpty()) {
-            QDesktopServices::openUrl(QUrl(url));
+        QUrl url(result["OpenUrl"].toObject()["url"].toString());
+        if (url.isValid() && (url.scheme() == "http" || url.scheme() == "https")) {
+            QDesktopServices::openUrl(url);
+        } else if (!url.isEmpty()) {
+            QMessageBox::warning(this, tr("Cannot open link"),
+                                 tr("URL scheme not allowed: %1").arg(url.scheme()));
         }
     } else if (result.contains("StartDeviceLink")) {
         char *r = vauchi_app_navigate_to(m_app, "device_linking");
@@ -170,7 +173,7 @@ void ScreenRenderer::updateButtonStates() {
         QString id = actionObj["id"].toString();
         bool enabled = actionObj["enabled"].toBool(true);
         for (auto &pair : m_buttons) {
-            if (pair.first == id) {
+            if (pair.first == id && pair.second) {
                 pair.second->setEnabled(enabled);
             }
         }

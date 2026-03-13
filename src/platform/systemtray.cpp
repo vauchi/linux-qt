@@ -6,7 +6,7 @@
 #include <QAction>
 
 SystemTray::SystemTray(QObject *parent) : QSystemTrayIcon(parent) {
-    auto *menu = new QMenu;
+    auto *menu = new QMenu(qobject_cast<QWidget *>(parent));
 
     auto *showAction = menu->addAction(tr("Show Vauchi"));
     connect(showAction, &QAction::triggered, this, &SystemTray::showWindowRequested);

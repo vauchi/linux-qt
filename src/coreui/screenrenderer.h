@@ -6,6 +6,7 @@
 #include <QWidget>
 #include <QJsonObject>
 #include <QVector>
+#include <QPointer>
 #include "vauchi.h"
 
 class QVBoxLayout;
@@ -31,5 +32,5 @@ private:
 
     struct ::VauchiApp *m_app;
     QVBoxLayout *m_layout;
-    QVector<QPair<QString, QPushButton*>> m_buttons;
+    QVector<QPair<QString, QPointer<QPushButton>>> m_buttons;
 };
