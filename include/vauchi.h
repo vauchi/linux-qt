@@ -80,7 +80,7 @@ char *vauchi_workflow_current_screen(struct VauchiWorkflow *handle);
 char *vauchi_workflow_handle_action(struct VauchiWorkflow *handle, const char *action_json);
 
 /**
- * Create a new AppEngine with in-memory storage.
+ * Create a new AppEngine with in-memory storage and default relay.
  *
  * Returns null on initialization failure.
  *
@@ -88,6 +88,18 @@ char *vauchi_workflow_handle_action(struct VauchiWorkflow *handle, const char *a
  * No special requirements.
  */
 struct VauchiApp *vauchi_app_create(void);
+
+/**
+ * Create a new AppEngine with a custom relay URL.
+ *
+ * If `relay_url` is NULL, uses the default (wss://relay.vauchi.app).
+ *
+ * Returns null on initialization failure.
+ *
+ * # Safety
+ * `relay_url` must be a valid null-terminated C string, or NULL.
+ */
+struct VauchiApp *vauchi_app_create_with_relay(const char *relay_url);
 
 /**
  * Destroy an AppEngine instance.
