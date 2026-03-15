@@ -15,6 +15,9 @@
 #include "components/pininputcomponent.h"
 #include "components/qrcodecomponent.h"
 #include "components/confirmationdialogcomponent.h"
+#include "components/showtoastcomponent.h"
+#include "components/inlineconfirmcomponent.h"
+#include "components/editabletextcomponent.h"
 #include "components/dividercomponent.h"
 
 #include <QLabel>
@@ -35,6 +38,9 @@ QWidget *ComponentRenderer::render(const QJsonObject &component,
     if (component.contains("PinInput")) return PinInputComponent::render(component["PinInput"].toObject(), onAction);
     if (component.contains("QrCode")) return QrcodeComponent::render(component["QrCode"].toObject());
     if (component.contains("ConfirmationDialog")) return ConfirmationDialogComponent::render(component["ConfirmationDialog"].toObject(), onAction);
+    if (component.contains("ShowToast")) return ShowToastComponent::render(component["ShowToast"].toObject(), onAction);
+    if (component.contains("InlineConfirm")) return InlineConfirmComponent::render(component["InlineConfirm"].toObject(), onAction);
+    if (component.contains("EditableText")) return EditableTextComponent::render(component["EditableText"].toObject(), onAction);
 
     // Divider is serialized as just the string "Divider"
     return DividerComponent::render();
