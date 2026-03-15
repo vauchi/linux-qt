@@ -12,9 +12,13 @@ QWidget *PinInputComponent::render(const QJsonObject &data,
     auto *layout = new QVBoxLayout(container);
     layout->setContentsMargins(0, 0, 0, 0);
 
+    container->setObjectName(data["id"].toString());
+
     auto *label = new QLabel(data["label"].toString());
     auto *input = new QLineEdit;
     input->setEchoMode(QLineEdit::Password);
+    input->setAccessibleName(data["label"].toString());
+    input->setObjectName(data["id"].toString() + "_input");
     input->setMaxLength(data["length"].toInt(6));
     input->setAlignment(Qt::AlignCenter);
 

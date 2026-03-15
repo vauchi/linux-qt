@@ -11,6 +11,8 @@ QWidget *ActionListComponent::render(const QJsonObject &data,
     auto *container = new QWidget;
     auto *layout = new QVBoxLayout(container);
     layout->setContentsMargins(0, 0, 0, 0);
+    container->setObjectName(data["id"].toString());
+    container->setAccessibleName(QStringLiteral("Actions"));
 
     QString componentId = data["id"].toString();
 

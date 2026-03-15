@@ -13,6 +13,8 @@
 QWidget *SettingsGroupComponent::render(const QJsonObject &data,
                                         const OnAction &onAction) {
     auto *group = new QGroupBox(data["label"].toString());
+    group->setObjectName(data["id"].toString());
+    group->setAccessibleName(data["label"].toString());
     auto *layout = new QVBoxLayout(group);
 
     QString componentId = data["id"].toString();

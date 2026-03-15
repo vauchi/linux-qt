@@ -8,6 +8,8 @@
 QWidget *ContactListComponent::render(const QJsonObject &data,
                                       const OnAction &onAction) {
     auto *list = new QListWidget;
+    list->setObjectName(data["id"].toString());
+    list->setAccessibleName(QStringLiteral("Contacts"));
 
     QString componentId = data["id"].toString();
 

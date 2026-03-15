@@ -13,6 +13,8 @@ QWidget *CardPreviewComponent::render(const QJsonObject &data,
                                       const OnAction &onAction) {
     auto *frame = new QFrame;
     frame->setFrameStyle(QFrame::Box | QFrame::Raised);
+    frame->setObjectName(QStringLiteral("card_preview"));
+    frame->setAccessibleName("Contact card: " + data["name"].toString());
     auto *layout = new QVBoxLayout(frame);
 
     auto *name = new QLabel(data["name"].toString());

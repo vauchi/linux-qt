@@ -7,6 +7,8 @@
 
 QWidget *StatusIndicatorComponent::render(const QJsonObject &data) {
     auto *container = new QWidget;
+    container->setObjectName(data["id"].toString());
+    container->setAccessibleName(data["title"].toString());
     auto *layout = new QHBoxLayout(container);
     layout->setContentsMargins(0, 0, 0, 0);
 

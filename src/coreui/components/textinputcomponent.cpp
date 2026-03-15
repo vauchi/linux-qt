@@ -12,10 +12,14 @@ QWidget *TextInputComponent::render(const QJsonObject &data,
     auto *layout = new QVBoxLayout(container);
     layout->setContentsMargins(0, 0, 0, 0);
 
+    container->setObjectName(data["id"].toString());
+
     auto *label = new QLabel(data["label"].toString());
     auto *input = new QLineEdit;
     input->setPlaceholderText(data["placeholder"].toString());
     input->setText(data["value"].toString());
+    input->setAccessibleName(data["label"].toString());
+    input->setObjectName(data["id"].toString() + "_input");
 
     if (data.contains("max_length") && !data["max_length"].isNull()) {
         input->setMaxLength(data["max_length"].toInt());

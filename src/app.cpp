@@ -34,6 +34,8 @@ VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
     // Sidebar
     m_sidebar = new QListWidget;
     m_sidebar->setFixedWidth(200);
+    m_sidebar->setObjectName(QStringLiteral("sidebar"));
+    m_sidebar->setAccessibleName(QStringLiteral("Navigation"));
     layout->addWidget(m_sidebar);
 
     // Content

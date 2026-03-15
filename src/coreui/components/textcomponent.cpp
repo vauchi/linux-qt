@@ -7,6 +7,8 @@
 QWidget *TextComponent::render(const QJsonObject &data) {
     auto *label = new QLabel(data["content"].toString());
     label->setWordWrap(true);
+    label->setObjectName(data["id"].toString());
+    label->setAccessibleName(data["content"].toString());
 
     QString style = data["style"].toString();
     if (style == "Title") {

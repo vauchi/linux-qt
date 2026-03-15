@@ -12,6 +12,8 @@
 QWidget *FieldListComponent::render(const QJsonObject &data,
                                      const OnAction &onAction) {
     auto *container = new QWidget;
+    container->setObjectName(data["id"].toString());
+    container->setAccessibleName(QStringLiteral("Fields"));
     auto *layout = new QVBoxLayout(container);
     layout->setContentsMargins(0, 0, 0, 0);
 

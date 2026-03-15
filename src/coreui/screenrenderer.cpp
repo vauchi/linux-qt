@@ -53,6 +53,8 @@ void ScreenRenderer::renderScreen(const QJsonObject &screen) {
     // Title
     auto *title = new QLabel(screen["title"].toString());
     title->setStyleSheet("font-size: 24px; font-weight: bold;");
+    title->setObjectName(QStringLiteral("screen_title"));
+    title->setAccessibleName(screen["title"].toString());
     m_layout->addWidget(title);
 
     // Subtitle
@@ -84,6 +86,7 @@ void ScreenRenderer::renderScreen(const QJsonObject &screen) {
         btn->setEnabled(actionObj["enabled"].toBool(true));
 
         QString actionId = actionObj["id"].toString();
+        btn->setObjectName(actionId);
         m_buttons.append({actionId, btn});
         connect(btn, &QPushButton::clicked, this, [this, actionId]() {
             handleAction(actionId);

@@ -13,6 +13,8 @@ QWidget *ToggleListComponent::render(const QJsonObject &data,
     auto *layout = new QVBoxLayout(container);
     layout->setContentsMargins(0, 0, 0, 0);
 
+    container->setObjectName(data["id"].toString());
+
     auto *label = new QLabel(data["label"].toString());
     layout->addWidget(label);
 

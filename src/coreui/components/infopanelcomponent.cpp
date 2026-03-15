@@ -11,6 +11,8 @@
 QWidget *InfoPanelComponent::render(const QJsonObject &data) {
     auto *frame = new QFrame;
     frame->setFrameStyle(QFrame::StyledPanel);
+    frame->setObjectName(data["id"].toString());
+    frame->setAccessibleName(data["title"].toString());
     auto *layout = new QVBoxLayout(frame);
 
     // Optional icon + title row

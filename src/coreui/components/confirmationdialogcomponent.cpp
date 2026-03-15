@@ -10,6 +10,8 @@
 QWidget *ConfirmationDialogComponent::render(const QJsonObject &data,
                                              const OnAction &onAction) {
     auto *container = new QWidget;
+    container->setObjectName(data["id"].toString());
+    container->setAccessibleName(data["title"].toString());
     auto *layout = new QVBoxLayout(container);
 
     auto *message = new QLabel(data["message"].toString());

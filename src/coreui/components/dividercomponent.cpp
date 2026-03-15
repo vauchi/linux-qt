@@ -8,5 +8,6 @@ QWidget *DividerComponent::render() {
     auto *line = new QFrame;
     line->setFrameShape(QFrame::HLine);
     line->setFrameShadow(QFrame::Sunken);
+    line->setAccessibleName(QStringLiteral("Separator"));
     return line;
 }

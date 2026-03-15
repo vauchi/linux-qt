@@ -12,11 +12,18 @@ static constexpr int QR_SIZE = 200;
 
 QWidget *QrcodeComponent::render(const QJsonObject &data) {
     auto *container = new QWidget;
+    container->setObjectName(data["id"].toString());
     auto *layout = new QVBoxLayout(container);
     layout->setContentsMargins(0, 0, 0, 0);
 
     QString qrData = data["data"].toString();
     QString mode = data["mode"].toString();
+
+    if (mode == "Scan") {
+        container->setAccessibleName(QStringLiteral("Scan QR code"));
+    } else {
+        container->setAccessibleName(QStringLiteral("QR code for contact exchange"));
+    }
 
     if (mode == "Scan") {
         auto *label = new QLabel("Camera not available on desktop");
