@@ -18,7 +18,7 @@ set(VAUCHI_CABI_DIR "${CMAKE_SOURCE_DIR}/../core/target/debug" CACHE PATH "Path 
 set(VAUCHI_CABI_INCLUDE "${CMAKE_SOURCE_DIR}/../core/vauchi-cabi/include" CACHE PATH "Path to vauchi-cabi headers")
 find_library(VAUCHI_CABI vauchi_cabi PATHS ${VAUCHI_CABI_DIR} REQUIRED)
 
-add_executable(vauchi-qt
+add_executable(qvauchi
     src/main.cpp
     src/app.cpp
     src/coreui/screenrenderer.cpp
@@ -41,8 +41,8 @@ add_executable(vauchi-qt
     src/platform/menubar.cpp
 )
 
-target_include_directories(vauchi-qt PRIVATE include ${QRENCODE_INCLUDE_DIRS} ${VAUCHI_CABI_INCLUDE})
-target_link_libraries(vauchi-qt PRIVATE Qt6::Widgets Qt6::Core ${VAUCHI_CABI} ${QRENCODE_LIBRARIES})
+target_include_directories(qvauchi PRIVATE include ${QRENCODE_INCLUDE_DIRS} ${VAUCHI_CABI_INCLUDE})
+target_link_libraries(qvauchi PRIVATE Qt6::Widgets Qt6::Core ${VAUCHI_CABI} ${QRENCODE_LIBRARIES})
 
-install(TARGETS vauchi-qt DESTINATION bin)
+install(TARGETS qvauchi DESTINATION bin)
 install(FILES packaging/vauchi-qt.desktop DESTINATION share/applications)
