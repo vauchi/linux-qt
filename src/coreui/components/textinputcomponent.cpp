@@ -27,12 +27,15 @@ QWidget *TextInputComponent::render(const QJsonObject &data,
 
     if (onAction) {
         QString componentId = data["id"].toString();
-        QObject::connect(input, &QLineEdit::textChanged, input,
-                         [onAction, componentId](const QString &text) {
+
+        // Emit TextChanged only on commit (Enter key or focus leave).
+        // editingFinished fires on both — prevents per-keystroke re-renders.
+        QObject::connect(input, &QLineEdit::editingFinished, input,
+                         [onAction, componentId, input]() {
                              QJsonObject action;
                              QJsonObject inner;
                              inner["component_id"] = componentId;
-                             inner["value"] = text;
+                             inner["value"] = input->text();
                              action["TextChanged"] = inner;
                              onAction(action);
                          });
