@@ -3,7 +3,7 @@
 
 # qVauchi (Qt) — Design Inventory
 
-## Components (14 types)
+## Components (17 types)
 
 All components are rendered by `src/coreui/componentrenderer.cpp` via `ComponentRenderer::render()`.
 Each component maps a vauchi-core JSON `Component` variant to Qt6 widgets.
@@ -25,13 +25,9 @@ Each component maps a vauchi-core JSON `Component` variant to Qt6 widgets.
 | 13 | SettingsGroup | `settingsgroupcomponent.cpp` | `QGroupBox` with toggles | Yes (ActionPressed, ItemToggled) | Settings |
 | 14 | Divider | `dividercomponent.cpp` | `QFrame` (HLine) | No | Various |
 
-### Missing Components (3 — present in GTK, absent from Qt)
-
-| Component | GTK Implementation | Impact |
-|-----------|-------------------|--------|
-| **ShowToast** | `adw::Toast` via ToastOverlay | No toast notifications in Qt — user gets no feedback on save/delete |
-| **InlineConfirm** | Warning box + confirm/cancel buttons | No inline confirmation — emergency shred may lack safety prompt |
-| **EditableText** | Label ↔ Entry toggle | No inline name editing — must use separate edit screen |
+| 15 | ShowToast | `showtoastcomponent.cpp` | `QWidget` + `QLabel` + `QPushButton` | Yes (UndoPressed) | Post-delete, post-save |
+| 16 | InlineConfirm | `inlineconfirmcomponent.cpp` | `QFrame` + `QPushButton` (confirm/cancel) | Yes (ActionPressed) | EmergencyShred |
+| 17 | EditableText | `editabletextcomponent.cpp` | `QLabel` ↔ `QLineEdit` + `QPushButton` | Yes (TextChanged, ActionPressed) | MyInfo (name editing) |
 
 ## Screens (12 navigable via CABI)
 
@@ -128,8 +124,8 @@ Settings → SettingsGroup items
 
 ## Known Issues
 
-1. **TextInput fires on every keystroke** — `QLineEdit::textChanged` triggers per-character, causing screen re-render per keystroke. GTK only fires on Enter/focus-leave.
-2. **Missing 3 component types** — ShowToast, InlineConfirm, EditableText not handled in `componentrenderer.cpp`; unknown types fall through to Divider.
+1. ~~**TextInput fires on every keystroke**~~ FIXED — now uses `editingFinished` (Enter/focus-leave).
+2. ~~**Missing 3 component types**~~ FIXED — ShowToast, InlineConfirm, EditableText now implemented.
 3. **Missing 6 screens** — CABI `vauchi_app_navigate_to()` doesn't expose Sync, TorSettings, Recovery, Groups, Privacy, Support.
 4. **No QR paste fallback** — Unlike GTK which has a paste dialog for QR data, Qt only displays QR codes.
 5. **No keyboard navigation** — No sidebar keyboard shortcuts, no screen-level hotkeys.
