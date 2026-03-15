@@ -5,12 +5,14 @@
 
 #include "app.h"
 #include <QApplication>
+#include <QIcon>
 
 int main(int argc, char *argv[]) {
     QApplication qtApp(argc, argv);
     qtApp.setApplicationName("Vauchi");
     qtApp.setApplicationVersion("0.5.0");
     qtApp.setOrganizationName("vauchi");
+    qtApp.setWindowIcon(QIcon(QStringLiteral(":/icons/vauchi.svg")));
 
     VauchiWindow window;
     window.show();

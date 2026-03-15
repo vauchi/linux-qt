@@ -3,6 +3,7 @@
 
 #include "screenrenderer.h"
 #include "componentrenderer.h"
+#include "../platform/hardwarebackend.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -13,10 +14,42 @@
 #include <QMessageBox>
 #include <QDesktopServices>
 #include <QUrl>
+#include <QInputDialog>
+#include <QStatusBar>
+#include <QMainWindow>
+#include <QTimer>
 
 ScreenRenderer::ScreenRenderer(struct VauchiApp *app, QWidget *parent)
     : QWidget(parent), m_app(app) {
     m_layout = new QVBoxLayout(this);
+
+    // Hardware backend for exchange commands
+    m_hardware = new HardwareBackend(app, this);
+    connect(m_hardware, &HardwareBackend::actionResultReady, this, [this](const QJsonObject &result) {
+        QByteArray json = QJsonDocument(result).toJson(QJsonDocument::Compact);
+        processActionResult(json.constData());
+    });
+    connect(m_hardware, &HardwareBackend::qrScanned, this, [this](const QString &data) {
+        if (data.isEmpty()) {
+            // No camera or scan cancelled — fall back to paste dialog
+            promptQrPaste();
+        } else {
+            // Camera decoded QR — send as hardware event
+            QJsonObject event;
+            QJsonObject inner;
+            inner["data"] = data;
+            event["QrScanned"] = inner;
+            QByteArray json = QJsonDocument(event).toJson(QJsonDocument::Compact);
+            char *result = vauchi_app_handle_hardware_event(m_app, json.constData());
+            if (result) {
+                processActionResult(result);
+                vauchi_string_free(result);
+            } else {
+                refresh();
+            }
+        }
+    });
+
     refresh();
 }
 
@@ -155,8 +188,32 @@ void ScreenRenderer::processActionResult(const char *resultJson) {
     } else if (result.contains("WipeComplete")) {
         refresh();
         emit screenChanged();
+    } else if (result.contains("ExchangeCommands")) {
+        // ADR-031: Dispatch exchange commands to hardware backends.
+        // Camera/BLE/NFC backends handle their respective commands;
+        // unavailable hardware triggers HardwareUnavailable events back to core.
+        QJsonObject cmds = result["ExchangeCommands"].toObject();
+        QJsonArray commands = cmds["commands"].toArray();
+        refresh();
+        m_hardware->dispatchCommands(commands);
+    } else if (result.contains("RequestCamera")) {
+        // Desktop fallback: prompt user to paste QR data manually
+        refresh();
+        promptQrPaste();
+    } else if (result.contains("ShowToast")) {
+        QJsonObject toast = result["ShowToast"].toObject();
+        showStatusMessage(toast["message"].toString());
+        refresh();
+    } else if (result.contains("Complete")) {
+        refresh();
+        emit screenChanged();
+    } else if (result.contains("ValidationError")) {
+        QJsonObject err = result["ValidationError"].toObject();
+        QString componentId = err["component_id"].toString();
+        QString message = err["message"].toString();
+        showValidationError(componentId, message);
     } else {
-        // ValidationError, Complete, RequestCamera, OpenEntryDetail, etc.
+        // OpenEntryDetail, etc.
         refresh();
     }
 }
@@ -180,6 +237,66 @@ void ScreenRenderer::updateButtonStates() {
                 pair.second->setEnabled(enabled);
             }
         }
+    }
+}
+
+void ScreenRenderer::showValidationError(const QString &componentId,
+                                          const QString &message) {
+    // Find the target widget by objectName (set during component rendering)
+    QWidget *target = findChild<QWidget *>(componentId);
+    if (!target) {
+        // Fallback: show as status bar message
+        showStatusMessage(message);
+        return;
+    }
+
+    // Add red border to the target widget
+    QString original = target->styleSheet();
+    target->setStyleSheet(original + QStringLiteral("; border: 2px solid red;"));
+
+    // Insert error label below the target widget
+    auto *errorLabel = new QLabel(message, this);
+    errorLabel->setObjectName(componentId + "_error");
+    errorLabel->setStyleSheet("color: red; font-size: 12px;");
+
+    // Find the target's position in the layout and insert after it
+    for (int i = 0; i < m_layout->count(); ++i) {
+        if (m_layout->itemAt(i)->widget() == target) {
+            m_layout->insertWidget(i + 1, errorLabel);
+            break;
+        }
+    }
+
+    // Also show in status bar for visibility
+    showStatusMessage(message);
+}
+
+void ScreenRenderer::promptQrPaste() {
+    bool ok = false;
+    QString data = QInputDialog::getText(
+        this, tr("Scan QR Code"),
+        tr("Camera not available on desktop.\nPaste the peer's QR code data:"),
+        QLineEdit::Normal, QString(), &ok);
+    if (ok && !data.isEmpty()) {
+        // Send as TextChanged action with component_id "scanned_data"
+        QJsonObject action;
+        QJsonObject inner;
+        inner["component_id"] = QStringLiteral("scanned_data");
+        inner["value"] = data;
+        action["TextChanged"] = inner;
+        handleComponentAction(action);
+    }
+}
+
+void ScreenRenderer::showStatusMessage(const QString &message) {
+    // Find the parent QMainWindow's status bar
+    QWidget *w = parentWidget();
+    while (w) {
+        if (auto *mw = qobject_cast<QMainWindow *>(w)) {
+            mw->statusBar()->showMessage(message, 4000);
+            return;
+        }
+        w = w->parentWidget();
     }
 }
 

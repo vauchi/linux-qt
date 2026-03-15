@@ -1,0 +1,7 @@
+<!-- SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me> -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <!-- Vauchi app icon: stylized "V" in a rounded square -->
+  <rect x="2" y="2" width="44" height="44" rx="10" ry="10" fill="#2563eb"/>
+  <path d="M14 14 L24 34 L34 14" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</svg>

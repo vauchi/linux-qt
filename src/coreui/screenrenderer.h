@@ -11,6 +11,7 @@
 
 class QVBoxLayout;
 class QPushButton;
+class HardwareBackend;
 
 /// Renders a ScreenModel JSON into Qt widgets.
 class ScreenRenderer : public QWidget {
@@ -29,8 +30,12 @@ private:
     void processActionResult(const char *resultJson);
     void updateButtonStates();
     void handleAction(const QString &actionId);
+    void showValidationError(const QString &componentId, const QString &message);
+    void promptQrPaste();
+    void showStatusMessage(const QString &message);
 
     struct ::VauchiApp *m_app;
     QVBoxLayout *m_layout;
     QVector<QPair<QString, QPointer<QPushButton>>> m_buttons;
+    HardwareBackend *m_hardware = nullptr;
 };

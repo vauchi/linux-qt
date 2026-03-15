@@ -4,8 +4,11 @@
 #include "systemtray.h"
 #include <QMenu>
 #include <QAction>
+#include <QIcon>
 
 SystemTray::SystemTray(QObject *parent) : QSystemTrayIcon(parent) {
+    setIcon(QIcon(QStringLiteral(":/icons/vauchi.svg")));
+
     auto *menu = new QMenu(qobject_cast<QWidget *>(parent));
 
     auto *showAction = menu->addAction(tr("Show Vauchi"));

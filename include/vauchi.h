@@ -19,6 +19,11 @@ extern "C" {
 typedef struct VauchiApp VauchiApp;
 
 /**
+ * Opaque handle to an exchange session.
+ */
+typedef struct VauchiExchange VauchiExchange;
+
+/**
  * Opaque handle to a workflow engine instance.
  */
 typedef struct VauchiWorkflow VauchiWorkflow;
@@ -92,14 +97,30 @@ struct VauchiApp *vauchi_app_create(void);
 /**
  * Create a new AppEngine with a custom relay URL.
  *
- * If `relay_url` is NULL, uses the default (wss://relay.vauchi.app).
+ * If `relay_url` is null, uses the default (`wss://relay.vauchi.app`).
+ * The caller retains ownership of the `relay_url` string.
  *
  * Returns null on initialization failure.
  *
  * # Safety
- * `relay_url` must be a valid null-terminated C string, or NULL.
+ * `relay_url` must be a valid null-terminated C string, or null.
  */
 struct VauchiApp *vauchi_app_create_with_relay(const char *relay_url);
+
+/**
+ * Create a new AppEngine with persistent storage and custom relay URL.
+ *
+ * Unlike `vauchi_app_create` (in-memory), this stores data on disk at
+ * `data_dir/vauchi.db`. Pass null for `relay_url` to use the default.
+ *
+ * Returns null on initialization failure.
+ *
+ * # Safety
+ * `data_dir` must be a valid null-terminated C string pointing to a
+ * writable directory. `relay_url` must be a valid null-terminated C
+ * string, or null.
+ */
+struct VauchiApp *vauchi_app_create_with_config(const char *data_dir, const char *relay_url);
 
 /**
  * Destroy an AppEngine instance.
@@ -154,6 +175,182 @@ char *vauchi_app_available_screens(struct VauchiApp *handle);
  * `handle` must be a valid app handle or null.
  */
 char *vauchi_app_default_screen(struct VauchiApp *handle);
+
+/**
+ * Handle a hardware event during an exchange (ADR-031).
+ *
+ * `event_json` must be a JSON-encoded `ExchangeHardwareEvent`.
+ * Returns the action result as JSON, or null if the event was ignored
+ * (e.g., not on the exchange screen).
+ *
+ * # Safety
+ * `handle` must be a valid app handle or null.
+ * `event_json` must be a valid null-terminated C string, or null.
+ */
+char *vauchi_app_handle_hardware_event(struct VauchiApp *handle, const char *event_json);
+
+/**
+ * Create a new AppEngine with persistent storage and platform keyring.
+ *
+ * Uses `PlatformKeyring` (D-Bus Secret Service on Linux, Keychain on macOS)
+ * for secure key storage. Falls back to file-based key storage if the
+ * keyring is unavailable.
+ *
+ * Returns null on initialization failure.
+ *
+ * # Safety
+ * `data_dir` must be a valid null-terminated C string pointing to a
+ * writable directory. `relay_url` must be a valid null-terminated C
+ * string, or null.
+ */
+struct VauchiApp *vauchi_app_create_with_keyring(const char *data_dir, const char *relay_url);
+
+/**
+ * Create a new QR exchange session using the app's identity.
+ *
+ * Uses manual confirmation for proximity verification (suitable for
+ * desktop platforms without audio proximity hardware).
+ *
+ * Returns null if the app handle is null, identity is not created,
+ * or initialization fails.
+ *
+ * # Safety
+ * `app` must be a valid app handle or null.
+ */
+struct VauchiExchange *vauchi_exchange_create(struct VauchiApp *app);
+
+/**
+ * Destroy an exchange session.
+ *
+ * # Safety
+ * `handle` must be a pointer returned by `vauchi_exchange_create`, or null.
+ */
+void vauchi_exchange_destroy(struct VauchiExchange *handle);
+
+/**
+ * Start QR generation and return the QR data string ("wb://...").
+ *
+ * Returns error JSON if the session is in the wrong state.
+ * Caller must free the returned string with `vauchi_string_free`.
+ *
+ * # Safety
+ * `handle` must be a valid exchange handle or null.
+ */
+char *vauchi_exchange_generate_qr(struct VauchiExchange *handle);
+
+/**
+ * Process a scanned QR code from the peer.
+ *
+ * `qr_data` should be the full QR string (with or without "wb://" prefix).
+ * Returns `"ok"` on success, error JSON on failure.
+ *
+ * # Safety
+ * `handle` must be a valid exchange handle or null.
+ * `qr_data` must be a valid null-terminated C string, or null.
+ */
+char *vauchi_exchange_process_qr(struct VauchiExchange *handle, const char *qr_data);
+
+/**
+ * Signal that the peer scanned our QR code.
+ *
+ * Returns `"ok"` on success, error JSON on failure.
+ *
+ * # Safety
+ * `handle` must be a valid exchange handle or null.
+ */
+char *vauchi_exchange_they_scanned_our_qr(struct VauchiExchange *handle);
+
+/**
+ * Perform key agreement and proximity verification.
+ *
+ * Returns `"ok"` on success, error JSON on failure.
+ *
+ * # Safety
+ * `handle` must be a valid exchange handle or null.
+ */
+char *vauchi_exchange_perform_key_agreement(struct VauchiExchange *handle);
+
+/**
+ * Complete the exchange with the peer's card name.
+ *
+ * Returns `"ok"` on success, error JSON on failure.
+ *
+ * # Safety
+ * `handle` must be a valid exchange handle or null.
+ * `their_name` must be a valid null-terminated C string, or null.
+ */
+char *vauchi_exchange_complete(struct VauchiExchange *handle, const char *their_name);
+
+/**
+ * Confirm that the user verified proximity manually.
+ *
+ * # Safety
+ * `handle` must be a valid exchange handle or null.
+ */
+void vauchi_exchange_confirm_proximity(struct VauchiExchange *handle);
+
+/**
+ * Get the current exchange state as a string label.
+ *
+ * Returns one of: "idle", "displaying_qr", "peer_scanned",
+ * "awaiting_key_agreement", "awaiting_card_exchange", "complete", "failed".
+ * Returns null if the handle is null.
+ *
+ * # Safety
+ * `handle` must be a valid exchange handle or null.
+ */
+char *vauchi_exchange_state(struct VauchiExchange *handle);
+
+/**
+ * Check whether the exchange session has timed out.
+ *
+ * Returns 1 if timed out, 0 if not, -1 on error.
+ *
+ * # Safety
+ * `handle` must be a valid exchange handle or null.
+ */
+int32_t vauchi_exchange_is_timed_out(struct VauchiExchange *handle);
+
+/**
+ * Get the peer's display name (from their QR code).
+ *
+ * Returns the name string, or null if not yet known or handle is null.
+ * Caller must free the returned string with `vauchi_string_free`.
+ *
+ * # Safety
+ * `handle` must be a valid exchange handle or null.
+ */
+char *vauchi_exchange_peer_display_name(struct VauchiExchange *handle);
+
+/**
+ * Enable debug logging on the exchange session.
+ *
+ * # Safety
+ * `handle` must be a valid exchange handle or null.
+ */
+void vauchi_exchange_enable_debug_log(struct VauchiExchange *handle);
+
+/**
+ * Get the exchange debug log as JSONL.
+ *
+ * Returns the JSONL string, or null if debug logging is not enabled.
+ * Caller must free the returned string with `vauchi_string_free`.
+ *
+ * # Safety
+ * `handle` must be a valid exchange handle or null.
+ */
+char *vauchi_exchange_debug_jsonl(struct VauchiExchange *handle);
+
+/**
+ * Get the exchange debug log as Markdown.
+ *
+ * Returns the Markdown string, or null if debug logging is not enabled.
+ * Caller must free the returned string with `vauchi_string_free`.
+ *
+ * # Safety
+ * `handle` must be a valid exchange handle or null.
+ */
+char *vauchi_exchange_debug_markdown(struct VauchiExchange *handle);
 
 #ifdef __cplusplus
 }

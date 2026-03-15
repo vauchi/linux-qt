@@ -11,12 +11,40 @@
 #include <QListWidget>
 #include <QJsonDocument>
 #include <QJsonArray>
+#include <QStandardPaths>
+#include <QDir>
+#include <QFile>
+#include <QProcessEnvironment>
 
 VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
     setWindowTitle("Vauchi");
     resize(700, 600);
 
-    m_app = vauchi_app_create();
+    // Persistent storage: XDG_DATA_HOME/vauchi/
+    QString dataDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    QDir().mkpath(dataDir);
+
+    // Relay URL: read from data_dir/relay_url.txt or VAUCHI_RELAY_URL env var
+    QString relayUrl;
+    QFile relayFile(dataDir + "/relay_url.txt");
+    if (relayFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        relayUrl = QString::fromUtf8(relayFile.readAll()).trimmed();
+        relayFile.close();
+    }
+    if (relayUrl.isEmpty()) {
+        relayUrl = QProcessEnvironment::systemEnvironment().value("VAUCHI_RELAY_URL");
+    }
+
+    QByteArray dataDirUtf8 = dataDir.toUtf8();
+    QByteArray relayUtf8 = relayUrl.toUtf8();
+    const char *relayPtr = relayUrl.isEmpty() ? nullptr : relayUtf8.constData();
+
+    // Try keyring-backed init first (uses D-Bus Secret Service for key storage),
+    // fall back to config-only if keyring is unavailable or CABI was built without it.
+    m_app = vauchi_app_create_with_keyring(dataDirUtf8.constData(), relayPtr);
+    if (!m_app) {
+        m_app = vauchi_app_create_with_config(dataDirUtf8.constData(), relayPtr);
+    }
 
     // Navigate to dynamic default screen (MyInfo with 0 contacts, Contacts with >=1)
     if (m_app) {
