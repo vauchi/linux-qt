@@ -24,6 +24,9 @@ public:
     bool hasCamera() const;
     bool hasBluetooth() const;
 
+    /// Send a hardware event to core via CABI (used by BleBackend).
+    void sendHardwareEvent(const QJsonObject &event);
+
 signals:
     /// Emitted when a hardware event produces a result that needs UI update.
     void actionResultReady(const QJsonObject &result);
@@ -32,7 +35,6 @@ signals:
     void qrScanned(const QString &data);
 
 private:
-    void sendHardwareEvent(const QJsonObject &event);
     void sendUnavailable(const QString &transport);
 
     struct ::VauchiApp *m_app;

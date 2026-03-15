@@ -49,12 +49,7 @@ void BleBackend::onDeviceDiscovered(const QBluetoothDeviceInfo &info) {
     inner["adv_data"] = advData;
     event["BleDeviceDiscovered"] = inner;
 
-    QByteArray json = QJsonDocument(event).toJson(QJsonDocument::Compact);
-    char *result = vauchi_app_handle_hardware_event(
-        // Access app handle through parent
-        reinterpret_cast<VauchiApp *>(0), // placeholder — wired through HardwareBackend
-        json.constData());
-    Q_UNUSED(result);
+    m_backend->sendHardwareEvent(event);
 }
 
 void BleBackend::connectDevice(const QString &deviceId) {
@@ -64,15 +59,11 @@ void BleBackend::connectDevice(const QString &deviceId) {
     m_controller = QLowEnergyController::createCentral(deviceInfo, this);
 
     connect(m_controller, &QLowEnergyController::connected, this, [this, deviceId]() {
-        // Send BleConnected event
         QJsonObject event;
         QJsonObject inner;
         inner["device_id"] = deviceId;
         event["BleConnected"] = inner;
-
-        QByteArray json = QJsonDocument(event).toJson(QJsonDocument::Compact);
-        // Forward through hardware backend
-        // (In production, HardwareBackend exposes the app handle)
+        m_backend->sendHardwareEvent(event);
     });
 
     connect(m_controller, &QLowEnergyController::disconnected, this, [this]() {
@@ -80,6 +71,7 @@ void BleBackend::connectDevice(const QString &deviceId) {
         QJsonObject inner;
         inner["reason"] = QStringLiteral("disconnected");
         event["BleDisconnected"] = inner;
+        m_backend->sendHardwareEvent(event);
     });
 
     m_controller->connectToDevice();

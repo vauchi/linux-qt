@@ -4,11 +4,11 @@
 #include "hardwarebackend.h"
 
 #include <QJsonDocument>
-#include <QFile>
 #include <QDir>
 
 #ifdef VAUCHI_HAS_CAMERA
 #include "camerabackend.h"
+#include <QMediaDevices>
 #endif
 
 #ifdef VAUCHI_HAS_BLUETOOTH
@@ -79,7 +79,7 @@ void HardwareBackend::dispatchCommands(const QJsonArray &commands) {
 
 bool HardwareBackend::hasCamera() const {
 #ifdef VAUCHI_HAS_CAMERA
-    return QFile::exists("/dev/video0");
+    return !QMediaDevices::videoInputs().isEmpty();
 #else
     return false;
 #endif
