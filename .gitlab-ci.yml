@@ -50,12 +50,12 @@ build:
     - cmake --build . --parallel
   artifacts:
     paths:
-      - build/vauchi-qt
+      - build/
   tags: [linux]
 
 test:
   stage: test
-  needs: [build]
+  needs: [build, build:cabi]
   script:
     - cd build
     - ctest --output-on-failure
