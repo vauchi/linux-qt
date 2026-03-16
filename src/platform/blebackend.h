@@ -11,6 +11,7 @@
 #include <QHash>
 
 class HardwareBackend;
+class BleAdvertiser;
 
 /// BLE backend using Qt Bluetooth for device discovery, connection, and GATT operations.
 ///
@@ -47,6 +48,7 @@ private:
     HardwareBackend *m_backend;
     QBluetoothDeviceDiscoveryAgent *m_discoveryAgent = nullptr;
     QLowEnergyController *m_controller = nullptr;
+    BleAdvertiser *m_advertiser = nullptr;
 
     /// All discovered services, keyed by service UUID.
     QHash<QBluetoothUuid, QLowEnergyService *> m_services;

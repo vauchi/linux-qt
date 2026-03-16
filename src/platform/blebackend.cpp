@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "blebackend.h"
+#include "bleadvertiser.h"
 #include "hardwarebackend.h"
 
 #include <QJsonDocument>
@@ -28,17 +29,10 @@ void BleBackend::stopScanning() {
 }
 
 void BleBackend::startAdvertising(const QString &serviceUuid, const QByteArray &payload) {
-    Q_UNUSED(serviceUuid);
-    Q_UNUSED(payload);
-    // Qt Bluetooth does not support BLE peripheral advertising on Linux.
-    // BlueZ advertising requires the bluer crate or direct D-Bus calls.
-    // Report as hardware error so core can fall back to other transports.
-    QJsonObject event;
-    QJsonObject inner;
-    inner["transport"] = QStringLiteral("BLE");
-    inner["error"] = QStringLiteral("BLE advertising not supported via Qt Bluetooth on Linux");
-    event["HardwareError"] = inner;
-    m_backend->sendHardwareEvent(event);
+    if (!m_advertiser) {
+        m_advertiser = new BleAdvertiser(m_backend, this);
+    }
+    m_advertiser->startAdvertising(serviceUuid, payload);
 }
 
 void BleBackend::onDeviceDiscovered(const QBluetoothDeviceInfo &info) {
