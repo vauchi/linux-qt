@@ -8,6 +8,7 @@
 #include <QJsonArray>
 #include <QBluetoothDeviceInfo>
 #include <QLowEnergyService>
+#include <QLowEnergyDescriptor>
 
 BleBackend::BleBackend(HardwareBackend *parent)
     : QObject(parent), m_backend(parent) {
@@ -24,6 +25,20 @@ void BleBackend::startScanning() {
 
 void BleBackend::stopScanning() {
     m_discoveryAgent->stop();
+}
+
+void BleBackend::startAdvertising(const QString &serviceUuid, const QByteArray &payload) {
+    Q_UNUSED(serviceUuid);
+    Q_UNUSED(payload);
+    // Qt Bluetooth does not support BLE peripheral advertising on Linux.
+    // BlueZ advertising requires the bluer crate or direct D-Bus calls.
+    // Report as hardware error so core can fall back to other transports.
+    QJsonObject event;
+    QJsonObject inner;
+    inner["transport"] = QStringLiteral("BLE");
+    inner["error"] = QStringLiteral("BLE advertising not supported via Qt Bluetooth on Linux");
+    event["HardwareError"] = inner;
+    m_backend->sendHardwareEvent(event);
 }
 
 void BleBackend::onDeviceDiscovered(const QBluetoothDeviceInfo &info) {
@@ -53,6 +68,15 @@ void BleBackend::onDeviceDiscovered(const QBluetoothDeviceInfo &info) {
 }
 
 void BleBackend::connectDevice(const QString &deviceId) {
+    // Clean up previous connection
+    if (m_controller) {
+        m_controller->disconnectFromDevice();
+        m_controller->deleteLater();
+        m_controller = nullptr;
+    }
+    qDeleteAll(m_services);
+    m_services.clear();
+
     QBluetoothAddress addr(deviceId);
     QBluetoothDeviceInfo deviceInfo(addr, QString(), 0);
 
@@ -64,6 +88,9 @@ void BleBackend::connectDevice(const QString &deviceId) {
         inner["device_id"] = deviceId;
         event["BleConnected"] = inner;
         m_backend->sendHardwareEvent(event);
+
+        // Trigger service discovery after successful connection
+        m_controller->discoverServices();
     });
 
     connect(m_controller, &QLowEnergyController::disconnected, this, [this]() {
@@ -74,18 +101,163 @@ void BleBackend::connectDevice(const QString &deviceId) {
         m_backend->sendHardwareEvent(event);
     });
 
+    connect(m_controller, &QLowEnergyController::serviceDiscovered,
+            this, &BleBackend::onServiceDiscovered);
+    connect(m_controller, &QLowEnergyController::discoveryFinished,
+            this, &BleBackend::onServiceDiscoveryFinished);
+
     m_controller->connectToDevice();
 }
 
+void BleBackend::onServiceDiscovered(const QBluetoothUuid &serviceUuid) {
+    Q_UNUSED(serviceUuid);
+    // Services are collected; details discovered in onServiceDiscoveryFinished.
+}
+
+void BleBackend::onServiceDiscoveryFinished() {
+    // Discover details for each service to populate characteristics
+    const auto serviceUuids = m_controller->services();
+    for (const auto &uuid : serviceUuids) {
+        auto *service = m_controller->createServiceObject(uuid, this);
+        if (!service) continue;
+
+        m_services.insert(uuid, service);
+
+        connect(service, &QLowEnergyService::stateChanged,
+                this, &BleBackend::onServiceStateChanged);
+        connect(service, &QLowEnergyService::characteristicRead,
+                this, &BleBackend::onCharacteristicRead);
+        connect(service, &QLowEnergyService::characteristicWritten,
+                this, &BleBackend::onCharacteristicWritten);
+        connect(service, &QLowEnergyService::characteristicChanged,
+                this, &BleBackend::onCharacteristicChanged);
+
+        service->discoverDetails();
+    }
+}
+
+void BleBackend::onServiceStateChanged(QLowEnergyService::ServiceState state) {
+    if (state != QLowEnergyService::RemoteServiceDiscovered) return;
+
+    auto *service = qobject_cast<QLowEnergyService *>(sender());
+    if (!service) return;
+
+    // Enable notifications for all characteristics that support it
+    const auto chars = service->characteristics();
+    for (const auto &c : chars) {
+        if (c.properties() & QLowEnergyCharacteristic::Notify) {
+            auto cccd = c.descriptor(
+                QBluetoothUuid::DescriptorType::ClientCharacteristicConfiguration);
+            if (cccd.isValid()) {
+                service->writeDescriptor(cccd, QLowEnergyCharacteristic::CCCDEnableNotification);
+            }
+        }
+    }
+}
+
+void BleBackend::onCharacteristicRead(const QLowEnergyCharacteristic &c,
+                                       const QByteArray &value) {
+    QJsonObject event;
+    QJsonObject inner;
+    inner["uuid"] = c.uuid().toString(QUuid::WithoutBraces);
+
+    QJsonArray data;
+    for (char byte : value) {
+        data.append(static_cast<int>(static_cast<unsigned char>(byte)));
+    }
+    inner["data"] = data;
+    event["BleCharacteristicRead"] = inner;
+
+    m_backend->sendHardwareEvent(event);
+}
+
+void BleBackend::onCharacteristicWritten(const QLowEnergyCharacteristic &c,
+                                          const QByteArray &value) {
+    Q_UNUSED(c);
+    Q_UNUSED(value);
+    // Write confirmed — no event needed back to core for writes.
+}
+
+void BleBackend::onCharacteristicChanged(const QLowEnergyCharacteristic &c,
+                                          const QByteArray &value) {
+    QJsonObject event;
+    QJsonObject inner;
+    inner["uuid"] = c.uuid().toString(QUuid::WithoutBraces);
+
+    QJsonArray data;
+    for (char byte : value) {
+        data.append(static_cast<int>(static_cast<unsigned char>(byte)));
+    }
+    inner["data"] = data;
+    event["BleCharacteristicNotified"] = inner;
+
+    m_backend->sendHardwareEvent(event);
+}
+
+QLowEnergyCharacteristic BleBackend::findCharacteristic(const QString &uuid) const {
+    QBluetoothUuid target(uuid);
+    for (auto *service : m_services) {
+        if (service->state() != QLowEnergyService::RemoteServiceDiscovered) continue;
+        const auto chars = service->characteristics();
+        for (const auto &c : chars) {
+            if (c.uuid() == target) {
+                return c;
+            }
+        }
+    }
+    return QLowEnergyCharacteristic(); // invalid
+}
+
 void BleBackend::writeCharacteristic(const QString &uuid, const QByteArray &data) {
-    Q_UNUSED(uuid);
-    Q_UNUSED(data);
-    // TODO: Implement GATT characteristic write once service discovery is wired
+    auto c = findCharacteristic(uuid);
+    if (!c.isValid()) {
+        QJsonObject event;
+        QJsonObject inner;
+        inner["transport"] = QStringLiteral("BLE");
+        inner["error"] = QStringLiteral("Characteristic not found: ") + uuid;
+        event["HardwareError"] = inner;
+        m_backend->sendHardwareEvent(event);
+        return;
+    }
+
+    // Find the owning service
+    for (auto *service : m_services) {
+        if (service->state() != QLowEnergyService::RemoteServiceDiscovered) continue;
+        const auto chars = service->characteristics();
+        for (const auto &sc : chars) {
+            if (sc.uuid() == c.uuid()) {
+                auto mode = (c.properties() & QLowEnergyCharacteristic::WriteNoResponse)
+                    ? QLowEnergyService::WriteWithoutResponse
+                    : QLowEnergyService::WriteWithResponse;
+                service->writeCharacteristic(c, data, mode);
+                return;
+            }
+        }
+    }
 }
 
 void BleBackend::readCharacteristic(const QString &uuid) {
-    Q_UNUSED(uuid);
-    // TODO: Implement GATT characteristic read once service discovery is wired
+    auto c = findCharacteristic(uuid);
+    if (!c.isValid()) {
+        QJsonObject event;
+        QJsonObject inner;
+        inner["transport"] = QStringLiteral("BLE");
+        inner["error"] = QStringLiteral("Characteristic not found: ") + uuid;
+        event["HardwareError"] = inner;
+        m_backend->sendHardwareEvent(event);
+        return;
+    }
+
+    for (auto *service : m_services) {
+        if (service->state() != QLowEnergyService::RemoteServiceDiscovered) continue;
+        const auto chars = service->characteristics();
+        for (const auto &sc : chars) {
+            if (sc.uuid() == c.uuid()) {
+                service->readCharacteristic(c);
+                return;
+            }
+        }
+    }
 }
 
 void BleBackend::disconnect() {
