@@ -19,6 +19,10 @@
 #include "audiobackend.h"
 #endif
 
+#ifdef VAUCHI_HAS_NFC
+#include "nfcbackend.h"
+#endif
+
 HardwareBackend::HardwareBackend(struct VauchiApp *app, QObject *parent)
     : QObject(parent), m_app(app) {
 #ifdef VAUCHI_HAS_BLUETOOTH
@@ -29,6 +33,11 @@ HardwareBackend::HardwareBackend(struct VauchiApp *app, QObject *parent)
 #ifdef VAUCHI_HAS_AUDIO
     if (hasAudio()) {
         m_audio = new AudioBackend(this);
+    }
+#endif
+#ifdef VAUCHI_HAS_NFC
+    if (hasNfc()) {
+        m_nfc = new NfcBackend(this);
     }
 #endif
 }
@@ -62,6 +71,12 @@ void HardwareBackend::dispatchCommands(const QJsonArray &commands) {
             }
 
             if (variant == QLatin1String("NfcDeactivate")) {
+#ifdef VAUCHI_HAS_NFC
+                if (m_nfc) {
+                    m_nfc->deactivate();
+                    continue;
+                }
+#endif
                 sendUnavailable("NFC");
                 continue;
             }
@@ -214,7 +229,26 @@ void HardwareBackend::dispatchCommands(const QJsonArray &commands) {
 
         // ── NFC commands ────────────────────────────────────────────
 
-        if (cmdObj.contains("NfcActivate") || cmdObj.contains("NfcDeactivate")) {
+        if (cmdObj.contains("NfcActivate")) {
+#ifdef VAUCHI_HAS_NFC
+            if (m_nfc) {
+                QJsonObject inner = cmdObj["NfcActivate"].toObject();
+                QByteArray payload = jsonArrayToBytes(inner["payload"].toArray());
+                m_nfc->activate(payload);
+                continue;
+            }
+#endif
+            sendUnavailable("NFC");
+            continue;
+        }
+
+        if (cmdObj.contains("NfcDeactivate")) {
+#ifdef VAUCHI_HAS_NFC
+            if (m_nfc) {
+                m_nfc->deactivate();
+                continue;
+            }
+#endif
             sendUnavailable("NFC");
             continue;
         }
@@ -241,6 +275,14 @@ bool HardwareBackend::hasBluetooth() const {
 bool HardwareBackend::hasAudio() const {
 #ifdef VAUCHI_HAS_AUDIO
     return AudioBackend::isAvailable();
+#else
+    return false;
+#endif
+}
+
+bool HardwareBackend::hasNfc() const {
+#ifdef VAUCHI_HAS_NFC
+    return NfcBackend::isAvailable();
 #else
     return false;
 #endif

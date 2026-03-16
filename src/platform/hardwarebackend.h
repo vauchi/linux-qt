@@ -10,6 +10,7 @@
 
 class BleBackend;
 class AudioBackend;
+class NfcBackend;
 
 /// Dispatches ExchangeCommands to hardware backends and sends
 /// ExchangeHardwareEvents back to core via CABI.
@@ -26,6 +27,7 @@ public:
     bool hasCamera() const;
     bool hasBluetooth() const;
     bool hasAudio() const;
+    bool hasNfc() const;
 
     /// Send a hardware event to core via CABI (used by backends).
     void sendHardwareEvent(const QJsonObject &event);
@@ -50,5 +52,8 @@ private:
 #endif
 #ifdef VAUCHI_HAS_AUDIO
     AudioBackend *m_audio = nullptr;
+#endif
+#ifdef VAUCHI_HAS_NFC
+    NfcBackend *m_nfc = nullptr;
 #endif
 };
