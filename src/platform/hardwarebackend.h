@@ -8,6 +8,9 @@
 #include <QJsonArray>
 #include "vauchi.h"
 
+class BleBackend;
+class AudioBackend;
+
 /// Dispatches ExchangeCommands to hardware backends and sends
 /// ExchangeHardwareEvents back to core via CABI.
 class HardwareBackend : public QObject {
@@ -17,14 +20,14 @@ public:
     explicit HardwareBackend(struct ::VauchiApp *app, QObject *parent = nullptr);
 
     /// Dispatch a list of exchange commands from an action result.
-    /// Returns the action result from any hardware event sent back to core.
     void dispatchCommands(const QJsonArray &commands);
 
     /// Check which hardware transports are available on this platform.
     bool hasCamera() const;
     bool hasBluetooth() const;
+    bool hasAudio() const;
 
-    /// Send a hardware event to core via CABI (used by BleBackend).
+    /// Send a hardware event to core via CABI (used by backends).
     void sendHardwareEvent(const QJsonObject &event);
 
 signals:
@@ -37,5 +40,15 @@ signals:
 private:
     void sendUnavailable(const QString &transport);
 
+    /// Extract a QByteArray from a JSON integer array (serde Vec<u8> format).
+    static QByteArray jsonArrayToBytes(const QJsonArray &arr);
+
     struct ::VauchiApp *m_app;
+
+#ifdef VAUCHI_HAS_BLUETOOTH
+    BleBackend *m_ble = nullptr;
+#endif
+#ifdef VAUCHI_HAS_AUDIO
+    AudioBackend *m_audio = nullptr;
+#endif
 };
