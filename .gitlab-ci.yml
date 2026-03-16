@@ -2,17 +2,25 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 include:
+  - template: Security/SAST.gitlab-ci.yml
+  - template: Security/Secret-Detection.gitlab-ci.yml
   - project: 'vauchi/scripts'
     ref: main
     file:
       - '/ci-templates/design-drift.yml'
       - '/ci-templates/badges.yml'
 
+variables:
+  SAST_EXCLUDED_PATHS: "build/, vauchi-core/"
+  SECRET_DETECTION_EXCLUDED_PATHS: "build/, vauchi-core/"
+  SAST_ANALYZER_IMAGE_TAG: "5"
+
 stages:
   - lint
   - deps
   - build
   - test
+  - security
   - deploy
 
 variables:
@@ -52,6 +60,31 @@ test:
     - cd build
     - ctest --output-on-failure
   tags: [linux]
+
+# ============================================================
+# Security Stage
+# ============================================================
+
+semgrep-sast:
+  tags: [docker]
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        compare_to: refs/heads/$CI_DEFAULT_BRANCH
+        paths:
+          - "**/*.cpp"
+          - "**/*.h"
+          - "**/*.hpp"
+          - "CMakeLists.txt"
+          - ".gitlab-ci.yml"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+
+secret_detection:
+  tags: [docker]
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 # Design drift: verify all design-spec components are implemented
 check:design-drift:
