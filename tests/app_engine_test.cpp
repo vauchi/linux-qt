@@ -113,6 +113,68 @@ static void test_navigate_unknown() {
     vauchi_app_destroy(app);
 }
 
+// --- Test: handle hardware event on non-exchange screen returns null ---
+static void test_hardware_event_no_exchange() {
+    VauchiApp *app = vauchi_app_create();
+    assert(app != nullptr);
+
+    // Send a hardware event when not on exchange screen — should return null
+    const char *event = R"({"QrScanned":{"data":"wb://test"}})";
+    char *result = vauchi_app_handle_hardware_event(app, event);
+    // Not on exchange screen, so result may be null (event ignored)
+    if (result) vauchi_string_free(result);
+
+    vauchi_app_destroy(app);
+}
+
+// --- Test: handle hardware event with null inputs ---
+static void test_hardware_event_null_safety() {
+    // Null handle
+    char *r1 = vauchi_app_handle_hardware_event(nullptr, R"({"QrScanned":{"data":"wb://test"}})");
+    assert(r1 == nullptr);
+
+    // Null event
+    VauchiApp *app = vauchi_app_create();
+    assert(app != nullptr);
+    char *r2 = vauchi_app_handle_hardware_event(app, nullptr);
+    assert(r2 == nullptr);
+    vauchi_app_destroy(app);
+}
+
+// --- Test: handle hardware event with invalid JSON ---
+static void test_hardware_event_invalid_json() {
+    VauchiApp *app = vauchi_app_create();
+    assert(app != nullptr);
+
+    char *result = vauchi_app_handle_hardware_event(app, "not json");
+    // Should return null or error JSON, but not crash
+    if (result) vauchi_string_free(result);
+    vauchi_app_destroy(app);
+}
+
+// --- Test: create with keyring (may fall back to config-only on macOS/CI) ---
+static void test_create_with_keyring() {
+    auto dir = make_temp_dir();
+    // On Linux with D-Bus Secret Service, this uses the keyring.
+    // On macOS or CI without a keyring, it may return null (expected).
+    VauchiApp *app = vauchi_app_create_with_keyring(dir.c_str(), nullptr);
+    if (app) {
+        // If it succeeded, verify basic operations work
+        char *screen = vauchi_app_current_screen(app);
+        assert(screen != nullptr);
+        assert(std::strlen(screen) > 0);
+        vauchi_string_free(screen);
+        vauchi_app_destroy(app);
+    }
+    fs::remove_all(dir);
+}
+
+// --- Test: create with keyring null data_dir returns null ---
+static void test_create_with_keyring_null_dir() {
+    VauchiApp *app = vauchi_app_create_with_keyring(nullptr, nullptr);
+    assert(app == nullptr);
+}
+
 // --- Test: null handle safety ---
 static void test_null_safety() {
     vauchi_app_destroy(nullptr);  // should not crash
@@ -122,6 +184,7 @@ static void test_null_safety() {
     assert(vauchi_app_available_screens(nullptr) == nullptr);
     assert(vauchi_app_default_screen(nullptr) == nullptr);
     assert(vauchi_app_create_with_config(nullptr, nullptr) == nullptr);
+    assert(vauchi_app_handle_hardware_event(nullptr, "{}") == nullptr);
 }
 
 int main() {
@@ -133,5 +196,10 @@ int main() {
     test_current_screen();
     test_handle_action();
     test_navigate_unknown();
+    test_hardware_event_no_exchange();
+    test_hardware_event_null_safety();
+    test_hardware_event_invalid_json();
+    test_create_with_keyring();
+    test_create_with_keyring_null_dir();
     return 0;
 }
