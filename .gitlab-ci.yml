@@ -33,7 +33,7 @@ build:cabi:
         https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/vauchi/core.git
         vauchi-core
     - cd vauchi-core
-    - cargo build --release -p vauchi-cabi
+    - cargo build --release -p vauchi-cabi --features secure-storage
     - mkdir -p ${CI_PROJECT_DIR}/cabi-lib
     - cp target/release/libvauchi_cabi.so target/release/libvauchi_cabi.a ${CI_PROJECT_DIR}/cabi-lib/
   artifacts:
