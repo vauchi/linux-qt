@@ -60,7 +60,7 @@ def qt_app(qt_binary, data_dir):
     )
 
     # Wait for app to appear in AT-SPI tree
-    app_root = find_app("qvauchi", timeout=15.0)
+    app_root = find_app("vauchi", timeout=15.0)
     if app_root is None:
         proc.kill()
         stdout, stderr = proc.communicate(timeout=5)
@@ -99,7 +99,7 @@ def qt_app_fresh(qt_binary):
         stderr=subprocess.PIPE,
     )
 
-    app_root = find_app("qvauchi", timeout=15.0)
+    app_root = find_app("vauchi", timeout=15.0)
     if app_root is None:
         proc.kill()
         stdout, stderr = proc.communicate(timeout=5)

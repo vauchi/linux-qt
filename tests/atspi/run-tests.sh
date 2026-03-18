@@ -28,7 +28,8 @@ fi
 # Otherwise, run under Xvfb with a fresh D-Bus session and AT-SPI.
 # XDG_CURRENT_DESKTOP=none prevents xdg-desktop-portal from activating
 # compositor-specific portals (e.g., hyprland) that crash under Xvfb.
-exec env XDG_CURRENT_DESKTOP=none \
+# QT_QPA_PLATFORM=xcb forces X11 backend (Qt defaults to wayland which crashes under Xvfb)
+exec env XDG_CURRENT_DESKTOP=none QT_QPA_PLATFORM=xcb \
     xvfb-run -s '-screen 0 1280x720x24' \
     dbus-run-session -- bash -c "
         /usr/lib/at-spi-bus-launcher &
