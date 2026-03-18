@@ -37,54 +37,6 @@ typedef struct VauchiWorkflow VauchiWorkflow;
 void vauchi_string_free(char *ptr);
 
 /**
- * Create a new workflow engine instance.
- *
- * Supported `workflow_type` values:
- * - `"onboarding"` — onboarding flow (no args)
- * - `"emergency_shred"` — emergency data wipe (no args)
- * - `"lock_screen"` — lock screen with 3 max attempts (no args)
- *
- * Returns null on unknown type or null input.
- *
- * # Safety
- * `workflow_type` must be a valid null-terminated C string, or null.
- */
-struct VauchiWorkflow *vauchi_workflow_create(const char *workflow_type);
-
-/**
- * Destroy a workflow engine instance.
- *
- * # Safety
- * `handle` must be a pointer returned by `vauchi_workflow_create`, or null.
- */
-void vauchi_workflow_destroy(struct VauchiWorkflow *handle);
-
-/**
- * Get the current screen as a JSON string.
- *
- * Returns null if the handle is null. Returns an error JSON object if
- * the internal lock is poisoned. The caller must free the returned
- * string with `vauchi_string_free`.
- *
- * # Safety
- * `handle` must be a valid workflow handle or null.
- */
-char *vauchi_workflow_current_screen(struct VauchiWorkflow *handle);
-
-/**
- * Handle a user action (JSON string) and return the result as JSON.
- *
- * Returns null if the handle is null. Returns an error JSON object if
- * the action JSON is null or invalid. The caller must free the returned
- * string with `vauchi_string_free`.
- *
- * # Safety
- * `handle` must be a valid workflow handle or null.
- * `action_json` must be a valid null-terminated C string, or null.
- */
-char *vauchi_workflow_handle_action(struct VauchiWorkflow *handle, const char *action_json);
-
-/**
  * Create a new AppEngine with in-memory storage and default relay.
  *
  * Returns null on initialization failure.
@@ -121,6 +73,24 @@ struct VauchiApp *vauchi_app_create_with_relay(const char *relay_url);
  * string, or null.
  */
 struct VauchiApp *vauchi_app_create_with_config(const char *data_dir, const char *relay_url);
+
+/**
+ * Create a new AppEngine with persistent storage and caller-provided key.
+ *
+ * The caller manages key storage (e.g., Windows PasswordVault, platform keychain).
+ * `key_bytes` must point to exactly `key_len` bytes. `key_len` must be 32.
+ *
+ * Returns null on initialization failure or invalid parameters.
+ *
+ * # Safety
+ * `data_dir` must be a valid null-terminated C string pointing to a writable directory.
+ * `relay_url` must be a valid null-terminated C string, or null.
+ * `key_bytes` must point to at least `key_len` valid bytes, or be null.
+ */
+struct VauchiApp *vauchi_app_create_with_key(const char *data_dir,
+                                             const char *relay_url,
+                                             const uint8_t *key_bytes,
+                                             uintptr_t key_len);
 
 /**
  * Destroy an AppEngine instance.
@@ -351,6 +321,54 @@ char *vauchi_exchange_debug_jsonl(struct VauchiExchange *handle);
  * `handle` must be a valid exchange handle or null.
  */
 char *vauchi_exchange_debug_markdown(struct VauchiExchange *handle);
+
+/**
+ * Create a new workflow engine instance.
+ *
+ * Supported `workflow_type` values:
+ * - `"onboarding"` — onboarding flow (no args)
+ * - `"emergency_shred"` — emergency data wipe (no args)
+ * - `"lock_screen"` — lock screen with 3 max attempts (no args)
+ *
+ * Returns null on unknown type or null input.
+ *
+ * # Safety
+ * `workflow_type` must be a valid null-terminated C string, or null.
+ */
+struct VauchiWorkflow *vauchi_workflow_create(const char *workflow_type);
+
+/**
+ * Destroy a workflow engine instance.
+ *
+ * # Safety
+ * `handle` must be a pointer returned by `vauchi_workflow_create`, or null.
+ */
+void vauchi_workflow_destroy(struct VauchiWorkflow *handle);
+
+/**
+ * Get the current screen as a JSON string.
+ *
+ * Returns null if the handle is null. Returns an error JSON object if
+ * the internal lock is poisoned. The caller must free the returned
+ * string with `vauchi_string_free`.
+ *
+ * # Safety
+ * `handle` must be a valid workflow handle or null.
+ */
+char *vauchi_workflow_current_screen(struct VauchiWorkflow *handle);
+
+/**
+ * Handle a user action (JSON string) and return the result as JSON.
+ *
+ * Returns null if the handle is null. Returns an error JSON object if
+ * the action JSON is null or invalid. The caller must free the returned
+ * string with `vauchi_string_free`.
+ *
+ * # Safety
+ * `handle` must be a valid workflow handle or null.
+ * `action_json` must be a valid null-terminated C string, or null.
+ */
+char *vauchi_workflow_handle_action(struct VauchiWorkflow *handle, const char *action_json);
 
 #ifdef __cplusplus
 }
