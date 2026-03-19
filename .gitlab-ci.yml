@@ -61,6 +61,28 @@ test:
     - ctest --output-on-failure
   tags: [linux]
 
+# AT-SPI accessibility + widget tree tests
+test:a11y:
+  stage: test
+  needs: [build, build:cabi]
+  tags: [linux, self-hosted]
+  variables:
+    QT_ACCESSIBILITY: "1"
+  script:
+    - pip install --quiet -r tests/atspi/requirements.txt
+    - chmod +x tests/atspi/run-tests.sh
+    - tests/atspi/run-tests.sh -v --tb=short
+  allow_failure: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        compare_to: refs/heads/$CI_DEFAULT_BRANCH
+        paths:
+          - "src/**"
+          - "tests/atspi/**"
+          - ".gitlab-ci.yml"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
 # ============================================================
 # Security Stage
 # ============================================================
