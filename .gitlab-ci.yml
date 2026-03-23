@@ -40,6 +40,9 @@ build:cabi:
     paths:
       - cabi-lib/
   tags: [linux]
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 build:
   stage: build
@@ -52,6 +55,9 @@ build:
     paths:
       - build/
   tags: [linux]
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 test:
   stage: test
@@ -60,6 +66,9 @@ test:
     - cd build
     - ctest --output-on-failure
   tags: [linux]
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 # AT-SPI accessibility + widget tree tests
 test:a11y:
