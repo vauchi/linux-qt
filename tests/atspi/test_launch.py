@@ -11,7 +11,7 @@ class TestAppLaunch:
 
     def test_app_appears_in_atspi_tree(self, qt_app):
         assert qt_app is not None
-        assert qt_app.get_name() == "qvauchi"
+        assert qt_app.get_name() == "vauchi"
 
     def test_app_has_window(self, qt_app):
         windows = find_all(qt_app, role="frame", max_depth=2)

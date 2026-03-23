@@ -83,7 +83,10 @@ def find_one(
 
 def click_button(root: Atspi.Accessible, name: str) -> bool:
     """Find a button by name and invoke its click action."""
+    # Qt6 AT-SPI exposes QPushButton as "button", GTK uses "push button"
     btn = find_one(root, role="push button", name=name)
+    if btn is None:
+        btn = find_one(root, role="button", name=name)
     if btn is None:
         return False
     try:
