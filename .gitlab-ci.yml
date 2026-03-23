@@ -14,6 +14,7 @@ variables:
   SAST_EXCLUDED_PATHS: "build/, vauchi-core/"
   SECRET_DETECTION_EXCLUDED_PATHS: "build/, vauchi-core/"
   SAST_ANALYZER_IMAGE_TAG: "5"
+  VAUCHI_CORE_REF: main
 
 stages:
   - lint
@@ -22,9 +23,6 @@ stages:
   - test
   - security
   - deploy
-
-variables:
-  VAUCHI_CORE_REF: main
 
 build:cabi:
   stage: deps
@@ -71,19 +69,19 @@ test:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 # AT-SPI accessibility + widget tree tests
+# Uses a venv with --system-site-packages so pip can install pytest/Pillow
+# (PEP 668 blocks bare pip install on Arch) while inheriting gi (PyGObject)
+# which is a system-only package needed for AT-SPI introspection.
 test:a11y:
   stage: test
   needs: [build, build:cabi]
   tags: [linux, self-hosted]
   variables:
     QT_ACCESSIBILITY: "1"
-  before_script:
-    - python3 -m venv .venv
+  script:
+    - python3 -m venv --system-site-packages .venv
     - source .venv/bin/activate
     - pip install --quiet -r tests/atspi/requirements.txt
-  script:
-    - source .venv/bin/activate
-    - chmod +x tests/atspi/run-tests.sh
     - tests/atspi/run-tests.sh -v --tb=short
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
