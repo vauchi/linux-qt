@@ -28,6 +28,7 @@ QWidget *StatusIndicatorComponent::render(const QJsonObject &data) {
     }
 
     auto *title = new QLabel(data["title"].toString());
+    title->setAccessibleName(data["title"].toString());
     layout->addWidget(dot);
     layout->addWidget(title);
 
@@ -35,6 +36,7 @@ QWidget *StatusIndicatorComponent::render(const QJsonObject &data) {
     QString detail = data["detail"].toString();
     if (!detail.isEmpty()) {
         auto *detailLabel = new QLabel(detail);
+        detailLabel->setAccessibleName(data["title"].toString() + " detail");
         detailLabel->setStyleSheet("color: #888;");
         layout->addWidget(detailLabel);
     }

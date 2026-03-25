@@ -20,6 +20,7 @@ QWidget *ActionListComponent::render(const QJsonObject &data,
     for (const auto &item : items) {
         QJsonObject itemObj = item.toObject();
         auto *btn = new QPushButton(itemObj["label"].toString());
+        btn->setAccessibleName(itemObj["label"].toString());
 
         if (onAction) {
             QString itemId = itemObj["id"].toString();

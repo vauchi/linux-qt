@@ -24,6 +24,7 @@ QWidget *ToggleListComponent::render(const QJsonObject &data,
     for (const auto &item : items) {
         QJsonObject itemObj = item.toObject();
         auto *checkbox = new QCheckBox(itemObj["label"].toString());
+        checkbox->setAccessibleName(itemObj["label"].toString());
         checkbox->setChecked(itemObj["selected"].toBool());
 
         if (onAction) {

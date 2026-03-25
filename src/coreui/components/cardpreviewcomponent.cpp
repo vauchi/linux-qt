@@ -19,6 +19,7 @@ QWidget *CardPreviewComponent::render(const QJsonObject &data,
 
     auto *name = new QLabel(data["name"].toString());
     name->setStyleSheet("font-size: 18px; font-weight: bold;");
+    name->setAccessibleName(data["name"].toString());
     layout->addWidget(name);
 
     // Render top-level fields

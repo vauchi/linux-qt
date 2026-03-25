@@ -30,8 +30,10 @@ QWidget *FieldListComponent::render(const QJsonObject &data,
         // Field label and value
         auto *label = new QLabel(fieldObj["label"].toString() + ":");
         label->setStyleSheet("font-weight: bold;");
+        label->setAccessibleName(fieldObj["label"].toString());
         auto *value = new QLabel(fieldObj["value"].toString());
         value->setWordWrap(true);
+        value->setAccessibleName(fieldObj["label"].toString() + " value");
         row->addWidget(label);
         row->addWidget(value, 1);
 

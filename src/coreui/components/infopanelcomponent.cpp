@@ -21,6 +21,7 @@ QWidget *InfoPanelComponent::render(const QJsonObject &data) {
         (icon.isEmpty() ? QString() : icon + " ") + data["title"].toString()
     );
     title->setStyleSheet("font-weight: bold;");
+    title->setAccessibleName(data["title"].toString());
     layout->addWidget(title);
 
     QJsonArray items = data["items"].toArray();
@@ -34,8 +35,10 @@ QWidget *InfoPanelComponent::render(const QJsonObject &data) {
         }
         auto *itemTitle = new QLabel(itemObj["title"].toString() + ":");
         itemTitle->setStyleSheet("font-weight: bold;");
+        itemTitle->setAccessibleName(itemObj["title"].toString());
         auto *detail = new QLabel(itemObj["detail"].toString());
         detail->setWordWrap(true);
+        detail->setAccessibleName(itemObj["title"].toString() + " detail");
         row->addWidget(itemTitle);
         row->addWidget(detail, 1);
         layout->addLayout(row);

@@ -10,7 +10,8 @@ QWidget *BannerComponent::render(const QJsonObject &data,
                                   const OnAction &onAction) {
     auto *container = new QWidget;
     auto *layout = new QHBoxLayout(container);
-    container->setObjectName(QStringLiteral("banner"));
+    // Banner has no "id" field — derive object name from action_id for uniqueness
+    container->setObjectName(QStringLiteral("banner_") + data["action_id"].toString());
     container->setAccessibleName(data["text"].toString());
     container->setStyleSheet("background-color: #e3f2fd; border-radius: 4px; padding: 8px;");
 

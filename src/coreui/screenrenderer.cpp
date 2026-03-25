@@ -93,6 +93,7 @@ void ScreenRenderer::renderScreen(const QJsonObject &screen) {
     // Subtitle
     if (screen.contains("subtitle") && !screen["subtitle"].isNull()) {
         auto *subtitle = new QLabel(screen["subtitle"].toString());
+        subtitle->setAccessibleName(screen["subtitle"].toString());
         subtitle->setStyleSheet("color: gray;");
         m_layout->addWidget(subtitle);
     }

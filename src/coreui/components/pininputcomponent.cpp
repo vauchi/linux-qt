@@ -15,6 +15,7 @@ QWidget *PinInputComponent::render(const QJsonObject &data,
     container->setObjectName(data["id"].toString());
 
     auto *label = new QLabel(data["label"].toString());
+    label->setAccessibleName(data["label"].toString());
     auto *input = new QLineEdit;
     input->setEchoMode(QLineEdit::Password);
     input->setAccessibleName(data["label"].toString());

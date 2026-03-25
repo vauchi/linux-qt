@@ -45,5 +45,15 @@ QWidget *ComponentRenderer::render(const QJsonObject &component,
     if (component.contains("Banner")) return BannerComponent::render(component["Banner"].toObject(), onAction);
 
     // Divider is serialized as just the string "Divider"
-    return DividerComponent::render();
+    if (component.isEmpty() || component.contains("Divider")
+        || QJsonDocument(component).toJson(QJsonDocument::Compact) == "\"Divider\"") {
+        return DividerComponent::render();
+    }
+
+    // Unknown component type — render a visible warning instead of silently falling through
+    QString type = component.keys().isEmpty() ? QStringLiteral("(empty)")
+                                              : component.keys().first();
+    auto *placeholder = new QLabel(QStringLiteral("Unknown component: ") + type);
+    placeholder->setStyleSheet("color: orange;");
+    return placeholder;
 }

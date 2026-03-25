@@ -30,7 +30,9 @@ QWidget *SettingsGroupComponent::render(const QJsonObject &data,
             // Toggle setting: render as checkbox
             auto *row = new QHBoxLayout;
             auto *label = new QLabel(itemLabel);
+            label->setAccessibleName(itemLabel);
             auto *checkbox = new QCheckBox;
+            checkbox->setAccessibleName(itemLabel);
             checkbox->setChecked(kind["Toggle"].toObject()["enabled"].toBool());
             row->addWidget(label);
             row->addStretch();
@@ -54,6 +56,7 @@ QWidget *SettingsGroupComponent::render(const QJsonObject &data,
         } else if (kind.contains("Link") || kind.contains("Destructive")) {
             // Link or destructive setting: render as clickable button
             auto *btn = new QPushButton(itemLabel);
+            btn->setAccessibleName(itemLabel);
             if (kind.contains("Destructive")) {
                 btn->setStyleSheet("color: red;");
             }

@@ -24,6 +24,7 @@ QWidget *EditableTextComponent::render(const QJsonObject &data,
 
     // Label
     auto *label = new QLabel(labelText);
+    label->setAccessibleName(labelText);
     label->setStyleSheet("font-size: 12px; color: #888;");
     layout->addWidget(label);
 
@@ -41,39 +42,24 @@ QWidget *EditableTextComponent::render(const QJsonObject &data,
         editRow->addWidget(saveBtn);
 
         if (onAction) {
-            // Save button: emit TextChanged then ActionPressed
-            QObject::connect(saveBtn, &QPushButton::clicked, saveBtn,
-                             [onAction, componentId, input]() {
-                                 QJsonObject textAction;
-                                 QJsonObject textInner;
-                                 textInner["component_id"] = componentId;
-                                 textInner["value"] = input->text();
-                                 textAction["TextChanged"] = textInner;
-                                 onAction(textAction);
+            // Shared save handler: emit TextChanged then ActionPressed
+            auto emitSave = [onAction, componentId, input]() {
+                QJsonObject textAction;
+                QJsonObject textInner;
+                textInner["component_id"] = componentId;
+                textInner["value"] = input->text();
+                textAction["TextChanged"] = textInner;
+                onAction(textAction);
 
-                                 QJsonObject pressAction;
-                                 QJsonObject pressInner;
-                                 pressInner["action_id"] = componentId + "_save";
-                                 pressAction["ActionPressed"] = pressInner;
-                                 onAction(pressAction);
-                             });
+                QJsonObject pressAction;
+                QJsonObject pressInner;
+                pressInner["action_id"] = componentId + "_save";
+                pressAction["ActionPressed"] = pressInner;
+                onAction(pressAction);
+            };
 
-            // Enter key: same as Save
-            QObject::connect(input, &QLineEdit::returnPressed, input,
-                             [onAction, componentId, input]() {
-                                 QJsonObject textAction;
-                                 QJsonObject textInner;
-                                 textInner["component_id"] = componentId;
-                                 textInner["value"] = input->text();
-                                 textAction["TextChanged"] = textInner;
-                                 onAction(textAction);
-
-                                 QJsonObject pressAction;
-                                 QJsonObject pressInner;
-                                 pressInner["action_id"] = componentId + "_save";
-                                 pressAction["ActionPressed"] = pressInner;
-                                 onAction(pressAction);
-                             });
+            QObject::connect(saveBtn, &QPushButton::clicked, saveBtn, emitSave);
+            QObject::connect(input, &QLineEdit::returnPressed, input, emitSave);
         }
 
         layout->addLayout(editRow);
