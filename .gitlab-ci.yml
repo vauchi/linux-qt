@@ -8,6 +8,8 @@ include:
     ref: main
     file:
       - '/ci-templates/design-drift.yml'
+      - '/ci-templates/inventory-check.yml'
+      - '/ci-templates/removed-symbols.yml'
       - '/ci-templates/badges.yml'
 
 variables:
@@ -126,6 +128,19 @@ check:design-drift:
     DESIGN_DRIFT_FILE_EXT: ".cpp"
     DESIGN_DRIFT_FILE_SUFFIX: "component"
     DESIGN_DRIFT_CASE: "lower"
+
+# Inventory check: verify INVENTORY.md matches filesystem
+check:inventory:
+  extends: .inventory-check-job
+  variables:
+    COMPONENT_DIR: "src/coreui/components"
+    COMPONENT_EXT: ".cpp"
+
+# Removed symbols: detect stale references to removed features
+check:removed-symbols:
+  extends: .removed-symbols-job
+  variables:
+    SEARCH_DIRS: "src/ tests/ design/ include/"
 
 # ============================================================
 # Deploy Stage — Badge Pages
