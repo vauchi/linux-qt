@@ -48,6 +48,7 @@ set(QVAUCHI_SOURCES
     src/coreui/components/showtoastcomponent.cpp
     src/coreui/components/inlineconfirmcomponent.cpp
     src/coreui/components/editabletextcomponent.cpp
+    src/coreui/components/bannercomponent.cpp
     src/coreui/components/dividercomponent.cpp
     src/platform/systemtray.cpp
     src/platform/menubar.cpp

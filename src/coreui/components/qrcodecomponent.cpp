@@ -26,7 +26,7 @@ QWidget *QrcodeComponent::render(const QJsonObject &data) {
     }
 
     if (mode == "Scan") {
-        auto *label = new QLabel("Camera not available on desktop");
+        auto *label = new QLabel(QObject::tr("Waiting for QR scan\u2026"));
         label->setAlignment(Qt::AlignCenter);
         layout->addWidget(label);
         return container;

@@ -275,7 +275,7 @@ void ScreenRenderer::promptQrPaste() {
     bool ok = false;
     QString data = QInputDialog::getText(
         this, tr("Scan QR Code"),
-        tr("Camera not available on desktop.\nPaste the peer's QR code data:"),
+        tr("Paste the peer's QR code data:"),
         QLineEdit::Normal, QString(), &ok);
     if (ok && !data.isEmpty()) {
         // Send as TextChanged action with component_id "scanned_data"

@@ -11,13 +11,13 @@ Each component maps a vauchi-core JSON `Component` variant to Qt6 widgets.
 | # | Component | File | Qt Widget(s) | Interactive | Used On |
 |---|-----------|------|-------------|-------------|---------|
 | 1 | Text | `textcomponent.cpp` | `QLabel` | No | All screens (titles, descriptions) |
-| 2 | TextInput | `textinputcomponent.cpp` | `QLineEdit` | Yes (TextChanged on **every keystroke**) | Onboarding, Settings |
+| 2 | TextInput | `textinputcomponent.cpp` | `QLineEdit` | Yes (TextChanged on Enter/focus-leave) | Onboarding, Settings |
 | 3 | PinInput | `pininputcomponent.cpp` | `QLineEdit` (password echo) | Yes (TextChanged) | Lock, DuressPin |
 | 4 | ToggleList | `togglelistcomponent.cpp` | `QCheckBox` (multiple) | Yes (ItemToggled) | Onboarding (groups), Exchange |
 | 5 | ContactList | `contactlistcomponent.cpp` | `QListWidget` | Yes (ListItemSelected) | Contacts |
 | 6 | FieldList | `fieldlistcomponent.cpp` | `QListWidget` with headers | Yes (ListItemSelected) | MyInfo, ContactDetail |
 | 7 | CardPreview | `cardpreviewcomponent.cpp` | `QFrame` + `QTabWidget` | Yes (GroupViewSelected) | MyInfo, ContactDetail |
-| 8 | QrCode | `qrcodecomponent.cpp` | `QLabel` (QPixmap via libqrencode) | No (display only) | Exchange |
+| 8 | QrCode | `qrcodecomponent.cpp` | `QLabel` (QPixmap via libqrencode) | Yes (scan via CameraBackend, paste fallback) | Exchange |
 | 9 | ConfirmationDialog | `confirmationdialogcomponent.cpp` | `QPushButton` (confirm/cancel) | Yes (ActionPressed) | EmergencyShred |
 | 10 | InfoPanel | `infopanelcomponent.cpp` | `QLabel` + `QVBoxLayout` | No | Help, Support |
 | 11 | StatusIndicator | `statusindicatorcomponent.cpp` | `QLabel` with icon | No | DeliveryStatus |
@@ -28,6 +28,7 @@ Each component maps a vauchi-core JSON `Component` variant to Qt6 widgets.
 | 15 | ShowToast | `showtoastcomponent.cpp` | `QWidget` + `QLabel` + `QPushButton` | Yes (UndoPressed) | Post-delete, post-save |
 | 16 | InlineConfirm | `inlineconfirmcomponent.cpp` | `QFrame` + `QPushButton` (confirm/cancel) | Yes (ActionPressed) | EmergencyShred |
 | 17 | EditableText | `editabletextcomponent.cpp` | `QLabel` ↔ `QLineEdit` + `QPushButton` | Yes (TextChanged, ActionPressed) | MyInfo (name editing) |
+| 18 | Banner | `bannercomponent.cpp` | `QLabel` + `QPushButton` (horizontal) | Yes (ActionPressed) | Informational bar with optional action |
 
 ## Screens (12 navigable via CABI)
 
@@ -48,12 +49,11 @@ Navigation via sidebar `QListWidget`. Screen data from `vauchi_app_navigate_to()
 | 11 | DuressPin | `duress_pin` | "Duress pin" | PinInput, ConfirmationDialog |
 | 12 | DeliveryStatus | `delivery_status` | "Delivery status" | StatusIndicator |
 
-### Missing Screens (6 — present in GTK, absent from Qt CABI)
+### Missing Screens (5 — present in GTK, absent from Qt CABI)
 
 | Screen | GTK Label | Why Missing |
 |--------|-----------|-------------|
 | Sync | "Sync" | Not exposed in CABI `vauchi_app_navigate_to()` |
-| TorSettings | "Tor Settings" | Not exposed in CABI |
 | Recovery | "Recovery" | Not exposed in CABI |
 | Groups | "Groups" | Not exposed in CABI |
 | Privacy | "Privacy" | Not exposed in CABI |
@@ -72,11 +72,12 @@ Navigation via sidebar `QListWidget`. Screen data from `vauchi_app_navigate_to()
 ### W2: Contact Exchange
 ```
 Exchange screen → Show QR (QrCode display)
-  → "Camera not available on desktop" message
-  → QR paste not implemented (no scan dialog)
-  → Exchange via relay only
+  → Hardware dispatch: QrRequestScan
+  → If camera available: CameraBackend opens scan dialog (zbar QR decode)
+  → If no camera or scan cancelled: paste dialog fallback (QInputDialog)
+  → Exchange complete → contact added
 ```
-**Note:** Qt has no camera integration and no paste dialog fallback.
+**Note:** Camera scanning via Qt Multimedia + zbar. Paste fallback via `promptQrPaste()` in ScreenRenderer.
 
 ### W3: Contact Management
 ```
@@ -100,32 +101,39 @@ Settings → SettingsGroup items
 
 ## Hardware Integration
 
-| Hardware | Status | Notes |
-|----------|--------|-------|
-| Camera | **Not implemented** | QrCode shows "Camera not available on desktop" |
-| BLE | **Not implemented** | No BlueZ integration |
-| Audio | **Not implemented** | No CPAL/audio integration |
-| NFC | **Not implemented** | No integration |
+| Hardware | Module | Feature Flag | Detection | Status |
+|----------|--------|-------------|-----------|--------|
+| Camera | `platform/camerabackend.cpp` | `VAUCHI_HAS_CAMERA` | `QMediaDevices::videoInputs()` | QR scanning via Qt Multimedia + zbar |
+| BLE | `platform/blebackend.cpp` + `bleadvertiser.cpp` | `VAUCHI_HAS_BLUETOOTH` | `/sys/class/bluetooth/` | Qt Bluetooth discovery + GATT read/write + BlueZ D-Bus advertising |
+| Audio | `platform/audiobackend.cpp` | `VAUCHI_HAS_AUDIO` | `QMediaDevices` | Ultrasonic FSK (Goertzel decode, 44.1kHz PCM) on worker thread |
+| NFC | `platform/nfcbackend.cpp` | `VAUCHI_HAS_NFC` | `SCardEstablishContext` | PC/SC exchange via pcsclite (SELECT AID + EXCHANGE APDU) on worker thread |
+
+All hardware backends are optional (CMake feature flags). When unavailable, `HardwareBackend` sends `HardwareUnavailable` events to core.
 
 ## Platform Features
 
 | Feature | Status | Notes |
 |---------|--------|-------|
 | System Tray | Yes | `QSystemTrayIcon` with Show/Quit actions |
-| Menu Bar | Yes | File (Quit) + Help (About Qt) |
+| Menu Bar | Yes | File (Quit) + Help (About Vauchi) |
 | Keyboard Shortcuts | **Minimal** | Only Quit action, no navigation keys |
 | Window Title | "Vauchi" | Fixed, no dynamic subtitle |
 
 ## Accessibility Status
 
-**Current: No accessibility labels set.** No `setObjectName()`, no `setAccessibleName()`, no `setAccessibleDescription()` on any widget. Invisible to AT-SPI screen readers.
+**Current: AT-SPI labels set on all components.** Every component uses `setObjectName()` for test identification and `setAccessibleName()` for screen reader support. Key coverage:
 
-**Needed for AT-SPI testing:** Every widget needs `setObjectName()` for test identification and `setAccessibleName()` for screen reader support.
+- Navigation sidebar: `setAccessibleName("Navigation")`
+- Screen title: `setAccessibleName(screen["title"])`
+- All list widgets: `setAccessibleName("Contacts")`, `setAccessibleName("Fields")`, `setAccessibleName("Actions")`
+- Text inputs: `setAccessibleName(data["label"])`
+- QR code: `setAccessibleName("QR code for contact exchange")` / `"Scan QR code"`
+- Settings groups: `setAccessibleName(data["label"])`
+- All other components: `setAccessibleName(title)` or `setAccessibleName(warning)`
+
+AT-SPI tests in `tests/atspi/` verify the accessibility tree.
 
 ## Known Issues
 
-1. ~~**TextInput fires on every keystroke**~~ FIXED — now uses `editingFinished` (Enter/focus-leave).
-2. ~~**Missing 3 component types**~~ FIXED — ShowToast, InlineConfirm, EditableText now implemented.
-3. **Missing 6 screens** — CABI `vauchi_app_navigate_to()` doesn't expose Sync, TorSettings, Recovery, Groups, Privacy, Support.
-4. **No QR paste fallback** — Unlike GTK which has a paste dialog for QR data, Qt only displays QR codes.
-5. **No keyboard navigation** — No sidebar keyboard shortcuts, no screen-level hotkeys.
+1. **Missing 5 screens** — CABI `vauchi_app_navigate_to()` doesn't expose Sync, Recovery, Groups, Privacy, Support.
+2. **No keyboard navigation** — No sidebar keyboard shortcuts, no screen-level hotkeys.

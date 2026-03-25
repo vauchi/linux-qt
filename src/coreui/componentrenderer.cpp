@@ -18,6 +18,7 @@
 #include "components/showtoastcomponent.h"
 #include "components/inlineconfirmcomponent.h"
 #include "components/editabletextcomponent.h"
+#include "components/bannercomponent.h"
 #include "components/dividercomponent.h"
 
 #include <QLabel>
@@ -41,6 +42,7 @@ QWidget *ComponentRenderer::render(const QJsonObject &component,
     if (component.contains("ShowToast")) return ShowToastComponent::render(component["ShowToast"].toObject(), onAction);
     if (component.contains("InlineConfirm")) return InlineConfirmComponent::render(component["InlineConfirm"].toObject(), onAction);
     if (component.contains("EditableText")) return EditableTextComponent::render(component["EditableText"].toObject(), onAction);
+    if (component.contains("Banner")) return BannerComponent::render(component["Banner"].toObject(), onAction);
 
     // Divider is serialized as just the string "Divider"
     return DividerComponent::render();
