@@ -9,6 +9,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
+# --- Coverage support (gcov/lcov) ---
+option(COVERAGE "Enable code coverage instrumentation (gcov/lcov)" OFF)
+if(COVERAGE)
+    message(STATUS "Coverage: ENABLED (gcov/lcov)")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage -fprofile-arcs -ftest-coverage")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
+endif()
+
 find_package(Qt6 REQUIRED COMPONENTS Widgets Core)
 
 find_package(PkgConfig REQUIRED)
