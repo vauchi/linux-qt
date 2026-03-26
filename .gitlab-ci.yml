@@ -136,7 +136,7 @@ test:snapshots:
 
 # Manual snapshot regeneration — run this job to update baselines.
 # Trigger via GitLab UI: Pipelines → Run pipeline → REGENERATE_SNAPSHOTS=1
-test:snapshots:regenerate:
+test:snapshots:record:
   stage: test
   needs: [build, build:cabi]
   tags: [linux, self-hosted]
