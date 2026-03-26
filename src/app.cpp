@@ -3,6 +3,7 @@
 
 #include "app.h"
 #include "coreui/screenrenderer.h"
+#include "coreui/thememanager.h"
 #include "platform/menubar.h"
 #include "platform/systemtray.h"
 
@@ -19,6 +20,9 @@
 VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
     setWindowTitle("Vauchi");
     resize(700, 600);
+
+    // Apply core theme colors via QPalette (runtime-switchable)
+    ThemeManager::applyDefaultTheme();
 
     // Persistent storage: XDG_DATA_HOME/vauchi/
     QString dataDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);

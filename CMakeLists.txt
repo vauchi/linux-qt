@@ -32,6 +32,7 @@ set(QVAUCHI_SOURCES
     src/app.cpp
     src/coreui/screenrenderer.cpp
     src/coreui/componentrenderer.cpp
+    src/coreui/thememanager.cpp
     src/coreui/components/textcomponent.cpp
     src/coreui/components/textinputcomponent.cpp
     src/coreui/components/togglelistcomponent.cpp
@@ -124,3 +125,9 @@ add_executable(app_engine_test tests/app_engine_test.cpp)
 target_include_directories(app_engine_test PRIVATE include)
 target_link_libraries(app_engine_test PRIVATE ${VAUCHI_CABI})
 add_test(NAME app_engine_test COMMAND app_engine_test)
+
+# ThemeManager test: palette generation, stylesheet output, file loading
+add_executable(theme_test tests/theme_test.cpp src/coreui/thememanager.cpp)
+target_include_directories(theme_test PRIVATE include)
+target_link_libraries(theme_test PRIVATE Qt6::Widgets Qt6::Core)
+add_test(NAME theme_test COMMAND theme_test)
