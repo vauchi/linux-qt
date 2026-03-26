@@ -28,26 +28,27 @@ def qt_binary():
     pytest.skip("qvauchi binary not found — run cmake build first")
 
 
-@pytest.fixture
-def data_dir():
-    """Create a temporary data directory for isolated test runs."""
-    with tempfile.TemporaryDirectory(prefix="vauchi-qt-test-") as tmpdir:
-        yield tmpdir
+
+@pytest.fixture(scope="session")
+def _qt_data_dir():
+    """Session-scoped data directory for the shared app instance."""
+    d = tempfile.mkdtemp(prefix="vauchi-qt-test-session-")
+    yield d
+    import shutil
+    shutil.rmtree(d, ignore_errors=True)
 
 
-@pytest.fixture
-def qt_app(qt_binary, data_dir):
-    """Launch qvauchi and return the AT-SPI accessible root.
+@pytest.fixture(scope="session")
+def qt_app(qt_binary, _qt_data_dir):
+    """Launch a single qvauchi instance shared across all tests.
 
-    The app is launched with:
-    - QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1 (enable AT-SPI on Wayland)
-    - QT_ACCESSIBILITY=1 (enable accessibility)
-    - XDG_DATA_HOME=<tmpdir> (isolated storage)
+    Session-scoped to avoid repeated process startup/teardown which
+    saturates the AT-SPI registry and causes timeouts on CI.
     """
     env = os.environ.copy()
     env["QT_LINUX_ACCESSIBILITY_ALWAYS_ON"] = "1"
     env["QT_ACCESSIBILITY"] = "1"
-    env["XDG_DATA_HOME"] = data_dir
+    env["XDG_DATA_HOME"] = _qt_data_dir
 
     if "DISPLAY" not in env and "WAYLAND_DISPLAY" not in env:
         pytest.skip("No display available — run under Xvfb or with a desktop session")
