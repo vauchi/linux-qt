@@ -1,6 +1,8 @@
 <!-- SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me> -->
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 
+> **Mirror:** This repo is a read-only mirror of [gitlab.com/vauchi/linux-qt](https://gitlab.com/vauchi/linux-qt). Please open issues and merge requests there.
+
 [![Pipeline](https://vauchi.gitlab.io/linux-qt/badges/pipeline.svg)](https://gitlab.com/vauchi/linux-qt/-/pipelines)
 [![REUSE](https://api.reuse.software/badge/gitlab.com/vauchi/linux-qt)](https://api.reuse.software/info/gitlab.com/vauchi/linux-qt)
 
