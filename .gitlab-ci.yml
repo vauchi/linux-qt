@@ -96,6 +96,40 @@ test:a11y:
           - ".gitlab-ci.yml"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
+# Visual snapshot regression — captures each screen under Xvfb and
+# compares against committed baselines using ImageMagick compare.
+# First run: generates baselines (skips, does not fail).
+# Subsequent runs: diffs against baselines, fails on visual regression.
+# To regenerate: UPDATE_SNAPSHOTS=1 ./run-tests.sh -k test_snapshots
+test:snapshots:
+  stage: test
+  needs: [build, build:cabi]
+  tags: [linux, self-hosted]
+  variables:
+    QT_ACCESSIBILITY: "1"
+  script:
+    - python3 -m venv --system-site-packages .venv
+    - source .venv/bin/activate
+    - pip install --quiet -r tests/atspi/requirements.txt
+    - tests/atspi/run-tests.sh -v --tb=short -k "test_snapshots"
+  artifacts:
+    when: always
+    paths:
+      - tests/atspi/snapshots/baseline/
+      - tests/atspi/snapshots/actual/
+      - tests/atspi/snapshots/diff/
+    expire_in: 30 days
+  allow_failure: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        compare_to: refs/heads/$CI_DEFAULT_BRANCH
+        paths:
+          - "src/**"
+          - "tests/atspi/**"
+          - ".gitlab-ci.yml"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
 # ============================================================
 # Security Stage
 # ============================================================
