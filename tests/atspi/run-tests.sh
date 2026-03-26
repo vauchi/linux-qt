@@ -29,13 +29,13 @@ fi
 # XDG_CURRENT_DESKTOP=none prevents xdg-desktop-portal from activating
 # compositor-specific portals (e.g., hyprland) that crash under Xvfb.
 # QT_QPA_PLATFORM=xcb forces X11 backend (Qt defaults to wayland which crashes under Xvfb)
+LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}"
+UPDATE_SNAPSHOTS="${UPDATE_SNAPSHOTS:-}"
+export LD_LIBRARY_PATH UPDATE_SNAPSHOTS
+
 exec env XDG_CURRENT_DESKTOP=none QT_QPA_PLATFORM=xcb \
-    LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}" \
-    UPDATE_SNAPSHOTS="${UPDATE_SNAPSHOTS:-}" \
     xvfb-run -s '-screen 0 1280x720x24' \
     dbus-run-session -- bash -c "
-        export LD_LIBRARY_PATH=\"$LD_LIBRARY_PATH\"
-        export UPDATE_SNAPSHOTS=\"$UPDATE_SNAPSHOTS\"
         /usr/lib/at-spi-bus-launcher &
         sleep 0.5
         /usr/lib/at-spi2-registryd &
