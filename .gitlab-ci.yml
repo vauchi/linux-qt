@@ -63,6 +63,8 @@ build:
 test:
   stage: test
   needs: [build, build:cabi]
+  variables:
+    QT_QPA_PLATFORM: offscreen
   script:
     - cd build
     - ctest --output-on-failure
