@@ -150,21 +150,6 @@ class TestQrCodeComponent:
             assert found.get_name(), "QR component has empty accessible name"
 
 
-class TestConfirmationDialogComponent:
-    """Confirmation dialog rendered by confirmationdialogcomponent.cpp."""
-
-    def test_confirmation_has_title_label(self, qt_app):
-        """Confirmation dialog must have title as accessible name when present."""
-        # Confirmation dialogs use the title as accessible name
-        panels = [
-            p for p in find_all(qt_app, role="panel")
-            if p.get_name() and len(p.get_name()) > 0
-        ]
-        # Non-empty assertion — just verify any visible panels have labels
-        for panel in panels:
-            assert panel.get_name(), "Panel has empty accessible name"
-
-
 class TestInfoPanelComponent:
     """Info panel rendered by infopanelcomponent.cpp."""
 

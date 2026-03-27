@@ -53,8 +53,6 @@ set(QVAUCHI_SOURCES
     src/coreui/components/statusindicatorcomponent.cpp
     src/coreui/components/pininputcomponent.cpp
     src/coreui/components/qrcodecomponent.cpp
-    src/coreui/components/confirmationdialogcomponent.cpp
-    src/coreui/components/showtoastcomponent.cpp
     src/coreui/components/inlineconfirmcomponent.cpp
     src/coreui/components/editabletextcomponent.cpp
     src/coreui/components/bannercomponent.cpp
