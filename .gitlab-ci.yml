@@ -74,7 +74,7 @@ test:unit:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 # AT-SPI accessibility + widget tree tests
-# Uses a venv with --system-site-packages so pip can install pytest/Pillow
+# Uses a venv with --system-site-packages so we can install pytest/Pillow
 # (PEP 668 blocks bare pip install on Arch) while inheriting gi (PyGObject)
 # which is a system-only package needed for AT-SPI introspection.
 test:a11y:
@@ -85,9 +85,9 @@ test:a11y:
     QT_ACCESSIBILITY: "1"
     LD_LIBRARY_PATH: "${CI_PROJECT_DIR}/cabi-lib"
   script:
-    - python3 -m venv --system-site-packages .venv
+    - uv venv --system-site-packages .venv
     - source .venv/bin/activate
-    - pip install --quiet -r tests/atspi/requirements.txt
+    - uv pip install --quiet -r tests/atspi/requirements.txt
     - tests/atspi/run-tests.sh -v --tb=short -k "not test_snapshots"
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
@@ -112,9 +112,9 @@ test:snapshots:
     QT_ACCESSIBILITY: "1"
     LD_LIBRARY_PATH: "${CI_PROJECT_DIR}/cabi-lib"
   script:
-    - python3 -m venv --system-site-packages .venv
+    - uv venv --system-site-packages .venv
     - source .venv/bin/activate
-    - pip install --quiet -r tests/atspi/requirements.txt
+    - uv pip install --quiet -r tests/atspi/requirements.txt
     - tests/atspi/run-tests.sh -v --tb=short -k "test_snapshots"
   artifacts:
     when: always
@@ -145,9 +145,9 @@ test:snapshots:record:
     LD_LIBRARY_PATH: "${CI_PROJECT_DIR}/cabi-lib"
     UPDATE_SNAPSHOTS: "1"
   script:
-    - python3 -m venv --system-site-packages .venv
+    - uv venv --system-site-packages .venv
     - source .venv/bin/activate
-    - pip install --quiet -r tests/atspi/requirements.txt
+    - uv pip install --quiet -r tests/atspi/requirements.txt
     - tests/atspi/run-tests.sh -v --tb=short -k "test_snapshots"
   artifacts:
     when: always
