@@ -125,6 +125,35 @@ void VauchiWindow::buildSidebar() {
     refreshSidebar();
 }
 
+// Sidebar labels matching core i18n nav.* keys (en.json).
+// When CABI gains i18n exports (T2-5), replace with runtime calls.
+static const QHash<QString, QString> SCREEN_LABELS = {
+    {"my_info",        "My Card"},
+    {"contacts",       "Contacts"},
+    {"exchange",       "Exchange"},
+    {"groups",         "Groups"},
+    {"more",           "More"},
+    {"onboarding",     "Onboarding"},
+    {"settings",       "Settings"},
+    {"help",           "Help"},
+    {"recovery",       "Recovery"},
+    {"backup",         "Backup"},
+    {"sync",           "Sync"},
+    {"privacy",        "Privacy"},
+    {"device_linking", "Devices"},
+    {"support",        "Support"},
+};
+
+static QString screenLabel(const QString &screenId) {
+    auto it = SCREEN_LABELS.find(screenId);
+    if (it != SCREEN_LABELS.end()) return it.value();
+    // Fallback: capitalize + replace underscores
+    QString label = screenId;
+    if (!label.isEmpty()) label[0] = label[0].toUpper();
+    label.replace('_', ' ');
+    return label;
+}
+
 void VauchiWindow::refreshSidebar() {
     m_sidebar->clear();
     if (!m_app) return;
@@ -136,12 +165,6 @@ void VauchiWindow::refreshSidebar() {
     vauchi_string_free(json);
 
     for (const auto &screen : screens) {
-        QString name = screen.toString();
-        // Capitalize first letter for display
-        if (!name.isEmpty()) {
-            name[0] = name[0].toUpper();
-        }
-        name.replace('_', ' ');
-        m_sidebar->addItem(name);
+        m_sidebar->addItem(screenLabel(screen.toString()));
     }
 }
