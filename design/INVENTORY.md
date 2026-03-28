@@ -136,7 +136,7 @@ When unavailable, `HardwareBackend` sends
 |---------|--------|-------|
 | System Tray | Yes | `QSystemTrayIcon` with Show/Quit actions |
 | Menu Bar | Yes | File (Quit) + Help (About Vauchi) |
-| Keyboard Shortcuts | **Minimal** | Only Quit action, no navigation keys |
+| Keyboard Shortcuts | Yes | Alt+1..5 for sidebar, Ctrl+Q for quit |
 | Window Title | "Vauchi" | Fixed, no dynamic subtitle |
 
 ## Accessibility Status
@@ -155,7 +155,10 @@ When unavailable, `HardwareBackend` sends
 
 AT-SPI tests in `tests/atspi/` verify the accessibility tree.
 
-## Known Issues
+## Keyboard Shortcuts
 
-1. **No keyboard navigation** — No sidebar keyboard shortcuts,
-   no screen-level hotkeys.
+| Shortcut | Action |
+|----------|--------|
+| Alt+1..5 | Navigate to sidebar screen (My Card, Contacts, Exchange, Groups, More) |
+| Ctrl+Q | Quit |
+| Alt | Activate menu bar |
