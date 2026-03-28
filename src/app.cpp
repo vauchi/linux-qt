@@ -12,6 +12,7 @@
 #include <QListWidget>
 #include <QJsonDocument>
 #include <QJsonArray>
+#include <QShortcut>
 #include <QStandardPaths>
 #include <QDir>
 #include <QFile>
@@ -93,6 +94,18 @@ VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
     connect(m_renderer, &ScreenRenderer::screenChanged, this, [this]() {
         refreshSidebar();
     });
+
+    // Keyboard shortcuts: Alt+1..5 navigate sidebar screens
+    for (int i = 0; i < 5; ++i) {
+        auto *sc = new QShortcut(
+            QKeySequence(Qt::ALT | static_cast<Qt::Key>(Qt::Key_1 + i)),
+            this);
+        connect(sc, &QShortcut::activated, this, [this, i]() {
+            if (m_sidebar->count() > i) {
+                m_sidebar->setCurrentRow(i);
+            }
+        });
+    }
 
     connect(m_sidebar, &QListWidget::currentRowChanged, this, [this](int row) {
         if (row < 0 || !m_app) return;
