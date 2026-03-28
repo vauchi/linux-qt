@@ -9,6 +9,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
+# Release profile: optimized binary (matches linux-gtk Cargo.toml)
+# LTO for cross-TU optimization, strip symbols, trap on overflow
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto=auto")
+set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -flto=auto -s")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftrapv")
+
 # --- Coverage support (gcov/lcov) ---
 option(COVERAGE "Enable code coverage instrumentation (gcov/lcov)" OFF)
 if(COVERAGE)
