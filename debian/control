@@ -1,0 +1,36 @@
+# SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+Source: vauchi-qt
+Section: net
+Priority: optional
+Maintainer: Mattia Egloff <mattia.egloff@pm.me>
+Build-Depends:
+ debhelper-compat (= 13),
+ cmake (>= 3.20),
+ g++,
+ pkg-config,
+ qt6-base-dev,
+ libqrencode-dev,
+ cargo,
+ rustc,
+ git,
+ qt6-multimedia-dev,
+ libzbar-dev,
+ qt6-connectivity-dev,
+ libpcsclite-dev,
+Standards-Version: 4.6.2
+Homepage: https://vauchi.app
+Rules-Requires-Root: no
+
+Package: vauchi-qt
+Architecture: any
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends},
+ libqrencode4,
+Description: Privacy-focused updatable contact cards (Qt desktop)
+ Vauchi is a privacy-focused app for exchanging updatable contact
+ cards in person. End-to-end encrypted and decentralized.
+ .
+ This package provides the native Linux desktop client built with Qt6.

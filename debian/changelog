@@ -1,0 +1,6 @@
+vauchi-qt (0.5.0-1) unstable; urgency=medium
+
+  * Initial packaging of vauchi-qt.
+  * Qt6 desktop client for privacy-focused contact card exchange.
+
+ -- Mattia Egloff <mattia.egloff@pm.me>  Sat, 29 Mar 2026 12:00:00 +0200

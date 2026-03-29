@@ -1,0 +1,72 @@
+# SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+# Maintainer: Mattia Egloff <mattia.egloff@pm.me>
+pkgname=vauchi-qt
+pkgver=0.5.0
+pkgrel=1
+pkgdesc="Privacy-focused updatable contact cards (Qt desktop)"
+arch=('x86_64')
+url="https://vauchi.app"
+license=('GPL-3.0-or-later')
+depends=(
+    'qt6-base'
+    'qrencode'
+)
+makedepends=(
+    'cmake'
+    'gcc'
+    'pkgconf'
+    'rust'
+    'git'
+    'qt6-multimedia'
+    'zbar'
+    'qt6-connectivity'
+    'pcsclite'
+)
+optdepends=(
+    'qt6-multimedia: camera and audio exchange backends'
+    'zbar: QR code scanning via camera'
+    'qt6-connectivity: Bluetooth Low Energy exchange'
+    'pcsclite: NFC exchange via USB readers'
+)
+source=("${pkgname}-${pkgver}.tar.gz::https://gitlab.com/vauchi/linux-qt/-/archive/v${pkgver}/linux-qt-v${pkgver}.tar.gz")
+sha256sums=('SKIP')
+
+prepare() {
+    cd "${srcdir}"
+    # Clone vauchi-core for CABI build
+    if [ ! -d vauchi-core ]; then
+        git clone --depth 1 https://gitlab.com/vauchi/core.git vauchi-core
+    fi
+}
+
+build() {
+    # Build vauchi-cabi
+    cd "${srcdir}/vauchi-core"
+    cargo build --release -p vauchi-cabi --features secure-storage
+
+    # Build Qt app
+    cd "${srcdir}/linux-qt-v${pkgver}"
+    cmake -B build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DVAUCHI_CABI_DIR="${srcdir}/vauchi-core/target/release"
+    cmake --build build -j"$(nproc)"
+}
+
+package() {
+    cd "${srcdir}/linux-qt-v${pkgver}"
+    DESTDIR="${pkgdir}" cmake --install build
+
+    # Bundle libvauchi_cabi.so
+    install -Dm755 "${srcdir}/vauchi-core/target/release/libvauchi_cabi.so" \
+        "${pkgdir}/usr/lib/libvauchi_cabi.so"
+
+    # Install icon
+    install -Dm644 resources/vauchi.svg \
+        "${pkgdir}/usr/share/icons/hicolor/scalable/apps/vauchi-qt.svg"
+
+    # License
+    install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+}

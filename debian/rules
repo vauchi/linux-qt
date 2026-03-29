@@ -1,0 +1,32 @@
+#!/usr/bin/make -f
+# SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+export DH_VERBOSE = 1
+
+CABI_BUILD = $(CURDIR)/vauchi-core/target/release
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+	# Build vauchi-cabi from source
+	if [ ! -d vauchi-core ]; then \
+		git clone --depth 1 https://gitlab.com/vauchi/core.git vauchi-core; \
+	fi
+	cd vauchi-core && cargo build --release -p vauchi-cabi --features secure-storage
+	dh_auto_configure -- \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DVAUCHI_CABI_DIR=$(CABI_BUILD)
+
+override_dh_auto_install:
+	dh_auto_install
+	# Bundle libvauchi_cabi.so — not packaged separately
+	install -Dm755 $(CABI_BUILD)/libvauchi_cabi.so \
+		debian/vauchi-qt/usr/lib/libvauchi_cabi.so
+	# Install icon (not in cmake install targets)
+	install -Dm644 resources/vauchi.svg \
+		debian/vauchi-qt/usr/share/icons/hicolor/scalable/apps/vauchi-qt.svg
+
+override_dh_shlibdeps:
+	dh_shlibdeps -l/usr/lib
