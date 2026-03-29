@@ -145,8 +145,8 @@ class TestQrCodeComponent:
         """QR container must have descriptive accessible name when present."""
         qr_display = find_one(qt_app, name="QR code for contact exchange")
         qr_scan = find_one(qt_app, name="Scan QR code")
-        if qr_display or qr_scan:
-            found = qr_display or qr_scan
+        found = qr_display or qr_scan
+        if found is not None:
             assert found.get_name(), "QR component has empty accessible name"
 
 
