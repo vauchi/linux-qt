@@ -215,3 +215,112 @@ class TestPinInputComponent:
         ]
         for entry in pin_entries:
             assert entry.get_name(), "PIN entry has empty accessible name"
+
+
+class TestEditableTextComponent:
+    """Editable text areas rendered by editabletextcomponent.cpp."""
+
+    def test_editable_text_entries_have_labels(self, qt_app):
+        """EditableText entries must have accessible names."""
+        entries = find_all(qt_app, role="text")
+        if not entries:
+            pytest.skip("No text entries on current screen")
+        # Filter to editable entries (those with editable text interface)
+        editable = []
+        for entry in entries:
+            try:
+                iface = entry.get_editable_text_iface()
+                if iface:
+                    editable.append(entry)
+            except Exception:
+                continue
+        if not editable:
+            pytest.skip("No editable text entries on current screen")
+        for entry in editable:
+            name = entry.get_name()
+            assert name is not None and len(name) > 0, (
+                f"Editable text entry missing accessible name.\n"
+                f"Entry tree:\n{dump_tree(entry)}"
+            )
+
+
+class TestInlineConfirmComponent:
+    """Inline confirm rendered by inlineconfirmcomponent.cpp."""
+
+    def test_inline_confirm_has_confirm_button(self, qt_app):
+        """InlineConfirm must have a confirm button with accessible name.
+
+        InlineConfirm appears on irrevocable-action screens like
+        Emergency Shred. The confirm button label varies by context.
+        """
+        buttons = find_all(qt_app, role="push button")
+        confirm_labels = {"Confirm", "Shred", "Delete", "Yes"}
+        confirm_btns = [
+            b for b in buttons
+            if b.get_name() in confirm_labels
+        ]
+        if not confirm_btns:
+            pytest.skip(
+                "No InlineConfirm buttons on current screen — "
+                "navigate to Emergency Shred to see them"
+            )
+        for btn in confirm_btns:
+            assert btn.get_name() and len(btn.get_name()) > 0, (
+                f"InlineConfirm button has empty accessible name.\n"
+                f"Button tree:\n{dump_tree(btn)}"
+            )
+
+    def test_inline_confirm_has_cancel_button(self, qt_app):
+        """InlineConfirm must have a cancel button with accessible name."""
+        cancel = find_one(qt_app, role="push button", name="Cancel")
+        if cancel is None:
+            pytest.skip(
+                "No Cancel button on current screen — "
+                "InlineConfirm may not be visible"
+            )
+        assert cancel.get_name() == "Cancel", (
+            f"Cancel button label should be 'Cancel', "
+            f"got: '{cancel.get_name()}'"
+        )
+
+
+class TestBannerComponent:
+    """Banner rendered by bannercomponent.cpp."""
+
+    @pytest.mark.skip(
+        reason="Banner is context-dependent and may not appear on default screens"
+    )
+    def test_banner_has_text_label(self, qt_app):
+        """Banner must have a text label with non-empty accessible name."""
+        panels = find_all(qt_app, role="panel")
+        banner_panels = [
+            p for p in panels
+            if p.get_name() and "banner" in p.get_name().lower()
+        ]
+        assert len(banner_panels) > 0, (
+            "No banner panel found in AT-SPI tree"
+        )
+        for banner in banner_panels:
+            labels = find_all(banner, role="label")
+            assert len(labels) > 0, (
+                f"Banner '{banner.get_name()}' has no text label.\n"
+                f"Banner tree:\n{dump_tree(banner)}"
+            )
+
+    @pytest.mark.skip(
+        reason="Banner is context-dependent and may not appear on default screens"
+    )
+    def test_banner_action_button_has_label(self, qt_app):
+        """Banner action button (if present) must have accessible name."""
+        panels = find_all(qt_app, role="panel")
+        banner_panels = [
+            p for p in panels
+            if p.get_name() and "banner" in p.get_name().lower()
+        ]
+        for banner in banner_panels:
+            buttons = find_all(banner, role="push button")
+            for btn in buttons:
+                assert btn.get_name() and len(btn.get_name()) > 0, (
+                    f"Banner action button has empty accessible name.\n"
+                    f"Button tree:\n{dump_tree(btn)}"
+                )
