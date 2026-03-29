@@ -165,15 +165,15 @@ static const QHash<QString, QPair<const char *, QString>> SCREEN_I18N = {
     {"exchange",       {"nav.exchange",  QStringLiteral("Exchange")}},
     {"groups",         {"nav.groups",    QStringLiteral("Groups")}},
     {"more",           {"nav.more",      QStringLiteral("More")}},
-    {"onboarding",     {nullptr,         QStringLiteral("Onboarding")}},
+    {"onboarding",     {"nav.onboarding", QStringLiteral("Onboarding")}},
     {"settings",       {"nav.settings",  QStringLiteral("Settings")}},
     {"help",           {"nav.help",      QStringLiteral("Help")}},
     {"recovery",       {"nav.recovery",  QStringLiteral("Recovery")}},
-    {"backup",         {nullptr,         QStringLiteral("Backup")}},
-    {"sync",           {nullptr,         QStringLiteral("Sync")}},
-    {"privacy",        {nullptr,         QStringLiteral("Privacy")}},
+    {"backup",         {"nav.backup",    QStringLiteral("Backup")}},
+    {"sync",           {"nav.sync",      QStringLiteral("Sync")}},
+    {"privacy",        {"nav.privacy",   QStringLiteral("Privacy")}},
     {"device_linking", {"nav.devices",   QStringLiteral("Devices")}},
-    {"support",        {nullptr,         QStringLiteral("Support")}},
+    {"support",        {"nav.support",   QStringLiteral("Support")}},
 };
 
 static QString screenLabel(const QString &screenId) {
