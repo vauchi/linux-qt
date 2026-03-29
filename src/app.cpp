@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "app.h"
+#include "i18n.h"
 #include "coreui/screenrenderer.h"
 #include "coreui/thememanager.h"
 #include "platform/menubar.h"
@@ -28,6 +29,23 @@ VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
     // Persistent storage: XDG_DATA_HOME/vauchi/
     QString dataDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
     QDir().mkpath(dataDir);
+
+    // Initialise i18n from bundled locale files.
+    // Looks for locales/ next to the binary first (dev/local build),
+    // then /usr/share/vauchi/locales (system install).
+    // Uses dlsym-resolved wrappers — gracefully no-ops when the CABI
+    // library lacks the i18n symbols.
+    if (!vauchiI18nIsInitialized()) {
+        QString localesDir = QCoreApplication::applicationDirPath()
+                             + QStringLiteral("/../locales");
+        if (!QDir(localesDir).exists()) {
+            localesDir =
+                QStringLiteral("/usr/share/vauchi/locales");
+        }
+        if (QDir(localesDir).exists()) {
+            vauchiI18nInit(localesDir.toUtf8().constData());
+        }
+    }
 
     // Relay URL: read from data_dir/relay_url.txt or VAUCHI_RELAY_URL env var
     QString relayUrl;
@@ -138,28 +156,33 @@ void VauchiWindow::buildSidebar() {
     refreshSidebar();
 }
 
-// Sidebar labels matching core i18n nav.* keys (en.json).
-// When CABI gains i18n exports (T2-5), replace with runtime calls.
-static const QHash<QString, QString> SCREEN_LABELS = {
-    {"my_info",        "My Card"},
-    {"contacts",       "Contacts"},
-    {"exchange",       "Exchange"},
-    {"groups",         "Groups"},
-    {"more",           "More"},
-    {"onboarding",     "Onboarding"},
-    {"settings",       "Settings"},
-    {"help",           "Help"},
-    {"recovery",       "Recovery"},
-    {"backup",         "Backup"},
-    {"sync",           "Sync"},
-    {"privacy",        "Privacy"},
-    {"device_linking", "Devices"},
-    {"support",        "Support"},
+// Maps screen IDs to i18n keys (nav.* namespace in locales/*.json).
+// Fallback strings are English defaults for when i18n is not initialised
+// or the CABI library lacks the i18n symbols at link time.
+static const QHash<QString, QPair<const char *, QString>> SCREEN_I18N = {
+    {"my_info",        {"nav.myCard",    QStringLiteral("My Card")}},
+    {"contacts",       {"nav.contacts",  QStringLiteral("Contacts")}},
+    {"exchange",       {"nav.exchange",  QStringLiteral("Exchange")}},
+    {"groups",         {"nav.groups",    QStringLiteral("Groups")}},
+    {"more",           {"nav.more",      QStringLiteral("More")}},
+    {"onboarding",     {nullptr,         QStringLiteral("Onboarding")}},
+    {"settings",       {"nav.settings",  QStringLiteral("Settings")}},
+    {"help",           {"nav.help",      QStringLiteral("Help")}},
+    {"recovery",       {"nav.recovery",  QStringLiteral("Recovery")}},
+    {"backup",         {nullptr,         QStringLiteral("Backup")}},
+    {"sync",           {nullptr,         QStringLiteral("Sync")}},
+    {"privacy",        {nullptr,         QStringLiteral("Privacy")}},
+    {"device_linking", {"nav.devices",   QStringLiteral("Devices")}},
+    {"support",        {nullptr,         QStringLiteral("Support")}},
 };
 
 static QString screenLabel(const QString &screenId) {
-    auto it = SCREEN_LABELS.find(screenId);
-    if (it != SCREEN_LABELS.end()) return it.value();
+    auto it = SCREEN_I18N.find(screenId);
+    if (it != SCREEN_I18N.end()) {
+        const char *key = it.value().first;
+        if (key) return tr_vauchi(key, it.value().second);
+        return it.value().second;
+    }
     // Fallback: capitalize + replace underscores
     QString label = screenId;
     if (!label.isEmpty()) label[0] = label[0].toUpper();
