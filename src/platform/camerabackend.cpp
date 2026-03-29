@@ -3,6 +3,7 @@
 
 #include "camerabackend.h"
 #include "hardwarebackend.h"
+#include "../i18n.h"
 
 #include <QVBoxLayout>
 #include <QLabel>
@@ -34,7 +35,7 @@ void CameraBackend::startScan(HardwareBackend *parent) {
 
     // Create scanning dialog
     backend->m_dialog = new QDialog(qobject_cast<QWidget *>(parent->parent()));
-    backend->m_dialog->setWindowTitle(QObject::tr("Scan QR Code"));
+    backend->m_dialog->setWindowTitle(tr_vauchi("platform.qr_scan_title", "Scan QR Code"));
     backend->m_dialog->resize(400, 350);
 
     auto *layout = new QVBoxLayout(backend->m_dialog);
@@ -42,11 +43,11 @@ void CameraBackend::startScan(HardwareBackend *parent) {
     backend->m_session.setVideoOutput(videoWidget);
     layout->addWidget(videoWidget);
 
-    auto *status = new QLabel(QObject::tr("Point camera at QR code..."));
+    auto *status = new QLabel(tr_vauchi("platform.qr_camera_prompt", "Point camera at QR code..."));
     status->setAlignment(Qt::AlignCenter);
     layout->addWidget(status);
 
-    auto *cancelBtn = new QPushButton(QObject::tr("Cancel"));
+    auto *cancelBtn = new QPushButton(tr_vauchi("platform.cancel", "Cancel"));
     layout->addWidget(cancelBtn);
 
     QObject::connect(cancelBtn, &QPushButton::clicked, backend->m_dialog, &QDialog::reject);

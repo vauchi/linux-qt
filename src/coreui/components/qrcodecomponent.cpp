@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "qrcodecomponent.h"
+#include "../../i18n.h"
 #include <QLabel>
 #include <QVBoxLayout>
 #include <QPainter>
@@ -26,7 +27,7 @@ QWidget *QrcodeComponent::render(const QJsonObject &data) {
     }
 
     if (mode == "Scan") {
-        auto *label = new QLabel(QObject::tr("Waiting for QR scan\u2026"));
+        auto *label = new QLabel(tr_vauchi("platform.qr_waiting", "Waiting for QR scan\u2026"));
         label->setAlignment(Qt::AlignCenter);
         layout->addWidget(label);
         return container;

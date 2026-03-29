@@ -4,6 +4,7 @@
 #include "screenrenderer.h"
 #include "componentrenderer.h"
 #include "../platform/hardwarebackend.h"
+#include "../i18n.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -165,8 +166,11 @@ void ScreenRenderer::processActionResult(const char *resultJson) {
         if (url.isValid() && (url.scheme() == "http" || url.scheme() == "https")) {
             QDesktopServices::openUrl(url);
         } else if (!url.isEmpty()) {
-            QMessageBox::warning(this, tr("Cannot open link"),
-                                 tr("URL scheme not allowed: %1").arg(url.scheme()));
+            QMessageBox::warning(this,
+                                 tr_vauchi("platform.error_could_not_open_link",
+                                           "Cannot open link"),
+                                 tr_vauchi("platform.error_url_scheme_not_allowed",
+                                           "URL scheme not allowed: %1").arg(url.scheme()));
         }
     } else if (result.contains("StartDeviceLink")) {
         char *r = vauchi_app_navigate_to(m_app, "device_linking");
@@ -275,8 +279,9 @@ void ScreenRenderer::showValidationError(const QString &componentId,
 void ScreenRenderer::promptQrPaste() {
     bool ok = false;
     QString data = QInputDialog::getText(
-        this, tr("Scan QR Code"),
-        tr("Paste the peer's QR code data:"),
+        this, tr_vauchi("platform.qr_scan_title", "Scan QR Code"),
+        tr_vauchi("platform.qr_paste_peer_data",
+                  "Paste the peer's QR code data:"),
         QLineEdit::Normal, QString(), &ok);
     if (ok && !data.isEmpty()) {
         // Send as TextChanged action with component_id "scanned_data"

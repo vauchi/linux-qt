@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "contactlistcomponent.h"
+#include "../../i18n.h"
 #include <QVBoxLayout>
 #include <QListWidget>
 #include <QLineEdit>
@@ -19,7 +20,7 @@ QWidget *ContactListComponent::render(const QJsonObject &data,
     // Search input (only when core says the list is searchable)
     if (searchable && onAction) {
         auto *search = new QLineEdit;
-        search->setPlaceholderText(QObject::tr("Search contacts..."));
+        search->setPlaceholderText(tr_vauchi("search.contacts", "Search contacts..."));
         search->setClearButtonEnabled(true);
         search->setAccessibleName(QStringLiteral("Search contacts"));
         layout->addWidget(search);
