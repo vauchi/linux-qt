@@ -69,6 +69,19 @@ VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
         m_app = vauchi_app_create_with_config(dataDirUtf8.constData(), relayPtr);
     }
 
+#ifndef NDEBUG
+    // --reset-for-testing: create a test identity so the app skips onboarding.
+    if (m_app && QCoreApplication::arguments().contains(
+            QStringLiteral("--reset-for-testing"))) {
+        if (vauchi_app_has_identity(m_app) != 1) {
+            int32_t rc = vauchi_app_create_identity(m_app, "Test User");
+            if (rc != 0) {
+                qWarning("[Vauchi] --reset-for-testing: failed to create identity");
+            }
+        }
+    }
+#endif
+
     // Navigate to dynamic default screen (MyInfo with 0 contacts, Contacts with >=1)
     if (m_app) {
         char *defaultScreen = vauchi_app_default_screen(m_app);

@@ -54,7 +54,7 @@ def qt_app(qt_binary, _qt_data_dir):
         pytest.skip("No display available — run under Xvfb or with a desktop session")
 
     proc = subprocess.Popen(
-        [qt_binary],
+        [qt_binary, "--reset-for-testing"],
         env=env,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
