@@ -12,6 +12,7 @@ include:
       - '/ci-templates/removed-symbols.yml'
       - '/ci-templates/badges.yml'
       - '/ci-templates/github-mirror.yml'
+      - '/ci-templates/vrt-upload.yml'
 
 variables:
   SAST_EXCLUDED_PATHS: "build/, vauchi-core/"
@@ -105,8 +106,13 @@ test:a11y:
 # Visual snapshot regression — diffs against committed baselines.
 test:snapshots:
   extends: .atspi-base
+  variables:
+    VRT_PLATFORM: linux-qt
+    VRT_SCREENSHOT_DIR: tests/atspi/snapshots/baseline
   script:
     - tests/atspi/run-tests.sh -v --tb=short -k "test_snapshots"
+  after_script:
+    - !reference [.vrt-upload-script, script]
   artifacts:
     when: always
     paths:
