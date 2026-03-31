@@ -3,16 +3,18 @@
 
 > **Mirror:** This repo is a read-only mirror of [gitlab.com/vauchi/linux-qt](https://gitlab.com/vauchi/linux-qt). Please open issues and merge requests there.
 
-[![Pipeline](https://vauchi.gitlab.io/linux-qt/badges/pipeline.svg)](https://gitlab.com/vauchi/linux-qt/-/pipelines)
+[![Pipeline](https://img.shields.io/endpoint?url=https://vauchi.gitlab.io/linux-qt/badges/pipeline.json&label=pipeline)](https://gitlab.com/vauchi/linux-qt/-/pipelines)
 [![REUSE](https://api.reuse.software/badge/gitlab.com/vauchi/linux-qt)](https://api.reuse.software/info/gitlab.com/vauchi/linux-qt)
 
 > [!WARNING]
-> **Pre-Alpha Software** - This project is under heavy development and not ready for production use.
+> **Pre-Alpha Software** - This project is under heavy development
+> and not ready for production use.
 > APIs may change without notice. Use at your own risk.
 
 # Vauchi Linux Qt
 
-Native Linux desktop app (Qt variant) for Vauchi — privacy-focused contact card exchange.
+Native Linux desktop app (Qt variant) for Vauchi —
+privacy-focused contact card exchange.
 
 Built with Qt6 Widgets + C++. Uses `vauchi-cabi` C ABI bindings via `QJsonDocument`.
 
