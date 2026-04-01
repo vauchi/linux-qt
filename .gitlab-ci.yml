@@ -26,6 +26,7 @@ stages:
   - build
   - test
   - security
+  - package
   - deploy
 
 build:cabi:
@@ -194,6 +195,61 @@ check:removed-symbols:
   extends: .removed-symbols-job
   variables:
     SEARCH_DIRS: "src/ tests/ design/ include/"
+
+# ============================================================
+# Package Stage — build-verification for distro packages
+# ============================================================
+# Only run on tags or manual trigger — not on every MR.
+
+package:deb:
+  stage: package
+  image: debian:bookworm
+  needs:
+    - job: build:qt
+      optional: true
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y -qq devscripts debhelper cmake g++ pkg-config
+        qt6-base-dev libqrencode-dev cargo rustc git
+        qt6-multimedia-dev libzbar-dev qt6-connectivity-dev libpcsclite-dev
+  script:
+    - dpkg-buildpackage -us -uc -b
+    - mkdir -p deb-out && cp ../*.deb deb-out/
+  artifacts:
+    paths:
+      - deb-out/*.deb
+    expire_in: 30 days
+  rules:
+    - if: $CI_COMMIT_TAG
+    - when: manual
+      allow_failure: true
+
+package:rpm:
+  stage: package
+  image: fedora:40
+  needs:
+    - job: build:qt
+      optional: true
+  before_script:
+    - dnf install -y rpm-build cmake gcc-c++ pkg-config qt6-qtbase-devel
+        qrencode-devel cargo rust git-core
+        qt6-qtmultimedia-devel zbar-devel qt6-qtconnectivity-devel
+        pcsc-lite-devel
+  script:
+    - mkdir -p rpmbuild/{SOURCES,SPECS}
+    - tar czf rpmbuild/SOURCES/vauchi-qt-0.5.0.tar.gz
+        --transform 's,^,vauchi-qt-0.5.0/,' --exclude=rpmbuild .
+    - cp packaging/vauchi-qt.spec rpmbuild/SPECS/
+    - rpmbuild --define "_topdir $(pwd)/rpmbuild" -bb rpmbuild/SPECS/vauchi-qt.spec
+    - mkdir -p rpm-out && cp rpmbuild/RPMS/**/*.rpm rpm-out/
+  artifacts:
+    paths:
+      - rpm-out/*.rpm
+    expire_in: 30 days
+  rules:
+    - if: $CI_COMMIT_TAG
+    - when: manual
+      allow_failure: true
 
 # ============================================================
 # Deploy Stage — Badge Pages
