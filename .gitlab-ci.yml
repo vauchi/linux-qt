@@ -204,6 +204,7 @@ check:removed-symbols:
 package:deb:
   stage: package
   image: debian:bookworm
+  tags: [docker]
   needs:
     - job: build:qt
       optional: true
@@ -227,6 +228,7 @@ package:deb:
 package:rpm:
   stage: package
   image: fedora:40
+  tags: [docker]
   needs:
     - job: build:qt
       optional: true
