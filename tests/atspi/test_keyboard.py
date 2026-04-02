@@ -21,7 +21,7 @@ from helpers import find_all, find_one, is_sensitive, dump_tree
 
 
 # Sidebar screens in order (first 5 correspond to Alt+1..5)
-SIDEBAR_SCREENS = ["My Info", "Contacts", "Exchange", "Settings", "Help"]
+SIDEBAR_SCREENS = ["My Card", "Contacts", "Exchange", "Groups", "More"]
 
 # X11 keycodes for digits 1-5
 _KEYCODES = {1: 10, 2: 11, 3: 12, 4: 13, 5: 14}
