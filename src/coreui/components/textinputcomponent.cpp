@@ -45,5 +45,14 @@ QWidget *TextInputComponent::render(const QJsonObject &data,
     layout->addWidget(label);
     layout->addWidget(input);
 
+    // Validation error (injected by core via AppEngine::resolve_validation_error)
+    QString error = data["validation_error"].toString();
+    if (!error.isEmpty()) {
+        auto *errLabel = new QLabel(error);
+        errLabel->setStyleSheet("color: red; font-size: 12px;");
+        errLabel->setAccessibleName(error);
+        layout->addWidget(errLabel);
+    }
+
     return container;
 }
