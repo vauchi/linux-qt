@@ -119,6 +119,21 @@ VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
     connect(tray, &SystemTray::quitRequested, qApp, &QApplication::quit);
     tray->show();
 
+    // Register event callback for background screen invalidation (Plan 2D).
+    // Core events (sync, contact updates, etc.) trigger re-render of the
+    // active screen. The callback fires on the dispatching thread, so we
+    // use QMetaObject::invokeMethod to marshal refresh() to the main thread.
+    if (m_app) {
+        vauchi_app_set_event_callback(
+            m_app,
+            [](const char * /*screen_ids_json*/, void *user_data) {
+                auto *renderer = static_cast<ScreenRenderer *>(user_data);
+                QMetaObject::invokeMethod(
+                    renderer, &ScreenRenderer::refresh, Qt::QueuedConnection);
+            },
+            m_renderer);
+    }
+
     buildSidebar();
 
     // Refresh sidebar when screen changes (e.g., after onboarding completes)

@@ -19,6 +19,17 @@ extern "C" {
 typedef struct VauchiApp VauchiApp;
 
 /**
+ * Type alias for the C event callback function pointer.
+ *
+ * Called by core when background operations invalidate screen data.
+ * `screen_ids_json` is a JSON array of screen ID strings, e.g. `["contacts","sync"]`.
+ * `user_data` is the opaque pointer passed to `vauchi_app_set_event_callback`.
+ *
+ * The string is owned by core and must NOT be freed by the caller.
+ */
+typedef void (*VauchiEventCallback)(const char *screen_ids_json, void *user_data);
+
+/**
  * Opaque handle to an exchange session.
  */
 typedef struct VauchiExchange VauchiExchange;
@@ -443,6 +454,28 @@ char *vauchi_workflow_current_screen(struct VauchiWorkflow *handle);
  * `action_json` must be a valid null-terminated C string, or null.
  */
 char *vauchi_workflow_handle_action(struct VauchiWorkflow *handle, const char *action_json);
+
+/**
+ * Register a callback for background event notifications.
+ *
+ * Core calls `callback(screen_ids_json, user_data)` when background
+ * operations (sync, delivery, device-link) change data that affects
+ * the given screens.
+ *
+ * The callback may fire on any thread. It must NOT call back into
+ * any `vauchi_app_*` function directly (would deadlock on internal
+ * Mutex). Always defer processing to the UI event loop.
+ *
+ * Pass null for `callback` to unregister.
+ *
+ * # Safety
+ * `handle` must be a valid `VauchiApp` pointer. `callback` (if non-null)
+ * must be safe to call from any thread. `user_data` must remain valid
+ * until the callback is unregistered.
+ */
+void vauchi_app_set_event_callback(struct VauchiApp *handle,
+                                   VauchiEventCallback callback,
+                                   void *user_data);
 
 #ifdef __cplusplus
 }
