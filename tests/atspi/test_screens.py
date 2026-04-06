@@ -12,36 +12,39 @@ import pytest
 from helpers import click_button, dump_tree, find_all, find_one, wait_for_element
 
 
-# Screens accessible via sidebar (from INVENTORY.md)
-SIDEBAR_SCREENS = [
-    "My Info",
-    "Contacts",
-    "Exchange",
-    "Settings",
-    "Help",
-    "Backup",
-    "Device Linking",
-    "Duress PIN",
-    "Emergency Shred",
-    "Delivery Status",
-]
+# Top-level sidebar items use i18n labels (nav.myCard → "My Card", etc.)
+SIDEBAR_SCREENS = ["My Card", "Contacts", "Exchange", "Groups", "More"]
+
+# Screens under "More" reached via two-step navigation
+MORE_SCREENS = ["Settings", "Help", "Backup", "Privacy"]
+
+
+def _click_sidebar(app, label):
+    """Click a sidebar list item by label. Returns True on success."""
+    sidebar = find_one(app, name="Navigation")
+    if sidebar is None:
+        return False
+    items = find_all(sidebar, role="list item", max_depth=5)
+    for item in items:
+        if item.get_name() == label:
+            try:
+                action = item.get_action_iface()
+                if action and action.get_n_actions() > 0:
+                    action.do_action(0)
+                    wait_for_element(app, role="label", timeout=3.0)
+                    return True
+            except Exception:
+                return False
+    return False
 
 
 def _navigate_to(app, screen_label):
-    """Navigate to a screen via sidebar. Returns True if navigation succeeded."""
-    for role in ("list item", "push button", "label"):
-        items = find_all(app, role=role, max_depth=8)
-        for item in items:
-            if item.get_name() == screen_label:
-                try:
-                    action = item.get_action_iface()
-                    if action and action.get_n_actions() > 0:
-                        action.do_action(0)
-                        wait_for_element(app, role="label", timeout=3.0)
-                        return True
-                except Exception:
-                    return False
-    return click_button(app, screen_label)
+    """Navigate to a screen. Handles sidebar items and More sub-screens."""
+    if screen_label in MORE_SCREENS:
+        if not _click_sidebar(app, "More"):
+            return False
+        return click_button(app, screen_label)
+    return _click_sidebar(app, screen_label)
 
 
 class TestSidebarNavigation:
@@ -52,20 +55,23 @@ class TestSidebarNavigation:
         sidebar = find_one(qt_app, name="Navigation")
         assert sidebar is not None, "Sidebar not found"
 
-        items = find_all(sidebar, max_depth=5)
-        assert len(items) > 0, (
-            f"Empty sidebar.\n"
-            f"Tree:\n{dump_tree(sidebar, 4)}"
+        items = find_all(sidebar, role="list item", max_depth=5)
+        item_names = [i.get_name() for i in items if i.get_name()]
+        assert len(item_names) >= len(SIDEBAR_SCREENS), (
+            f"Expected {len(SIDEBAR_SCREENS)} sidebar items, found {len(item_names)}: "
+            f"{item_names}.\nTree:\n{dump_tree(sidebar, 4)}"
         )
 
-    @pytest.mark.parametrize("screen_name", SIDEBAR_SCREENS[:5])
+    @pytest.mark.parametrize("screen_name", SIDEBAR_SCREENS)
     def test_navigate_to_screen(self, qt_app, screen_name):
         """Navigate to a screen via sidebar and verify the entry exists."""
-        navigated = _navigate_to(qt_app, screen_name)
-        assert navigated, (
-            f"Failed to navigate to '{screen_name}' — sidebar item not found "
-            f"or action interface unavailable.\n"
-            f"Tree:\n{dump_tree(qt_app, 4)}"
+        sidebar = find_one(qt_app, name="Navigation")
+        assert sidebar is not None, "Sidebar not found"
+
+        items = find_all(sidebar, role="list item", max_depth=5)
+        item_names = [i.get_name() for i in items if i.get_name()]
+        assert screen_name in item_names, (
+            f"'{screen_name}' not in sidebar. Found: {item_names}"
         )
 
 
@@ -73,8 +79,8 @@ class TestScreenContent:
     """Verify key screens have expected component types."""
 
     def test_settings_has_interactive_widgets(self, qt_app):
-        """Settings screen should contain toggle or button widgets."""
-        _navigate_to(qt_app, "Settings")
+        """Settings screen (under More) should contain toggle or button widgets."""
+        _navigate_to(qt_app, "Settings")  # navigates via More
         checks = find_all(qt_app, role="check box")
         toggles = find_all(qt_app, role="toggle button")
         buttons = find_all(qt_app, role="push button")

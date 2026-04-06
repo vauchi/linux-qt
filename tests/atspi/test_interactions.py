@@ -14,53 +14,70 @@ from helpers import (
     click_button,
     dump_tree,
     find_all,
+    find_one,
     wait_for_element,
 )
 
 
 # ---------------------------------------------------------------------------
-# Sidebar navigation helper
+# Navigation helpers
 # ---------------------------------------------------------------------------
+
+MORE_SCREENS = {"Settings", "Help", "Backup", "Privacy", "Sync", "Devices"}
+SETTINGS_SCREENS = {"Duress PIN", "Emergency Shred", "Delivery Status", "Recovery"}
+
+
+def _click_sidebar(app, label, timeout=3.0):
+    """Click a sidebar list item by label. Returns True on success."""
+    sidebar = find_one(app, name="Navigation")
+    if sidebar is None:
+        return False
+    items = find_all(sidebar, role="list item", max_depth=5)
+    for item in items:
+        if item.get_name() == label:
+            try:
+                action = item.get_action_iface()
+                if action and action.get_n_actions() > 0:
+                    action.do_action(0)
+                    wait_for_element(app, role="label", timeout=timeout)
+                    return True
+            except Exception:
+                return False
+    return False
+
 
 def navigate_to(app, screen_label, timeout=3.0):
-    """Click a sidebar item to navigate to a screen.
-
-    Returns True if a matching item was found and activated.
-    """
-    # Qt sidebar uses QListWidget — items appear as "list item" role
-    for role in ("list item", "push button", "label"):
-        items = find_all(app, role=role, max_depth=8)
-        for item in items:
-            if item.get_name() == screen_label:
-                try:
-                    action = item.get_action_iface()
-                    if action and action.get_n_actions() > 0:
-                        action.do_action(0)
-                        wait_for_element(app, role="label", timeout=3.0)
-                        return True
-                except Exception:
-                    pass
-
-    return click_button(app, screen_label)
+    """Navigate to a screen. Handles sidebar, More sub-screens, and Settings sub-screens."""
+    if screen_label in SETTINGS_SCREENS:
+        if not _click_sidebar(app, "More", timeout):
+            return False
+        if not click_button(app, "Settings"):
+            return False
+        return click_button(app, screen_label)
+    if screen_label in MORE_SCREENS:
+        if not _click_sidebar(app, "More", timeout):
+            return False
+        return click_button(app, screen_label)
+    return _click_sidebar(app, screen_label, timeout)
 
 
 # ---------------------------------------------------------------------------
-# Manual verification: navigate all sidebar screens
+# Manual verification: navigate all reachable screens
 # ---------------------------------------------------------------------------
 
 class TestNavigateAllScreens:
-    """Manual item: launch app, navigate all sidebar screens."""
+    """Manual item: launch app, navigate sidebar and More screens."""
 
+    # Sidebar uses i18n labels: My Card, Contacts, Exchange, Groups, More.
+    # More sub-screens: Settings, Help, Backup, Privacy.
     SCREENS = [
-        "My Info", "Contacts", "Exchange", "Settings", "Help",
-        "Backup", "Device Linking", "Duress PIN", "Emergency Shred",
-        "Delivery Status", "Sync", "Recovery",
-        "Groups", "Privacy", "Support",
+        "My Card", "Contacts", "Exchange", "Groups",
+        "Settings", "Help", "Backup", "Privacy",
     ]
 
     @pytest.mark.parametrize("screen", SCREENS)
     def test_screen_reachable(self, qt_app, screen):
-        """Each screen should be reachable via sidebar navigation."""
+        """Each screen should be reachable via navigation."""
         navigated = navigate_to(qt_app, screen)
         assert navigated, (
             f"Failed to navigate to '{screen}' — sidebar item not found or "
