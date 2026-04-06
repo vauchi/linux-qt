@@ -18,11 +18,10 @@ Usage:
 
 import os
 import shutil
-import time
 
 import pytest
 
-from helpers import find_all, find_one, click_button, dump_tree
+from helpers import click_button, dump_tree, find_all, wait_for_element
 from screenshot import take_screenshot
 
 BASELINE_DIR = os.path.join(os.path.dirname(__file__), "snapshots", "baseline")
@@ -51,7 +50,7 @@ def _screen_filename(name: str) -> str:
 
 
 def _navigate_to(app, screen_label):
-    """Best-effort sidebar navigation for Qt."""
+    """Navigate to a screen via sidebar. Returns True if navigation succeeded."""
     for role in ("list item", "push button", "label"):
         items = find_all(app, role=role, max_depth=8)
         for item in items:
@@ -60,11 +59,12 @@ def _navigate_to(app, screen_label):
                     action = item.get_action_iface()
                     if action and action.get_n_actions() > 0:
                         action.do_action(0)
-                        time.sleep(0.5)
-                        return
+                        # Poll for content to appear (CC-06: no time.sleep)
+                        wait_for_element(app, role="label", timeout=3.0)
+                        return True
                 except Exception:
-                    pass
-    click_button(app, screen_label)
+                    return False
+    return click_button(app, screen_label)
 
 
 def _compare_images(baseline_path: str, actual_path: str, diff_path: str) -> float:
@@ -118,13 +118,10 @@ class TestScreenSnapshots:
     @pytest.mark.parametrize("screen", SNAPSHOT_SCREENS)
     def test_screen_snapshot(self, qt_app, screen):
         """Screenshot each screen and compare against baseline."""
-        _navigate_to(qt_app, screen)
-        time.sleep(0.5)
-
-        # Verify screen loaded
-        labels = find_all(qt_app, role="label", max_depth=10)
-        assert len(labels) > 0, (
-            f"Screen '{screen}' has no content before screenshot.\n"
+        navigated = _navigate_to(qt_app, screen)
+        assert navigated, (
+            f"Failed to navigate to '{screen}'. "
+            f"Sidebar may be missing this entry — is an identity present?\n"
             f"Tree:\n{dump_tree(qt_app, 4)}"
         )
 
@@ -146,7 +143,6 @@ class TestScreenSnapshots:
                 pytest.skip(f"Baseline updated: {filename}")
             else:
                 pytest.skip(f"Baseline created: {filename} — commit and re-run")
-            return
 
         # Compare against baseline
         diff_path = os.path.join(DIFF_DIR, filename)

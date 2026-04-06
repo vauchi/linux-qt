@@ -8,17 +8,13 @@ linux-qt completion plan by navigating to specific screens and
 verifying expected widget presence and interactivity.
 """
 
-import time
-
 import pytest
 
 from helpers import (
-    find_all,
-    find_one,
     click_button,
-    wait_for_element,
     dump_tree,
-    is_sensitive,
+    find_all,
+    wait_for_element,
 )
 
 
@@ -40,7 +36,7 @@ def navigate_to(app, screen_label, timeout=3.0):
                     action = item.get_action_iface()
                     if action and action.get_n_actions() > 0:
                         action.do_action(0)
-                        time.sleep(0.5)
+                        wait_for_element(app, role="label", timeout=3.0)
                         return True
                 except Exception:
                     pass
@@ -64,12 +60,11 @@ class TestNavigateAllScreens:
 
     @pytest.mark.parametrize("screen", SCREENS)
     def test_screen_reachable(self, qt_app, screen):
-        """Each screen should be reachable without crashing the app."""
-        navigate_to(qt_app, screen)
-        # App must still be responsive
-        labels = find_all(qt_app, role="label", max_depth=10)
-        assert len(labels) > 0, (
-            f"App unresponsive after navigating to '{screen}'.\n"
+        """Each screen should be reachable via sidebar navigation."""
+        navigated = navigate_to(qt_app, screen)
+        assert navigated, (
+            f"Failed to navigate to '{screen}' — sidebar item not found or "
+            f"action interface unavailable.\n"
             f"Tree:\n{dump_tree(qt_app, 4)}"
         )
 
@@ -105,7 +100,7 @@ class TestOnboarding:
             names = [b.get_name() for b in buttons if b.get_name()]
             pytest.skip(f"No known onboarding button found. Buttons: {names}")
 
-        time.sleep(0.5)
+        wait_for_element(qt_app_fresh, role="label", timeout=3.0)
 
         # After advancing, the screen should have new content
         new_buttons = find_all(qt_app_fresh, role="button", max_depth=15)
@@ -128,7 +123,7 @@ class TestExchangeQR:
     def test_exchange_has_qr_widget(self, qt_app):
         """Exchange screen should contain a QR rendering widget."""
         navigate_to(qt_app, "Exchange")
-        time.sleep(0.5)
+        wait_for_element(qt_app, role="label", timeout=3.0)
 
         # QR is rendered via QPainter on a QLabel or custom widget
         # Look for drawing/image containers or the accessible description
@@ -158,7 +153,7 @@ class TestSettingsInteraction:
             names = [i.get_name() for i in sidebar_items]
             pytest.skip(f"Settings not reachable — sidebar has: {names}")
 
-        time.sleep(0.5)
+        wait_for_element(qt_app, role="label", timeout=3.0)
 
         checks = find_all(qt_app, role="check box", max_depth=15)
         toggles = find_all(qt_app, role="toggle button", max_depth=15)
@@ -179,7 +174,7 @@ class TestContactListInteraction:
     def test_contacts_has_list_items(self, qt_app):
         """Contacts screen should show a list with items."""
         navigate_to(qt_app, "Contacts")
-        time.sleep(0.5)
+        wait_for_element(qt_app, role="label", timeout=3.0)
 
         items = find_all(qt_app, role="list item", max_depth=15)
         labels = find_all(qt_app, role="label", max_depth=15)

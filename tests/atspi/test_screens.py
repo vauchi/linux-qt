@@ -7,11 +7,9 @@ Verifies that screens are reachable via sidebar navigation and render
 expected content in the AT-SPI tree.
 """
 
-import time
-
 import pytest
 
-from helpers import find_all, find_one, click_button, dump_tree
+from helpers import click_button, dump_tree, find_all, find_one, wait_for_element
 
 
 # Screens accessible via sidebar (from INVENTORY.md)
@@ -30,7 +28,7 @@ SIDEBAR_SCREENS = [
 
 
 def _navigate_to(app, screen_label):
-    """Best-effort sidebar navigation for Qt."""
+    """Navigate to a screen via sidebar. Returns True if navigation succeeded."""
     for role in ("list item", "push button", "label"):
         items = find_all(app, role=role, max_depth=8)
         for item in items:
@@ -39,10 +37,10 @@ def _navigate_to(app, screen_label):
                     action = item.get_action_iface()
                     if action and action.get_n_actions() > 0:
                         action.do_action(0)
-                        time.sleep(0.5)
+                        wait_for_element(app, role="label", timeout=3.0)
                         return True
                 except Exception:
-                    pass
+                    return False
     return click_button(app, screen_label)
 
 
@@ -62,12 +60,11 @@ class TestSidebarNavigation:
 
     @pytest.mark.parametrize("screen_name", SIDEBAR_SCREENS[:5])
     def test_navigate_to_screen(self, qt_app, screen_name):
-        """Navigate to a screen via sidebar and verify it loads."""
-        _navigate_to(qt_app, screen_name)
-        # The screen should load without crashing
-        labels = find_all(qt_app, role="label", max_depth=10)
-        assert len(labels) > 0, (
-            f"App appears unresponsive after navigating to {screen_name}.\n"
+        """Navigate to a screen via sidebar and verify the entry exists."""
+        navigated = _navigate_to(qt_app, screen_name)
+        assert navigated, (
+            f"Failed to navigate to '{screen_name}' — sidebar item not found "
+            f"or action interface unavailable.\n"
             f"Tree:\n{dump_tree(qt_app, 4)}"
         )
 
