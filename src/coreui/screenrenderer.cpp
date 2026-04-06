@@ -207,7 +207,13 @@ void ScreenRenderer::processActionResult(const char *resultJson) {
         promptQrPaste();
     } else if (result.contains("ShowToast")) {
         QJsonObject toast = result["ShowToast"].toObject();
-        showStatusMessage(toast["message"].toString());
+        QString message = toast["message"].toString();
+        QString undoId = toast["undo_action_id"].toString();
+        if (!undoId.isEmpty()) {
+            showStatusMessageWithUndo(message, undoId);
+        } else {
+            showStatusMessage(message);
+        }
         refresh();
     } else if (result.contains("Complete")) {
         refresh();
@@ -300,6 +306,31 @@ void ScreenRenderer::showStatusMessage(const QString &message) {
     while (w) {
         if (auto *mw = qobject_cast<QMainWindow *>(w)) {
             mw->statusBar()->showMessage(message, 4000);
+            return;
+        }
+        w = w->parentWidget();
+    }
+}
+
+void ScreenRenderer::showStatusMessageWithUndo(
+    const QString &message, const QString &undoActionId) {
+    QWidget *w = parentWidget();
+    while (w) {
+        if (auto *mw = qobject_cast<QMainWindow *>(w)) {
+            auto *bar = mw->statusBar();
+            bar->showMessage(message);
+            auto *btn = new QPushButton(tr("Undo"), bar);
+            bar->addPermanentWidget(btn);
+            connect(btn, &QPushButton::clicked, this,
+                    [this, btn, undoActionId]() {
+                        btn->deleteLater();
+                        handleAction(undoActionId);
+                    });
+            // Auto-dismiss after 4 seconds
+            QTimer::singleShot(4000, btn, [btn, bar]() {
+                bar->clearMessage();
+                btn->deleteLater();
+            });
             return;
         }
         w = w->parentWidget();

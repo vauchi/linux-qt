@@ -33,6 +33,8 @@ private:
     void showValidationError(const QString &componentId, const QString &message);
     void promptQrPaste();
     void showStatusMessage(const QString &message);
+    void showStatusMessageWithUndo(const QString &message,
+                                   const QString &undoActionId);
 
     struct ::VauchiApp *m_app;
     QVBoxLayout *m_layout;
