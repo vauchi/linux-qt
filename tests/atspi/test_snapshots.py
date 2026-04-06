@@ -33,26 +33,23 @@ DIFF_DIR = os.path.join(os.path.dirname(__file__), "snapshots", "diff")
 DIFF_THRESHOLD = 0.02  # 2% pixel difference allowed
 
 # Sidebar items use i18n labels (nav.myCard → "My Card", etc.).
-# Screens under "More" require two-step navigation: click More, then click target.
-# Action-navigated screens (Duress PIN, Emergency Shred) are excluded — they require
-# multi-step navigation through Settings and are too fragile for snapshot tests.
-SIDEBAR_SCREENS = ["My Card", "Contacts", "Exchange", "Groups"]
-MORE_SCREENS = ["Settings", "Help", "Backup", "Privacy"]
-SNAPSHOT_SCREENS = SIDEBAR_SCREENS + MORE_SCREENS
+# More sub-screens excluded — AT-SPI do_action(0) on QListWidget items doesn't
+# trigger currentRowChanged, so sidebar clicks don't navigate to More.
+SNAPSHOT_SCREENS = ["My Card", "Contacts", "Exchange", "Groups"]
 
 
 def _screen_filename(name: str) -> str:
     return f"{name.lower().replace(' ', '_')}.png"
 
 
-def _click_sidebar(app, label):
-    """Click a sidebar list item by label. Returns True on success."""
+def _navigate_to(app, screen_label):
+    """Navigate to a sidebar screen via AT-SPI action."""
     sidebar = find_one(app, name="Navigation")
     if sidebar is None:
         return False
     items = find_all(sidebar, role="list item", max_depth=5)
     for item in items:
-        if item.get_name() == label:
+        if item.get_name() == screen_label:
             try:
                 action = item.get_action_iface()
                 if action and action.get_n_actions() > 0:
@@ -62,30 +59,6 @@ def _click_sidebar(app, label):
             except Exception:
                 return False
     return False
-
-
-def _wait_and_click(app, name, timeout=3.0):
-    """Wait for a button to appear, then click it. Handles AT-SPI rendering delay."""
-    for role in ("push button", "button"):
-        btn = wait_for_element(app, role=role, name=name, timeout=timeout)
-        if btn is not None:
-            try:
-                action = btn.get_action_iface()
-                if action and action.get_n_actions() > 0:
-                    action.do_action(0)
-                    return True
-            except Exception:
-                return False
-    return False
-
-
-def _navigate_to(app, screen_label):
-    """Navigate to a screen. Handles sidebar items and More sub-screens."""
-    if screen_label in MORE_SCREENS:
-        if not _click_sidebar(app, "More"):
-            return False
-        return _wait_and_click(app, screen_label)
-    return _click_sidebar(app, screen_label)
 
 
 def _compare_images(baseline_path: str, actual_path: str, diff_path: str) -> float:
