@@ -195,6 +195,20 @@ int32_t vauchi_app_create_identity(struct VauchiApp *handle, const char *display
 char *vauchi_app_handle_hardware_event(struct VauchiApp *handle, const char *event_json);
 
 /**
+ * Notify the engine that the app moved to the background.
+ *
+ * If a password is set and the app is not already locked or in
+ * onboarding, navigates to the lock screen and returns the lock
+ * screen JSON. Otherwise returns null.
+ *
+ * Caller must free the returned string with `vauchi_string_free`.
+ *
+ * # Safety
+ * `handle` must be a valid app handle or null.
+ */
+char *vauchi_app_handle_app_backgrounded(struct VauchiApp *handle);
+
+/**
  * Create a new AppEngine with persistent storage and platform keyring.
  *
  * Uses `PlatformKeyring` (D-Bus Secret Service on Linux, Keychain on macOS)

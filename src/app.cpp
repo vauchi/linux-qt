@@ -174,6 +174,17 @@ VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
     });
 }
 
+void VauchiWindow::changeEvent(QEvent *event) {
+    QMainWindow::changeEvent(event);
+    if (event->type() == QEvent::WindowDeactivate && m_app) {
+        char *screenJson = vauchi_app_handle_app_backgrounded(m_app);
+        if (screenJson) {
+            vauchi_string_free(screenJson);
+            m_renderer->refresh();
+        }
+    }
+}
+
 VauchiWindow::~VauchiWindow() {
     if (m_app) {
         vauchi_app_destroy(m_app);

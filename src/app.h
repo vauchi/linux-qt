@@ -16,6 +16,9 @@ public:
     explicit VauchiWindow(QWidget *parent = nullptr);
     ~VauchiWindow() override;
 
+protected:
+    void changeEvent(QEvent *event) override;
+
 private:
     void buildSidebar();
     void refreshSidebar();
