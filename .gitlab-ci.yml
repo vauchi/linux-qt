@@ -75,6 +75,55 @@ test:unit:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
+# Coverage: build with gcov instrumentation, run tests, produce Cobertura XML.
+# CMakeLists.txt already supports -DCOVERAGE=ON for gcov/lcov flags.
+# Uses gcovr for Cobertura conversion and pushes metrics to Grafana Pushgateway.
+coverage:unit:
+  stage: test
+  needs: [build:cabi]
+  variables:
+    QT_QPA_PLATFORM: offscreen
+  script:
+    - mkdir -p build-cov && cd build-cov
+    - cmake .. -DVAUCHI_CABI_DIR=${CI_PROJECT_DIR}/cabi-lib -DCOVERAGE=ON
+    - cmake --build . --parallel
+    - ctest --output-on-failure || true
+    - cd ${CI_PROJECT_DIR}
+    - pip install --quiet gcovr 2>/dev/null || pip install --quiet --break-system-packages gcovr
+    - |
+      # Produce Cobertura XML from gcov data (exclude tests/ and system headers)
+      gcovr --root . --filter 'src/' \
+        --xml cobertura.xml \
+        --print-summary \
+        build-cov/
+    - |
+      curl --silent --fail \
+        "${CI_API_V4_URL}/projects/vauchi%2Fscripts/repository/files/scripts%2Fci%2Fpush-coverage.sh/raw?ref=main" \
+        -o push-coverage.sh
+      chmod +x push-coverage.sh
+    - ./push-coverage.sh cobertura.xml linux-qt || true
+  coverage: '/Line Coverage:\s+(\d+(?:\.\d+)?%)/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: cobertura.xml
+    paths:
+      - cobertura.xml
+    expire_in: 1 week
+  tags: [linux]
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "pipeline" || $CI_PIPELINE_SOURCE == "trigger" || $CI_PIPELINE_SOURCE == "api"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        paths:
+          - "src/**"
+          - "tests/**/*.cpp"
+          - "CMakeLists.txt"
+          - ".gitlab-ci.yml"
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+
 # AT-SPI accessibility + widget tree tests
 # Uses a venv with --system-site-packages so we can install pytest/Pillow
 # while inheriting gi (PyGObject), a system-only package for AT-SPI.
