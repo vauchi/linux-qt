@@ -89,7 +89,6 @@ coverage:unit:
     - cmake --build . --parallel
     - ctest --output-on-failure || true
     - cd ${CI_PROJECT_DIR}
-    - pip install --quiet gcovr 2>/dev/null || pip install --quiet --break-system-packages gcovr
     - |
       # Produce Cobertura XML from gcov data (exclude tests/ and system headers)
       gcovr --root . --filter 'src/' \
