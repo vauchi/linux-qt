@@ -9,14 +9,34 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+/**
+ * Opaque config builder for C ABI consumers.
+ *
+ * Built via `vauchi_config_new`, configured with `vauchi_config_set_*`
+ * functions, consumed by `vauchi_app_create_from_config`, and freed
+ * with `vauchi_config_free`.
+ */
+typedef struct CabiConfig CabiConfig;
 
 /**
  * Opaque handle to an AppEngine instance.
  */
 typedef struct VauchiApp VauchiApp;
+
+/**
+ * Opaque handle to a device link initiator.
+ */
+typedef struct VauchiDeviceLinkInitiator VauchiDeviceLinkInitiator;
+
+/**
+ * Opaque handle to an exchange session.
+ */
+typedef struct VauchiExchange VauchiExchange;
+
+/**
+ * Opaque handle to a workflow engine instance.
+ */
+typedef struct VauchiWorkflow VauchiWorkflow;
 
 /**
  * Type alias for the C event callback function pointer.
@@ -30,14 +50,64 @@ typedef struct VauchiApp VauchiApp;
 typedef void (*VauchiEventCallback)(const char *screen_ids_json, void *user_data);
 
 /**
- * Opaque handle to an exchange session.
+ * Create a new config builder with data directory and relay URL.
+ *
+ * Returns null if `data_dir` is null.
+ * If `relay_url` is null, uses the default (`wss://relay.vauchi.app`).
+ *
+ * # Safety
+ * `data_dir` and `relay_url` must be valid null-terminated C strings, or null.
  */
-typedef struct VauchiExchange VauchiExchange;
+struct CabiConfig *vauchi_config_new(const char *data_dir, const char *relay_url);
 
 /**
- * Opaque handle to a workflow engine instance.
+ * Free a config handle.
+ *
+ * # Safety
+ * `config` must be a pointer returned by `vauchi_config_new`, or null.
  */
-typedef struct VauchiWorkflow VauchiWorkflow;
+void vauchi_config_free(struct CabiConfig *config);
+
+/**
+ * Set the storage encryption key (exactly 32 bytes, must not be all-zeros).
+ *
+ * Returns `false` if key_len != 32, key is all-zeros, config is null, or key is null.
+ * Never panics across the FFI boundary.
+ *
+ * # Safety
+ * `config` must be a valid config handle or null.
+ * `key` must point to at least `key_len` readable bytes, or be null.
+ */
+bool vauchi_config_set_storage_key(struct CabiConfig *config,
+                                   const uint8_t *key,
+                                   uintptr_t key_len);
+
+/**
+ * Enable or disable BLE backend.
+ *
+ * # Safety
+ * `config` must be a valid config handle or null.
+ */
+void vauchi_config_enable_ble(struct CabiConfig *config, bool enabled);
+
+/**
+ * Enable or disable audio (ultrasonic) backend.
+ *
+ * # Safety
+ * `config` must be a valid config handle or null.
+ */
+void vauchi_config_enable_audio(struct CabiConfig *config, bool enabled);
+
+/**
+ * Create an AppEngine from a config builder.
+ *
+ * The config handle is consumed (freed) by this call — do not free it
+ * separately. Returns null on initialization failure or if config is null.
+ *
+ * # Safety
+ * `config` must be a valid config handle returned by `vauchi_config_new`, or null.
+ */
+struct VauchiApp *vauchi_app_create_from_config(struct CabiConfig *config);
 
 /**
  * Free a string allocated by vauchi-cabi.
@@ -201,12 +271,34 @@ char *vauchi_app_handle_hardware_event(struct VauchiApp *handle, const char *eve
  * onboarding, navigates to the lock screen and returns the lock
  * screen JSON. Otherwise returns null.
  *
- * Caller must free the returned string with `vauchi_string_free`.
- *
  * # Safety
  * `handle` must be a valid app handle or null.
  */
 char *vauchi_app_handle_app_backgrounded(struct VauchiApp *handle);
+
+/**
+ * Register a callback for async state-change notifications.
+ *
+ * Core calls `callback` when background operations (sync, delivery,
+ * device link) change data that affects rendered screens. Pass null
+ * to unregister. `user_data` is forwarded to each callback invocation.
+ *
+ * # Threading — IMPORTANT
+ *
+ * The callback may fire **on the same thread** that called
+ * `vauchi_app_handle_action` (synchronous event dispatch). The callback
+ * **must not** call back into any `vauchi_app_*` function directly —
+ * doing so would deadlock on the internal Mutex. Always defer
+ * processing to a separate thread or event loop iteration.
+ *
+ * # Safety
+ * `handle` must be a valid `VauchiApp` pointer. `callback` (if non-null)
+ * must be safe to call from any thread. `user_data` must remain valid
+ * until the callback is unregistered.
+ */
+void vauchi_app_set_event_callback(struct VauchiApp *handle,
+                                   VauchiEventCallback callback,
+                                   void *user_data);
 
 /**
  * Create a new AppEngine with persistent storage and platform keyring.
@@ -223,6 +315,191 @@ char *vauchi_app_handle_app_backgrounded(struct VauchiApp *handle);
  * string, or null.
  */
 struct VauchiApp *vauchi_app_create_with_keyring(const char *data_dir, const char *relay_url);
+
+/**
+ * Signal that a peer device has connected during device linking.
+ *
+ * `verification_code` is the code to display for manual confirmation.
+ * Returns the updated screen JSON, or null if not on the device linking
+ * screen.
+ *
+ * # Safety
+ * `handle` must be a valid app handle or null.
+ * `verification_code` must be a valid null-terminated C string, or null.
+ */
+char *vauchi_app_device_link_peer_connected(struct VauchiApp *handle,
+                                            const char *verification_code);
+
+/**
+ * Signal that data sync has completed during device linking.
+ *
+ * Returns the updated screen JSON, or null if not on the device linking
+ * screen.
+ *
+ * # Safety
+ * `handle` must be a valid app handle or null.
+ */
+char *vauchi_app_device_link_sync_complete(struct VauchiApp *handle);
+
+/**
+ * Drain pending OS notifications as a JSON array.
+ *
+ * Returns a JSON array of notification objects, e.g.:
+ * `[{"event_key":"...","category":"EmergencyAlert","title":"...","body":"...","contact_id":"..."}]`
+ *
+ * Returns `"[]"` if no notifications are pending.
+ * Returns null on error (null handle, lock poisoned).
+ *
+ * Frontends should call this after receiving the event callback.
+ * Each call clears the buffer — notifications are never returned twice.
+ *
+ * # Safety
+ * `handle` must be a valid app handle or null.
+ */
+char *vauchi_app_drain_notifications(struct VauchiApp *handle);
+
+/**
+ * Check if audio proximity verification is available on this platform.
+ *
+ * Returns 1 if cpal can enumerate at least one output and one input device,
+ * 0 otherwise. Always safe to call (never panics).
+ *
+ * # Safety
+ * No special requirements.
+ */
+int32_t vauchi_audio_is_available(void);
+
+/**
+ * Emit an ultrasonic challenge signal containing `data`.
+ *
+ * Blocks until the signal has been emitted. Returns 1 on success, 0 on failure.
+ * `data` must point to at least `data_len` valid bytes.
+ *
+ * # Safety
+ * `data` must be a valid pointer to `data_len` bytes, or null.
+ */
+int32_t vauchi_audio_emit(const uint8_t *data, uintptr_t data_len);
+
+/**
+ * Listen for an ultrasonic response within `timeout_ms` milliseconds.
+ *
+ * Blocks until a response is received or the timeout expires.
+ * Returns a JSON string `{"data":[1,2,3,...]}` on success, or null on
+ * failure/timeout. The caller must free the returned string with
+ * `vauchi_string_free`.
+ *
+ * # Safety
+ * No special requirements.
+ */
+char *vauchi_audio_listen(uint64_t timeout_ms);
+
+/**
+ * Stop all audio operations. Cancels any in-flight emit or listen.
+ *
+ * # Safety
+ * No special requirements.
+ */
+void vauchi_audio_stop(void);
+
+/**
+ * Start a device link as the existing device (initiator).
+ *
+ * Creates an initiator from the app's identity and device registry.
+ * Returns null if no identity exists or on error.
+ *
+ * # Safety
+ * `handle` must be a valid app handle or null.
+ */
+struct VauchiDeviceLinkInitiator *vauchi_device_link_start(struct VauchiApp *handle);
+
+/**
+ * Destroy a device link initiator.
+ *
+ * # Safety
+ * `initiator` must be a pointer returned by `vauchi_device_link_start`, or null.
+ */
+void vauchi_device_link_initiator_destroy(struct VauchiDeviceLinkInitiator *initiator);
+
+/**
+ * Get the QR data string from the initiator.
+ *
+ * # Safety
+ * `initiator` must be a valid initiator handle or null.
+ */
+char *vauchi_device_link_qr_data(struct VauchiDeviceLinkInitiator *initiator);
+
+/**
+ * Get the expiry timestamp (Unix seconds) of the QR code.
+ *
+ * Returns 0 on error.
+ *
+ * # Safety
+ * `initiator` must be a valid initiator handle or null.
+ */
+uint64_t vauchi_device_link_expires_at(struct VauchiDeviceLinkInitiator *initiator);
+
+/**
+ * Decrypt an incoming link request and return confirmation details.
+ *
+ * `encrypted_request_b64` is the base64-encoded encrypted request from
+ * the new device. Returns a JSON string:
+ * `{"device_name":"...","confirmation_code":"...","identity_fingerprint":"..."}`
+ * or `{"error":"..."}` on failure. Returns null on null inputs.
+ *
+ * # Safety
+ * `initiator` must be a valid initiator handle or null.
+ * `encrypted_request_b64` must be a valid null-terminated C string, or null.
+ */
+char *vauchi_device_link_prepare_confirmation(struct VauchiDeviceLinkInitiator *initiator,
+                                              const char *encrypted_request_b64);
+
+/**
+ * Confirm the device link with manual code verification.
+ *
+ * Must call `vauchi_device_link_prepare_confirmation` first.
+ * `confirmation_code` is the human-readable code (e.g. "123-456").
+ * Rust computes the HMAC internally — the link key never crosses FFI.
+ * `confirmed_at` is the Unix timestamp (seconds).
+ *
+ * Returns JSON: `{"encrypted_response":"base64...","device_name":"...","device_index":N}`
+ * or `{"error":"..."}`. Returns null on null inputs.
+ *
+ * # Safety
+ * `initiator` must be a valid initiator handle or null.
+ * `confirmation_code` must be a valid null-terminated C string, or null.
+ */
+char *vauchi_device_link_confirm_manual(struct VauchiDeviceLinkInitiator *initiator,
+                                        const char *confirmation_code,
+                                        uint64_t confirmed_at);
+
+/**
+ * Listen for an incoming device link request via relay (blocking).
+ *
+ * Creates an exchange offer with the identity, then polls until the new
+ * device claims it. Blocks up to `timeout_secs` seconds.
+ *
+ * Returns JSON: `{"encrypted_payload":"base64...","sender_token":"..."}`
+ * or `{"error":"..."}`. Returns null on null handle.
+ *
+ * # Safety
+ * `handle` must be a valid app handle or null.
+ */
+char *vauchi_device_link_listen(struct VauchiApp *handle, uint64_t timeout_secs);
+
+/**
+ * Send device link response back via relay.
+ *
+ * Claims the return channel created by the new device.
+ * Returns 0 on success, -1 on error.
+ *
+ * # Safety
+ * `handle` must be a valid app handle or null.
+ * `sender_token` and `encrypted_response_b64` must be valid null-terminated
+ * C strings, or null.
+ */
+int32_t vauchi_device_link_send_response(struct VauchiApp *handle,
+                                         const char *sender_token,
+                                         const char *encrypted_response_b64);
 
 /**
  * Create a new QR exchange session using the app's identity.
@@ -375,23 +652,24 @@ char *vauchi_exchange_debug_markdown(struct VauchiExchange *handle);
  * Get a translated string for the given locale and key.
  *
  * Returns the translated string, falling back to English if the
- * locale lacks the key, or "Missing: <key>" if no translation
- * exists at all. Returns null if locale_code or key is null,
- * or locale_code is not a recognised locale.
+ * locale lacks the key, or `"Missing: <key>"` if no translation
+ * exists at all. Returns null if `locale_code` or `key` is null,
+ * or `locale_code` is not a recognised locale.
  *
- * The caller must free the returned string with vauchi_string_free.
+ * The caller must free the returned string with `vauchi_string_free`.
  *
  * # Safety
- * locale_code and key must be valid null-terminated C strings, or null.
+ * `locale_code` and `key` must be valid null-terminated C strings,
+ * or null.
  */
 char *vauchi_i18n_get_string(const char *locale_code, const char *key);
 
 /**
  * Return a JSON array of all available locale codes.
  *
- * Example: ["en","de","fr","es","it"]
+ * Example: `["en","de","fr","es","it"]`
  *
- * The caller must free the returned string with vauchi_string_free.
+ * The caller must free the returned string with `vauchi_string_free`.
  *
  * # Safety
  * No special requirements.
@@ -401,13 +679,13 @@ char *vauchi_i18n_available_locales(void);
 /**
  * Initialise the i18n system from a directory of JSON locale files.
  *
- * Each *.json file in resource_dir is loaded as a locale
- * (filename stem = locale code, e.g. de.json -> "de").
+ * Each `*.json` file in `resource_dir` is loaded as a locale
+ * (filename stem = locale code, e.g. `de.json` → `"de"`).
  *
  * Returns 0 on success, 1 on failure.
  *
  * # Safety
- * resource_dir must be a valid null-terminated C string, or null.
+ * `resource_dir` must be a valid null-terminated C string, or null.
  */
 int32_t vauchi_i18n_init(const char *resource_dir);
 
@@ -468,31 +746,5 @@ char *vauchi_workflow_current_screen(struct VauchiWorkflow *handle);
  * `action_json` must be a valid null-terminated C string, or null.
  */
 char *vauchi_workflow_handle_action(struct VauchiWorkflow *handle, const char *action_json);
-
-/**
- * Register a callback for background event notifications.
- *
- * Core calls `callback(screen_ids_json, user_data)` when background
- * operations (sync, delivery, device-link) change data that affects
- * the given screens.
- *
- * The callback may fire on any thread. It must NOT call back into
- * any `vauchi_app_*` function directly (would deadlock on internal
- * Mutex). Always defer processing to the UI event loop.
- *
- * Pass null for `callback` to unregister.
- *
- * # Safety
- * `handle` must be a valid `VauchiApp` pointer. `callback` (if non-null)
- * must be safe to call from any thread. `user_data` must remain valid
- * until the callback is unregistered.
- */
-void vauchi_app_set_event_callback(struct VauchiApp *handle,
-                                   VauchiEventCallback callback,
-                                   void *user_data);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif  /* VAUCHI_CABI_H */

@@ -13,6 +13,7 @@
 #include <QListWidget>
 #include <QJsonDocument>
 #include <QJsonArray>
+#include <QJsonObject>
 #include <QShortcut>
 #include <QStandardPaths>
 #include <QDir>
@@ -127,11 +128,16 @@ VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
         vauchi_app_set_event_callback(
             m_app,
             [](const char * /*screen_ids_json*/, void *user_data) {
-                auto *renderer = static_cast<ScreenRenderer *>(user_data);
+                auto *window = static_cast<VauchiWindow *>(user_data);
                 QMetaObject::invokeMethod(
-                    renderer, &ScreenRenderer::refresh, Qt::QueuedConnection);
+                    window,
+                    [window]() {
+                        window->m_renderer->refresh();
+                        window->drainAndShowNotifications();
+                    },
+                    Qt::QueuedConnection);
             },
-            m_renderer);
+            this);
 
     }
 
@@ -243,6 +249,27 @@ void VauchiWindow::refreshSidebar() {
 
     for (const auto &screen : screens) {
         m_sidebar->addItem(screenLabel(screen.toString()));
+    }
+}
+
+void VauchiWindow::drainAndShowNotifications() {
+    if (!m_app || !m_tray) return;
+
+    char *json = vauchi_app_drain_notifications(m_app);
+    if (!json) return;
+
+    QJsonArray notifications = QJsonDocument::fromJson(json).array();
+    vauchi_string_free(json);
+
+    for (const auto &n : notifications) {
+        QJsonObject obj = n.toObject();
+        QString title = obj["title"].toString();
+        QString body = obj["body"].toString();
+        QSystemTrayIcon::MessageIcon icon =
+            obj["category"].toString() == "EmergencyAlert"
+                ? QSystemTrayIcon::Critical
+                : QSystemTrayIcon::Information;
+        m_tray->showMessage(title, body, icon, 10000);
     }
 }
 
