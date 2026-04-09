@@ -18,6 +18,7 @@
 #include <QDir>
 #include <QFile>
 #include <QProcessEnvironment>
+#include <QTimer>
 
 VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
     setWindowTitle("Vauchi");
@@ -114,10 +115,10 @@ VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
     connect(menuBar, &VauchiMenuBar::quitRequested, qApp, &QApplication::quit);
 
     // System tray
-    auto *tray = new SystemTray(this);
-    connect(tray, &SystemTray::showWindowRequested, this, &QWidget::show);
-    connect(tray, &SystemTray::quitRequested, qApp, &QApplication::quit);
-    tray->show();
+    m_tray = new SystemTray(this);
+    connect(m_tray, &SystemTray::showWindowRequested, this, &QWidget::show);
+    connect(m_tray, &SystemTray::quitRequested, qApp, &QApplication::quit);
+    m_tray->show();
 
     // Register event callback for background screen invalidation (Plan 2D).
     // Core events (sync, contact updates, etc.) trigger re-render of the
@@ -132,6 +133,11 @@ VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
                     renderer, &ScreenRenderer::refresh, Qt::QueuedConnection);
             },
             m_renderer);
+
+        // Poll for notifications periodically every 30 seconds (E)
+        auto *timer = new QTimer(this);
+        connect(timer, &QTimer::timeout, this, &VauchiWindow::pollNotifications);
+        timer->start(30000);
     }
 
     buildSidebar();
@@ -210,6 +216,7 @@ static const QHash<QString, QPair<const char *, QString>> SCREEN_I18N = {
     {"recovery",       {"nav.recovery",  QStringLiteral("Recovery")}},
     {"backup",         {"nav.backup",    QStringLiteral("Backup")}},
     {"sync",           {"nav.sync",      QStringLiteral("Sync")}},
+    {"activity_log",   {"nav.activity",  QStringLiteral("Activity")}},
     {"privacy",        {"nav.privacy",   QStringLiteral("Privacy")}},
     {"device_linking", {"nav.devices",   QStringLiteral("Devices")}},
     {"support",        {"nav.support",   QStringLiteral("Support")}},
@@ -241,5 +248,22 @@ void VauchiWindow::refreshSidebar() {
 
     for (const auto &screen : screens) {
         m_sidebar->addItem(screenLabel(screen.toString()));
+    }
+}
+
+void VauchiWindow::pollNotifications() {
+    if (!m_app || !m_tray) return;
+
+    char *json = vauchi_app_poll_notifications(m_app);
+    if (!json) return;
+
+    QJsonArray notifications = QJsonDocument::fromJson(json).array();
+    vauchi_string_free(json);
+
+    for (const auto &val : notifications) {
+        QJsonObject n = val.toObject();
+        QString title = n["title"].toString();
+        QString body = n["body"].toString();
+        m_tray->showMessage(title, body, QSystemTrayIcon::Information, 5000);
     }
 }

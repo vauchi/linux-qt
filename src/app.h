@@ -22,8 +22,10 @@ protected:
 private:
     void buildSidebar();
     void refreshSidebar();
+    void pollNotifications();
 
     struct ::VauchiApp *m_app = nullptr;
     ScreenRenderer *m_renderer = nullptr;
     QListWidget *m_sidebar = nullptr;
+    class SystemTray *m_tray = nullptr;
 };
