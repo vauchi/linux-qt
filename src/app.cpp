@@ -18,7 +18,6 @@
 #include <QDir>
 #include <QFile>
 #include <QProcessEnvironment>
-#include <QTimer>
 
 VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
     setWindowTitle("Vauchi");
@@ -134,10 +133,6 @@ VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
             },
             m_renderer);
 
-        // Poll for notifications periodically every 30 seconds (E)
-        auto *timer = new QTimer(this);
-        connect(timer, &QTimer::timeout, this, &VauchiWindow::pollNotifications);
-        timer->start(30000);
     }
 
     buildSidebar();
@@ -251,19 +246,3 @@ void VauchiWindow::refreshSidebar() {
     }
 }
 
-void VauchiWindow::pollNotifications() {
-    if (!m_app || !m_tray) return;
-
-    char *json = vauchi_app_poll_notifications(m_app);
-    if (!json) return;
-
-    QJsonArray notifications = QJsonDocument::fromJson(json).array();
-    vauchi_string_free(json);
-
-    for (const auto &val : notifications) {
-        QJsonObject n = val.toObject();
-        QString title = n["title"].toString();
-        QString body = n["body"].toString();
-        m_tray->showMessage(title, body, QSystemTrayIcon::Information, 5000);
-    }
-}
