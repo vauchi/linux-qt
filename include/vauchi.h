@@ -49,6 +49,10 @@ typedef struct VauchiWorkflow VauchiWorkflow;
  */
 typedef void (*VauchiEventCallback)(const char *screen_ids_json, void *user_data);
 
+#ifdef __cplusplus
+extern "C" {
+#endif // __cplusplus
+
 /**
  * Create a new config builder with data directory and relay URL.
  *
@@ -188,6 +192,18 @@ void vauchi_app_destroy(struct VauchiApp *handle);
  * `handle` must be a valid app handle or null.
  */
 char *vauchi_app_current_screen(struct VauchiApp *handle);
+
+/**
+ * Poll for any new OS notifications produced by the app engine.
+ *
+ * Returns a JSON-encoded array of `PendingNotification` objects, or
+ * null if there are no new notifications.
+ *
+ * # Safety
+ * `app` must be a valid pointer created by `vauchi_app_create*`.
+ * The caller must free the returned string via `vauchi_free_string`.
+ */
+char *vauchi_app_poll_notifications(struct VauchiApp *app);
 
 /**
  * Handle a user action (JSON) and return the result as JSON.
@@ -746,5 +762,9 @@ char *vauchi_workflow_current_screen(struct VauchiWorkflow *handle);
  * `action_json` must be a valid null-terminated C string, or null.
  */
 char *vauchi_workflow_handle_action(struct VauchiWorkflow *handle, const char *action_json);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif  // __cplusplus
 
 #endif  /* VAUCHI_CABI_H */
