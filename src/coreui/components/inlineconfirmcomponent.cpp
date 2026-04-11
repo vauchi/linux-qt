@@ -52,6 +52,18 @@ QWidget *InlineConfirmComponent::render(const QJsonObject &data,
     buttonRow->addWidget(confirmBtn);
     layout->addLayout(buttonRow);
 
+    if (data.contains("a11y") && data["a11y"].isObject()) {
+        auto a11y = data["a11y"].toObject();
+        auto a11yLabel = a11y.value("label").toString();
+        if (!a11yLabel.isEmpty()) {
+            frame->setAccessibleName(a11yLabel);
+        }
+        auto hint = a11y.value("hint").toString();
+        if (!hint.isEmpty()) {
+            frame->setAccessibleDescription(hint);
+        }
+    }
+
     if (onAction) {
         QString dialogId = data["id"].toString();
 

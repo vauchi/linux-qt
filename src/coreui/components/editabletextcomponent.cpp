@@ -22,6 +22,18 @@ QWidget *EditableTextComponent::render(const QJsonObject &data,
     container->setObjectName(componentId);
     container->setAccessibleName(labelText);
 
+    if (data.contains("a11y") && data["a11y"].isObject()) {
+        auto a11y = data["a11y"].toObject();
+        auto a11yLabel = a11y.value("label").toString();
+        if (!a11yLabel.isEmpty()) {
+            container->setAccessibleName(a11yLabel);
+        }
+        auto hint = a11y.value("hint").toString();
+        if (!hint.isEmpty()) {
+            container->setAccessibleDescription(hint);
+        }
+    }
+
     // Label
     auto *label = new QLabel(labelText);
     label->setAccessibleName(labelText);

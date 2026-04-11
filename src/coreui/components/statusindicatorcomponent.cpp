@@ -43,5 +43,17 @@ QWidget *StatusIndicatorComponent::render(const QJsonObject &data) {
 
     layout->addStretch();
 
+    if (data.contains("a11y") && data["a11y"].isObject()) {
+        auto a11y = data["a11y"].toObject();
+        auto label = a11y.value("label").toString();
+        if (!label.isEmpty()) {
+            container->setAccessibleName(label);
+        }
+        auto hint = a11y.value("hint").toString();
+        if (!hint.isEmpty()) {
+            container->setAccessibleDescription(hint);
+        }
+    }
+
     return container;
 }

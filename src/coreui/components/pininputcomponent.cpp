@@ -49,5 +49,17 @@ QWidget *PinInputComponent::render(const QJsonObject &data,
         layout->addWidget(errLabel);
     }
 
+    if (data.contains("a11y") && data["a11y"].isObject()) {
+        auto a11y = data["a11y"].toObject();
+        auto a11yLabel = a11y.value("label").toString();
+        if (!a11yLabel.isEmpty()) {
+            input->setAccessibleName(a11yLabel);
+        }
+        auto hint = a11y.value("hint").toString();
+        if (!hint.isEmpty()) {
+            input->setAccessibleDescription(hint);
+        }
+    }
+
     return container;
 }
