@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "hardwarebackend.h"
+#include "directsendworker.h"
 
 #include <QJsonDocument>
 #include <QDir>
@@ -250,6 +251,38 @@ void HardwareBackend::dispatchCommands(const QJsonArray &commands) {
             }
 #endif
             sendUnavailable("NFC");
+            continue;
+        }
+
+        // ── DirectSend (TCP loopback exchange) ──────────────────────
+
+        if (cmdObj.contains("DirectSend")) {
+            QJsonObject data = cmdObj["DirectSend"].toObject();
+            QByteArray payload = jsonArrayToBytes(data["payload"].toArray());
+            bool isInitiator = data["is_initiator"].toBool();
+
+            auto *worker = new DirectSendWorker(payload, isInitiator, this);
+            connect(worker, &DirectSendWorker::payloadReceived, this, [this](const QByteArray &received) {
+                QJsonObject event;
+                QJsonObject inner;
+                QJsonArray dataArr;
+                for (unsigned char byte : received) {
+                    dataArr.append(static_cast<int>(byte));
+                }
+                inner["data"] = dataArr;
+                event["DirectPayloadReceived"] = inner;
+                sendHardwareEvent(event);
+            });
+            connect(worker, &DirectSendWorker::errorOccurred, this, [this](const QString &error) {
+                QJsonObject event;
+                QJsonObject inner;
+                inner["transport"] = QString("USB");
+                inner["error"] = error;
+                event["HardwareError"] = inner;
+                sendHardwareEvent(event);
+            });
+            connect(worker, &DirectSendWorker::finished, worker, &QObject::deleteLater);
+            worker->start();
             continue;
         }
     }

@@ -66,6 +66,7 @@ set(QVAUCHI_SOURCES
     src/platform/systemtray.cpp
     src/platform/menubar.cpp
     src/platform/hardwarebackend.cpp
+    src/platform/directsendworker.cpp
     resources/resources.qrc
 )
 

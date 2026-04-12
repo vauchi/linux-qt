@@ -11,6 +11,7 @@
 class BleBackend;
 class AudioBackend;
 class NfcBackend;
+class DirectSendWorker;
 
 /// Dispatches ExchangeCommands to hardware backends and sends
 /// ExchangeHardwareEvents back to core via CABI.
