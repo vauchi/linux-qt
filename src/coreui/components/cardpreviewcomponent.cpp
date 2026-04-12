@@ -86,5 +86,17 @@ QWidget *CardPreviewComponent::render(const QJsonObject &data,
         layout->addWidget(tabs);
     }
 
+    if (data.contains("a11y") && data["a11y"].isObject()) {
+        auto a11y = data["a11y"].toObject();
+        auto a11yLabel = a11y.value("label").toString();
+        if (!a11yLabel.isEmpty()) {
+            frame->setAccessibleName(a11yLabel);
+        }
+        auto hint = a11y.value("hint").toString();
+        if (!hint.isEmpty()) {
+            frame->setAccessibleDescription(hint);
+        }
+    }
+
     return frame;
 }
