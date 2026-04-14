@@ -34,7 +34,7 @@ UPDATE_SNAPSHOTS="${UPDATE_SNAPSHOTS:-}"
 export LD_LIBRARY_PATH UPDATE_SNAPSHOTS
 
 exec env XDG_CURRENT_DESKTOP=none QT_QPA_PLATFORM=xcb \
-    xvfb-run -s '-screen 0 1280x720x24' \
+    xvfb-run -a -s '-screen 0 1280x720x24' \
     dbus-run-session -- bash -c "
         /usr/lib/at-spi-bus-launcher &
         sleep 0.5
