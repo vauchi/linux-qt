@@ -57,7 +57,7 @@ extern "C" {
  * Create a new config builder with data directory and relay URL.
  *
  * Returns null if `data_dir` is null.
- * If `relay_url` is null, uses the default (`wss://relay.vauchi.app`).
+ * If `relay_url` is null, uses the default (`https://relay.vauchi.app`).
  *
  * # Safety
  * `data_dir` and `relay_url` must be valid null-terminated C strings, or null.
@@ -134,7 +134,7 @@ struct VauchiApp *vauchi_app_create(void);
 /**
  * Create a new AppEngine with a custom relay URL.
  *
- * If `relay_url` is null, uses the default (`wss://relay.vauchi.app`).
+ * If `relay_url` is null, uses the default (`https://relay.vauchi.app`).
  * The caller retains ownership of the `relay_url` string.
  *
  * Returns null on initialization failure.
@@ -219,8 +219,8 @@ char *vauchi_app_handle_action(struct VauchiApp *handle, const char *action_json
  *
  * Supported screen names: "home", "contacts", "exchange", "settings",
  * "help", "backup", "lock", "onboarding", "emergency_shred",
- * "device_linking", "duress_pin", "delivery_status", "sync",
- * "recovery", "groups", "privacy", "support",
+ * "device_linking", "device_management", "duress_pin", "delivery_status",
+ * "sync", "recovery", "groups", "privacy", "support",
  * "contact_duplicates", "contact_limit", "more".
  *
  * # Safety
@@ -356,6 +356,22 @@ char *vauchi_app_device_link_peer_connected(struct VauchiApp *handle,
  * `handle` must be a valid app handle or null.
  */
 char *vauchi_app_device_link_sync_complete(struct VauchiApp *handle);
+
+/**
+ * Import contacts from vCard (.vcf) data.
+ *
+ * Returns a JSON object: `{"imported":N,"skipped":N,"warnings":["..."]}`,
+ * or `{"error":"..."}` on failure. Returns null if `handle` or `data` is null.
+ *
+ * The caller must free the returned string with `vauchi_string_free`.
+ *
+ * # Safety
+ * `handle` must be a valid app handle or null.
+ * `data` must point to at least `data_len` valid bytes, or be null.
+ */
+char *vauchi_app_import_contacts_from_vcf(struct VauchiApp *handle,
+                                          const uint8_t *data,
+                                          uintptr_t data_len);
 
 /**
  * Drain pending OS notifications as a JSON array.

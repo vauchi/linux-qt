@@ -18,7 +18,9 @@
 #include <QStandardPaths>
 #include <QDir>
 #include <QFile>
+#include <QFileDialog>
 #include <QProcessEnvironment>
+#include <QStatusBar>
 
 VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
     setWindowTitle("Vauchi");
@@ -113,6 +115,9 @@ VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
     auto *menuBar = new VauchiMenuBar(this);
     setMenuBar(menuBar);
     connect(menuBar, &VauchiMenuBar::quitRequested, qApp, &QApplication::quit);
+    connect(menuBar, &VauchiMenuBar::importContactsRequested, this, [this]() {
+        importContactsFromFile();
+    });
 
     // System tray
     m_tray = new SystemTray(this);
@@ -220,6 +225,7 @@ static const QHash<QString, QPair<const char *, QString>> SCREEN_I18N = {
     {"activity_log",   {"nav.activity",  QStringLiteral("Activity")}},
     {"privacy",        {"nav.privacy",   QStringLiteral("Privacy")}},
     {"device_linking", {"nav.devices",   QStringLiteral("Devices")}},
+    {"device_management", {"nav.devices", QStringLiteral("Devices")}},
     {"support",        {"nav.support",   QStringLiteral("Support")}},
 };
 
@@ -271,5 +277,64 @@ void VauchiWindow::drainAndShowNotifications() {
                 : QSystemTrayIcon::Information;
         m_tray->showMessage(title, body, icon, 10000);
     }
+}
+
+void VauchiWindow::importContactsFromFile() {
+    if (!m_app) return;
+
+    QString path = QFileDialog::getOpenFileName(
+        this,
+        tr_vauchi("contacts.importContacts",
+                  QStringLiteral("Import Contacts")),
+        QString(),
+        QStringLiteral("vCard Files (*.vcf)"));
+    if (path.isEmpty()) return;
+
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) {
+        statusBar()->showMessage(
+            tr_vauchi("platform.error_could_not_read_file",
+                      QStringLiteral("Could not read file")),
+            4000);
+        return;
+    }
+
+    QByteArray data = file.readAll();
+    file.close();
+
+    char *result = vauchi_app_import_contacts_from_vcf(
+        m_app,
+        reinterpret_cast<const uint8_t *>(data.constData()),
+        static_cast<uintptr_t>(data.size()));
+
+    if (!result) {
+        statusBar()->showMessage(
+            tr_vauchi("platform.error_import_failed",
+                      QStringLiteral("Import failed")),
+            4000);
+        return;
+    }
+
+    QJsonObject obj = QJsonDocument::fromJson(result).object();
+    vauchi_string_free(result);
+
+    if (obj.contains("error")) {
+        statusBar()->showMessage(
+            tr_vauchi("platform.error_import_failed",
+                      QStringLiteral("Import failed: "))
+            + obj["error"].toString(),
+            4000);
+        return;
+    }
+
+    int imported = obj["imported"].toInt();
+    int skipped = obj["skipped"].toInt();
+    QString msg = skipped > 0
+        ? QString("Imported %1 contact(s), skipped %2").arg(imported).arg(skipped)
+        : QString("Imported %1 contact(s)").arg(imported);
+    statusBar()->showMessage(msg, 4000);
+
+    // Refresh screen to show imported contacts
+    m_renderer->refresh();
 }
 

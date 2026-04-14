@@ -14,4 +14,5 @@ public:
 signals:
     void quitRequested();
     void aboutRequested();
+    void importContactsRequested();
 };

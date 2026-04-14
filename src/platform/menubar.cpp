@@ -4,6 +4,7 @@
 #include "menubar.h"
 #include "../i18n.h"
 #include <QAction>
+#include <QKeySequence>
 #include <QMessageBox>
 
 VauchiMenuBar::VauchiMenuBar(QWidget *parent) : QMenuBar(parent) {
@@ -12,6 +13,15 @@ VauchiMenuBar::VauchiMenuBar(QWidget *parent) : QMenuBar(parent) {
 
     // File menu (no i18n key — desktop convention, not app content)
     auto *fileMenu = addMenu(QStringLiteral("&File"));
+    auto *importAction = fileMenu->addAction(
+        tr_vauchi("contacts.importContacts",
+                  QStringLiteral("Import Contacts...")));
+    importAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_I));
+    connect(importAction, &QAction::triggered,
+            this, &VauchiMenuBar::importContactsRequested);
+
+    fileMenu->addSeparator();
+
     auto *quitAction = fileMenu->addAction(
         QStringLiteral("&")
         + tr_vauchi("help.quit", QStringLiteral("Quit")));

@@ -23,6 +23,7 @@ private:
     void buildSidebar();
     void refreshSidebar();
     void drainAndShowNotifications();
+    void importContactsFromFile();
 
     struct ::VauchiApp *m_app = nullptr;
     ScreenRenderer *m_renderer = nullptr;
