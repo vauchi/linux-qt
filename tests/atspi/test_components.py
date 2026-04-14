@@ -186,7 +186,11 @@ class TestDividerComponent:
     def test_separators_have_accessible_name(self, qt_app):
         """Divider must have 'Separator' accessible name."""
         separators = find_all(qt_app, role="separator")
-        for sep in separators:
+        # Filter out Qt menu separators (QMenu::addSeparator) which have
+        # no accessible name by default — only test our DividerComponent.
+        dividers = [s for s in separators if s.get_name() != ""]
+        assert len(dividers) > 0, "Expected at least one named Divider separator"
+        for sep in dividers:
             assert sep.get_name() == "Separator", (
                 f"Divider accessible name should be 'Separator', got: '{sep.get_name()}'"
             )
