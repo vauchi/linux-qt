@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "inlineconfirmcomponent.h"
+#include "Tokens.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -16,7 +17,8 @@ QWidget *InlineConfirmComponent::render(const QJsonObject &data,
     frame->setAccessibleName(data["warning"].toString());
 
     auto *layout = new QVBoxLayout(frame);
-    layout->setContentsMargins(16, 16, 16, 16);
+    layout->setContentsMargins(Tokens::Spacing::MD, Tokens::Spacing::MD,
+                               Tokens::Spacing::MD, Tokens::Spacing::MD);
 
     // Warning icon + text
     auto *warningRow = new QHBoxLayout;
