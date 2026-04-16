@@ -32,6 +32,7 @@ private:
     void handleAction(const QString &actionId);
     void showValidationError(const QString &componentId, const QString &message);
     void promptQrPaste();
+    void saveBackupToFile(const QString &hexData);
     void showStatusMessage(const QString &message);
     void showStatusMessageWithUndo(const QString &message,
                                    const QString &undoActionId);

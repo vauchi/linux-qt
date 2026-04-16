@@ -19,6 +19,10 @@
 #include <QStatusBar>
 #include <QMainWindow>
 #include <QTimer>
+#include <QFileDialog>
+#include <QDateTime>
+#include <QDir>
+#include <QFile>
 
 ScreenRenderer::ScreenRenderer(struct VauchiApp *app, QWidget *parent)
     : QWidget(parent), m_app(app) {
@@ -215,6 +219,12 @@ void ScreenRenderer::processActionResult(const char *resultJson) {
             showStatusMessage(message);
         }
         refresh();
+    } else if (result.contains("BackupExportComplete")) {
+        QJsonObject backup = result["BackupExportComplete"].toObject();
+        QString hexData = backup["data"].toString();
+        saveBackupToFile(hexData);
+        refresh();
+        emit screenChanged();
     } else if (result.contains("Complete")) {
         refresh();
         emit screenChanged();
@@ -353,4 +363,32 @@ void ScreenRenderer::handleAction(const QString &actionId) {
 
     refresh();
     emit screenChanged();
+}
+
+void ScreenRenderer::saveBackupToFile(const QString &hexData) {
+    QString defaultName = QStringLiteral("vauchi-backup-%1.vbk")
+        .arg(QDateTime::currentDateTime().toString(QStringLiteral("yyyy-MM-dd")));
+
+    QString path = QFileDialog::getSaveFileName(
+        this,
+        tr_vauchi("backup.save_title", QStringLiteral("Save Backup")),
+        QDir::homePath() + QStringLiteral("/") + defaultName,
+        QStringLiteral("Vauchi Backup (*.vbk)"));
+
+    if (path.isEmpty()) return;
+
+    QByteArray raw = QByteArray::fromHex(hexData.toLatin1());
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly)) {
+        showStatusMessage(
+            tr_vauchi("platform.error_could_not_write_file",
+                      QStringLiteral("Could not save backup file")));
+        return;
+    }
+    file.write(raw);
+    file.close();
+
+    showStatusMessage(
+        tr_vauchi("backup.export_success",
+                  QStringLiteral("Backup saved successfully")));
 }
