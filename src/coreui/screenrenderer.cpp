@@ -126,7 +126,26 @@ void ScreenRenderer::renderScreen(const QJsonObject &screen) {
         btn->setEnabled(actionObj["enabled"].toBool(true));
 
         QString actionId = actionObj["id"].toString();
+        // `objectName` is the stable id test drivers (AT-SPI, Qt
+        // Test, etc.) look up. Qt derives the accessible name from
+        // the button's visible text by default; core-provided
+        // `a11y` overrides below.
         btn->setObjectName(actionId);
+
+        // Core-provided accessibility override (plan Task 3.1 /
+        // `_private/docs/problems/2026-04-20-screen-action-a11y-identifier-gap`).
+        // `a11y.label` replaces the visible-text-derived screen-
+        // reader announcement; `a11y.hint` maps to Qt's accessible
+        // description. When `a11y` is absent, Qt keeps its default
+        // (label-derived) behaviour — no visible change.
+        QJsonObject a11y = actionObj["a11y"].toObject();
+        if (a11y.contains("label")) {
+            btn->setAccessibleName(a11y["label"].toString());
+        }
+        if (a11y.contains("hint")) {
+            btn->setAccessibleDescription(a11y["hint"].toString());
+        }
+
         m_buttons.append({actionId, btn});
         connect(btn, &QPushButton::clicked, this, [this, actionId]() {
             handleAction(actionId);
