@@ -260,16 +260,17 @@ check:removed-symbols:
   variables:
     SEARCH_DIRS: "src/ tests/ design/ include/"
 
-# Design token drift: warn on hex/named colors in setStyleSheet() calls
+# Design token drift: block hex/named colors in setStyleSheet() calls
 # that bypass ThemeManager::styleForRole. Script lives in vauchi/scripts —
 # fetched via API to avoid duplicating it here.
-# allow_failure: true makes this a visibility gate, not a merge blocker.
+# Baseline is 0 CPP_HEX / CPP_NAMED violations as of 2026-04-20, so the
+# gate is blocking; flip back to allow_failure: true if a temporary
+# regression needs to land with a follow-up ticket.
 check:design-tokens:
   stage: lint
   image: alpine:3.21
   tags: [docker]
   needs: []
-  allow_failure: true
   before_script:
     - apk add --no-cache bash findutils grep curl
   script:
@@ -278,7 +279,7 @@ check:design-tokens:
         "${CI_API_V4_URL}/projects/vauchi%2Fscripts/repository/files/scripts%2Fcheck-design-tokens.sh/raw?ref=main" \
         -o check-design-tokens.sh
       chmod +x check-design-tokens.sh
-    - ./check-design-tokens.sh src/
+    - ./check-design-tokens.sh --strict src/
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes:
