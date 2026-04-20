@@ -2,11 +2,22 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "thememanager.h"
+#include "Tokens.h"
 #include <QApplication>
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QStyleFactory>
+
+namespace {
+// Cached copy of the most-recently applied palette so styleForRole() can
+// resolve colors without reloading themes.json. Defaults to Catppuccin Mocha
+// until applyTheme() runs.
+QJsonObject &mutableCurrentColors() {
+    static QJsonObject colors = ThemeManager::defaultColors();
+    return colors;
+}
+}
 
 void ThemeManager::applyDefaultTheme() {
     applyTheme(QJsonObject{{"colors", defaultColors()}});
@@ -15,6 +26,8 @@ void ThemeManager::applyDefaultTheme() {
 void ThemeManager::applyTheme(const QJsonObject &theme) {
     QJsonObject colors = theme["colors"].toObject();
     if (colors.isEmpty()) return;
+
+    mutableCurrentColors() = colors;
 
     QPalette palette = paletteFromColors(colors);
     QApplication::setPalette(palette);
@@ -112,6 +125,62 @@ QString ThemeManager::stylesheetFromColors(const QJsonObject &colors) {
         "QPushButton:hover { background-color: %6; }"
     )
         .arg(bgPrimary, textPrimary, bgSecondary, border, bgTertiary, accent);
+}
+
+QJsonObject ThemeManager::currentColors() {
+    return mutableCurrentColors();
+}
+
+QString ThemeManager::styleForRole(ThemeRole role) {
+    const QJsonObject colors = currentColors();
+    const QString accent      = colors["accent"].toString();
+    const QString error       = colors["error"].toString();
+    const QString success     = colors["success"].toString();
+    const QString warning     = colors["warning"].toString();
+    const QString textPrimary = colors["text-primary"].toString();
+    const QString textSecondary = colors["text-secondary"].toString();
+    const QString bgTertiary  = colors["bg-tertiary"].toString();
+
+    // Spacing, radius, and type sizes flow from design tokens (Tokens.h)
+    // so a single source of truth governs both the Rust core and this frontend.
+    const int radiusSm   = Tokens::BorderRadius::SM;    // buttons, banner
+    const int padV       = Tokens::Spacing::SM;         // 8px — vertical button padding
+    const int padH       = Tokens::Spacing::MD;         // 16px — horizontal button padding
+    const int bannerPad  = Tokens::Spacing::SM;         // banner content padding
+    const int statusSize = Tokens::Typography::CAPTION_SIZE; // status dot glyph size
+
+    switch (role) {
+    case ThemeRole::PrimaryButton:
+        return QStringLiteral("color: %1; background-color: %2; "
+                              "border-radius: %3px; padding: %4px %5px;")
+            .arg(textPrimary, accent)
+            .arg(radiusSm).arg(padV).arg(padH);
+    case ThemeRole::DestructiveButton:
+        return QStringLiteral("color: %1; background-color: %2; "
+                              "border-radius: %3px; padding: %4px %5px;")
+            .arg(textPrimary, error)
+            .arg(radiusSm).arg(padV).arg(padH);
+    case ThemeRole::StatusSuccess:
+        return QStringLiteral("color: %1; font-size: %2px;").arg(success).arg(statusSize);
+    case ThemeRole::StatusError:
+        return QStringLiteral("color: %1; font-size: %2px;").arg(error).arg(statusSize);
+    case ThemeRole::StatusWarning:
+        return QStringLiteral("color: %1; font-size: %2px;").arg(warning).arg(statusSize);
+    case ThemeRole::StatusInProgress:
+        return QStringLiteral("color: %1; font-size: %2px;").arg(accent).arg(statusSize);
+    case ThemeRole::StatusNeutral:
+        return QStringLiteral("color: %1; font-size: %2px;").arg(textSecondary).arg(statusSize);
+    case ThemeRole::DestructiveText:
+        return QStringLiteral("color: %1;").arg(error);
+    case ThemeRole::SecondaryText:
+        return QStringLiteral("color: %1;").arg(textSecondary);
+    case ThemeRole::BannerInfo:
+        return QStringLiteral("background-color: %1; border-radius: %2px; padding: %3px;")
+            .arg(bgTertiary).arg(radiusSm).arg(bannerPad);
+    case ThemeRole::ErrorBorder:
+        return QStringLiteral("border: 2px solid %1;").arg(error);
+    }
+    return QString();
 }
 
 QJsonObject ThemeManager::defaultColors() {

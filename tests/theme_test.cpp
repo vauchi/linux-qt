@@ -141,6 +141,97 @@ static void test_empty_colors() {
     printf("  PASS: empty_colors\n");
 }
 
+// --- Test: currentColors() defaults to Catppuccin Mocha before applyTheme() ---
+static void test_current_colors_defaults() {
+    // NOTE: must run before test_current_colors_updates_after_apply
+    QJsonObject current = ThemeManager::currentColors();
+    assert(current["bg-primary"].toString() == "#1e1e2e");
+    assert(current["accent"].toString() == "#89b4fa");
+    assert(current["error"].toString() == "#f38ba8");
+    printf("  PASS: current_colors_defaults\n");
+}
+
+// --- Test: styleForRole returns CSS containing theme color for each role ---
+static void test_style_for_role_uses_default_palette() {
+    // Default palette — Catppuccin Mocha
+    QString primary = ThemeManager::styleForRole(ThemeRole::PrimaryButton);
+    assert(primary.contains("#89b4fa"));      // accent
+    assert(primary.contains("#cdd6f4"));      // text-primary
+    // Radius + padding come from design tokens (Tokens::BorderRadius::SM,
+    // Tokens::Spacing::SM, Tokens::Spacing::MD) — not hardcoded in the helper.
+    assert(primary.contains("border-radius: 4px"));
+    assert(primary.contains("padding: 8px 16px"));
+
+    QString destructive = ThemeManager::styleForRole(ThemeRole::DestructiveButton);
+    assert(destructive.contains("#f38ba8"));  // error
+    assert(destructive.contains("#cdd6f4"));  // text-primary
+    // PrimaryButton and DestructiveButton must diverge on fill color
+    assert(primary != destructive);
+
+    assert(ThemeManager::styleForRole(ThemeRole::StatusSuccess).contains("#a6e3a1"));
+    assert(ThemeManager::styleForRole(ThemeRole::StatusError).contains("#f38ba8"));
+    assert(ThemeManager::styleForRole(ThemeRole::StatusWarning).contains("#fab387"));
+    assert(ThemeManager::styleForRole(ThemeRole::StatusInProgress).contains("#89b4fa"));
+    assert(ThemeManager::styleForRole(ThemeRole::StatusNeutral).contains("#a6adc8"));
+
+    assert(ThemeManager::styleForRole(ThemeRole::DestructiveText).contains("#f38ba8"));
+    assert(ThemeManager::styleForRole(ThemeRole::SecondaryText).contains("#a6adc8"));
+    assert(ThemeManager::styleForRole(ThemeRole::BannerInfo).contains("#313244"));
+    assert(ThemeManager::styleForRole(ThemeRole::ErrorBorder).contains("#f38ba8"));
+
+    // Regression guard: no role may return an empty stylesheet (switch coverage).
+    ThemeRole all[] = {
+        ThemeRole::PrimaryButton, ThemeRole::DestructiveButton,
+        ThemeRole::StatusSuccess, ThemeRole::StatusError,
+        ThemeRole::StatusWarning, ThemeRole::StatusInProgress,
+        ThemeRole::StatusNeutral, ThemeRole::DestructiveText,
+        ThemeRole::SecondaryText, ThemeRole::BannerInfo,
+        ThemeRole::ErrorBorder,
+    };
+    for (ThemeRole r : all) {
+        assert(!ThemeManager::styleForRole(r).isEmpty());
+    }
+    printf("  PASS: style_for_role_uses_default_palette\n");
+}
+
+// --- Test: applyTheme updates currentColors and styleForRole reflects it ---
+static void test_style_for_role_updates_after_apply() {
+    QJsonObject light;
+    light["bg-primary"] = "#ffffff";
+    light["bg-secondary"] = "#eeeeee";
+    light["bg-tertiary"] = "#dddddd";
+    light["text-primary"] = "#000000";
+    light["text-secondary"] = "#333333";
+    light["accent"] = "#0066cc";
+    light["accent-dark"] = "#004488";
+    light["success"] = "#228b22";
+    light["error"] = "#cc0000";
+    light["warning"] = "#cc8800";
+    light["border"] = "#cccccc";
+    ThemeManager::applyTheme(QJsonObject{{"colors", light}});
+
+    QJsonObject seen = ThemeManager::currentColors();
+    assert(seen["accent"].toString() == "#0066cc");
+    assert(seen["error"].toString() == "#cc0000");
+
+    assert(ThemeManager::styleForRole(ThemeRole::PrimaryButton).contains("#0066cc"));
+    assert(ThemeManager::styleForRole(ThemeRole::DestructiveButton).contains("#cc0000"));
+    assert(ThemeManager::styleForRole(ThemeRole::StatusSuccess).contains("#228b22"));
+    assert(ThemeManager::styleForRole(ThemeRole::StatusWarning).contains("#cc8800"));
+    assert(ThemeManager::styleForRole(ThemeRole::StatusNeutral).contains("#333333"));
+    assert(ThemeManager::styleForRole(ThemeRole::BannerInfo).contains("#dddddd"));
+    assert(ThemeManager::styleForRole(ThemeRole::ErrorBorder).contains("#cc0000"));
+
+    // Prior-theme hexes must not leak into the new palette output.
+    assert(!ThemeManager::styleForRole(ThemeRole::PrimaryButton).contains("#89b4fa"));
+    assert(!ThemeManager::styleForRole(ThemeRole::DestructiveButton).contains("#f38ba8"));
+
+    // Restore Catppuccin Mocha to keep later runs deterministic for manual reruns.
+    ThemeManager::applyDefaultTheme();
+    assert(ThemeManager::currentColors()["accent"].toString() == "#89b4fa");
+    printf("  PASS: style_for_role_updates_after_apply\n");
+}
+
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
 
@@ -152,6 +243,9 @@ int main(int argc, char *argv[]) {
     test_load_from_file_valid();
     test_load_from_file_missing();
     test_empty_colors();
+    test_current_colors_defaults();
+    test_style_for_role_uses_default_palette();
+    test_style_for_role_updates_after_apply();
     printf("All ThemeManager tests passed.\n");
 
     return 0;
