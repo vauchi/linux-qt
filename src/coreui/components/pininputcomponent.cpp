@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "pininputcomponent.h"
+#include "../thememanager.h"
 #include <QLineEdit>
 #include <QVBoxLayout>
 #include <QLabel>
@@ -43,7 +44,8 @@ QWidget *PinInputComponent::render(const QJsonObject &data,
     QString error = data["validation_error"].toString();
     if (!error.isEmpty()) {
         auto *errLabel = new QLabel(error);
-        errLabel->setStyleSheet("color: red; font-size: 12px;");
+        errLabel->setStyleSheet(ThemeManager::styleForRole(ThemeRole::DestructiveText) +
+                                QStringLiteral(" font-size: 12px;"));
         errLabel->setAccessibleName(error);
         errLabel->setAlignment(Qt::AlignCenter);
         layout->addWidget(errLabel);

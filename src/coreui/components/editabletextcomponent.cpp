@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "editabletextcomponent.h"
+#include "../thememanager.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -37,7 +38,8 @@ QWidget *EditableTextComponent::render(const QJsonObject &data,
     // Label
     auto *label = new QLabel(labelText);
     label->setAccessibleName(labelText);
-    label->setStyleSheet("font-size: 12px; color: #888;");
+    label->setStyleSheet(QStringLiteral("font-size: 12px; ") +
+                         ThemeManager::styleForRole(ThemeRole::SecondaryText));
     layout->addWidget(label);
 
     if (editing) {
@@ -50,7 +52,7 @@ QWidget *EditableTextComponent::render(const QJsonObject &data,
         editRow->addWidget(input, 1);
 
         auto *saveBtn = new QPushButton(QStringLiteral("Save"));
-        saveBtn->setStyleSheet("color: white; background-color: #3498db; border-radius: 4px; padding: 4px 12px;");
+        saveBtn->setStyleSheet(ThemeManager::styleForRole(ThemeRole::PrimaryButton));
         editRow->addWidget(saveBtn);
 
         if (onAction) {
@@ -80,7 +82,7 @@ QWidget *EditableTextComponent::render(const QJsonObject &data,
         QString error = data["validation_error"].toString();
         if (!error.isEmpty()) {
             auto *errLabel = new QLabel(error);
-            errLabel->setStyleSheet("color: red;");
+            errLabel->setStyleSheet(ThemeManager::styleForRole(ThemeRole::DestructiveText));
             layout->addWidget(errLabel);
         }
     } else {

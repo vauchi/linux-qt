@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "componentrenderer.h"
+#include "thememanager.h"
 #include "components/textcomponent.h"
 #include "components/textinputcomponent.h"
 #include "components/togglelistcomponent.h"
@@ -50,6 +51,6 @@ QWidget *ComponentRenderer::render(const QJsonObject &component,
     QString type = component.keys().isEmpty() ? QStringLiteral("(empty)")
                                               : component.keys().first();
     auto *placeholder = new QLabel(QStringLiteral("Unknown component: ") + type);
-    placeholder->setStyleSheet("color: orange;");
+    placeholder->setStyleSheet(ThemeManager::styleForRole(ThemeRole::StatusWarning));
     return placeholder;
 }

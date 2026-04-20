@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "settingsgroupcomponent.h"
+#include "../thememanager.h"
 #include <QGroupBox>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -58,7 +59,7 @@ QWidget *SettingsGroupComponent::render(const QJsonObject &data,
             auto *btn = new QPushButton(itemLabel);
             btn->setAccessibleName(itemLabel);
             if (kind.contains("Destructive")) {
-                btn->setStyleSheet("color: red;");
+                btn->setStyleSheet(ThemeManager::styleForRole(ThemeRole::DestructiveText));
             }
             layout->addWidget(btn);
 

@@ -3,6 +3,7 @@
 
 #include "screenrenderer.h"
 #include "componentrenderer.h"
+#include "thememanager.h"
 #include "../platform/hardwarebackend.h"
 #include "../i18n.h"
 
@@ -99,7 +100,7 @@ void ScreenRenderer::renderScreen(const QJsonObject &screen) {
     if (screen.contains("subtitle") && !screen["subtitle"].isNull()) {
         auto *subtitle = new QLabel(screen["subtitle"].toString());
         subtitle->setAccessibleName(screen["subtitle"].toString());
-        subtitle->setStyleSheet("color: gray;");
+        subtitle->setStyleSheet(ThemeManager::styleForRole(ThemeRole::SecondaryText));
         m_layout->addWidget(subtitle);
     }
 
@@ -271,14 +272,16 @@ void ScreenRenderer::showValidationError(const QString &componentId,
         return;
     }
 
-    // Add red border to the target widget
+    // Add themed error border to the target widget
     QString original = target->styleSheet();
-    target->setStyleSheet(original + QStringLiteral("; border: 2px solid red;"));
+    target->setStyleSheet(original + QStringLiteral("; ") +
+                          ThemeManager::styleForRole(ThemeRole::ErrorBorder));
 
     // Insert error label below the target widget
     auto *errorLabel = new QLabel(message, this);
     errorLabel->setObjectName(componentId + "_error");
-    errorLabel->setStyleSheet("color: red; font-size: 12px;");
+    errorLabel->setStyleSheet(ThemeManager::styleForRole(ThemeRole::DestructiveText) +
+                              QStringLiteral(" font-size: 12px;"));
 
     // Find the target's position in the layout and insert after it
     for (int i = 0; i < m_layout->count(); ++i) {

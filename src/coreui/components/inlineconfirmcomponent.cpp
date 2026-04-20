@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "inlineconfirmcomponent.h"
+#include "../thememanager.h"
 #include "Tokens.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -28,7 +29,7 @@ QWidget *InlineConfirmComponent::render(const QJsonObject &data,
     auto *warningLabel = new QLabel(data["warning"].toString());
     warningLabel->setWordWrap(true);
     if (data["destructive"].toBool()) {
-        warningLabel->setStyleSheet("color: red;");
+        warningLabel->setStyleSheet(ThemeManager::styleForRole(ThemeRole::DestructiveText));
     }
     warningRow->addWidget(warningLabel, 1);
     layout->addLayout(warningRow);
@@ -47,9 +48,9 @@ QWidget *InlineConfirmComponent::render(const QJsonObject &data,
     QString confirmText = data["confirm_text"].toString("Confirm");
     auto *confirmBtn = new QPushButton(confirmText);
     if (data["destructive"].toBool()) {
-        confirmBtn->setStyleSheet("color: white; background-color: #e74c3c; border-radius: 4px; padding: 6px 16px;");
+        confirmBtn->setStyleSheet(ThemeManager::styleForRole(ThemeRole::DestructiveButton));
     } else {
-        confirmBtn->setStyleSheet("color: white; background-color: #3498db; border-radius: 4px; padding: 6px 16px;");
+        confirmBtn->setStyleSheet(ThemeManager::styleForRole(ThemeRole::PrimaryButton));
     }
     buttonRow->addWidget(confirmBtn);
     layout->addLayout(buttonRow);

@@ -3,6 +3,7 @@
 
 #include "qrcodecomponent.h"
 #include "../../i18n.h"
+#include "../thememanager.h"
 #include <QLabel>
 #include <QVBoxLayout>
 #include <QPainter>
@@ -87,7 +88,8 @@ QWidget *QrcodeComponent::render(const QJsonObject &data) {
     if (!labelText.isEmpty()) {
         auto *textLabel = new QLabel(labelText);
         textLabel->setAlignment(Qt::AlignCenter);
-        textLabel->setStyleSheet("color: #666; font-size: 12px;");
+        textLabel->setStyleSheet(ThemeManager::styleForRole(ThemeRole::SecondaryText) +
+                                 QStringLiteral(" font-size: 12px;"));
         layout->addWidget(textLabel);
     }
 

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "bannercomponent.h"
+#include "../thememanager.h"
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
@@ -13,7 +14,7 @@ QWidget *BannerComponent::render(const QJsonObject &data,
     // Banner has no "id" field — derive object name from action_id for uniqueness
     container->setObjectName(QStringLiteral("banner_") + data["action_id"].toString());
     container->setAccessibleName(data["text"].toString());
-    container->setStyleSheet("background-color: #e3f2fd; border-radius: 4px; padding: 8px;");
+    container->setStyleSheet(ThemeManager::styleForRole(ThemeRole::BannerInfo));
 
     auto *label = new QLabel(data["text"].toString());
     label->setWordWrap(true);

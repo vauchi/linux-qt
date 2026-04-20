@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "textcomponent.h"
+#include "../thememanager.h"
 #include <QLabel>
 
 QWidget *TextComponent::render(const QJsonObject &data) {
@@ -14,9 +15,11 @@ QWidget *TextComponent::render(const QJsonObject &data) {
     if (style == "Title") {
         label->setStyleSheet("font-size: 20px; font-weight: bold;");
     } else if (style == "Subtitle") {
-        label->setStyleSheet("font-size: 16px; color: #666;");
+        label->setStyleSheet(QStringLiteral("font-size: 16px; ") +
+                             ThemeManager::styleForRole(ThemeRole::SecondaryText));
     } else if (style == "Caption") {
-        label->setStyleSheet("font-size: 12px; color: #888;");
+        label->setStyleSheet(QStringLiteral("font-size: 12px; ") +
+                             ThemeManager::styleForRole(ThemeRole::SecondaryText));
     }
     // Body is the default — no extra styling needed
 
