@@ -169,6 +169,15 @@ test:a11y:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 # Visual snapshot regression — diffs against committed baselines.
+# Gates MR pipelines: a baseline diff blocks merge. When a legitimate
+# UI change lands, regenerate baselines via test:snapshots:record and
+# commit the updated tests/atspi/snapshots/baseline/.
+# Flipped from allow_failure:true to false as part of Phase 2 T2.1
+# (2026-04-22-ci-pipeline-health-audit). Re-measured MR flake rate on
+# linux-qt was test:a11y 3/20, build:qt 2/20; test:snapshots was NOT
+# flaky, so the gate is safe to activate here. If the flip destabilises
+# MR pass rate, revert this commit — the record-side sibling is
+# unchanged.
 test:snapshots:
   extends: .atspi-base
   variables:
@@ -185,7 +194,6 @@ test:snapshots:
       - tests/atspi/snapshots/actual/
       - tests/atspi/snapshots/diff/
     expire_in: 30 days
-  allow_failure: true
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes:
