@@ -19,6 +19,7 @@
 #include <QDir>
 #include <QFile>
 #include <QFileDialog>
+#include <QMessageBox>
 #include <QProcessEnvironment>
 #include <QStatusBar>
 
@@ -332,7 +333,26 @@ void VauchiWindow::importContactsFromFile() {
     QString msg = skipped > 0
         ? QString("Imported %1 contact(s), skipped %2").arg(imported).arg(skipped)
         : QString("Imported %1 contact(s)").arg(imported);
-    statusBar()->showMessage(msg, 4000);
+
+    QJsonArray warnings = obj["warnings"].toArray();
+    if (warnings.isEmpty()) {
+        statusBar()->showMessage(msg, 4000);
+    } else {
+        QStringList lines;
+        for (const auto &w : warnings) {
+            QJsonObject wo = w.toObject();
+            QString key = wo["key"].toString();
+            QString legacyText = wo["legacy_text"].toString();
+            QString rendered = tr_vauchi(key.toUtf8().constData(), legacyText);
+            const QJsonObject args = wo["args"].toObject();
+            for (auto it = args.begin(); it != args.end(); ++it) {
+                rendered.replace(QStringLiteral("{%1}").arg(it.key()),
+                                 it.value().toString());
+            }
+            lines << QStringLiteral("• ") + rendered;
+        }
+        QMessageBox::information(this, msg, lines.join(QStringLiteral("\n")));
+    }
 
     // Refresh screen to show imported contacts
     m_renderer->refresh();
