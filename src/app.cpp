@@ -169,16 +169,16 @@ VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
     connect(m_sidebar, &QListWidget::currentRowChanged, this, [this](int row) {
         if (row < 0 || !m_app) return;
 
-        // Get available screens
-        char *screensJson = vauchi_app_available_screens(m_app);
-        if (!screensJson) return;
+        const QByteArray locale = systemLocaleCode().toUtf8();
+        char *json = vauchi_app_sidebar_items(m_app, locale.constData());
+        if (!json) return;
 
-        QJsonArray screens = QJsonDocument::fromJson(screensJson).array();
-        vauchi_string_free(screensJson);
+        QJsonArray tabs = QJsonDocument::fromJson(json).array();
+        vauchi_string_free(json);
 
-        if (row < screens.size()) {
-            QString screenName = screens[row].toString();
-            char *resultJson = vauchi_app_navigate_to(m_app, screenName.toUtf8().constData());
+        if (row < tabs.size()) {
+            QString screenId = tabs[row].toObject()["id"].toString();
+            char *resultJson = vauchi_app_navigate_to(m_app, screenId.toUtf8().constData());
             if (resultJson) {
                 vauchi_string_free(resultJson);
             }
@@ -208,54 +208,24 @@ void VauchiWindow::buildSidebar() {
     refreshSidebar();
 }
 
-// Maps screen IDs to i18n keys (nav.* namespace in locales/*.json).
-// Fallback strings are English defaults for when i18n is not initialised
-// or the CABI library lacks the i18n symbols at link time.
-static const QHash<QString, QPair<const char *, QString>> SCREEN_I18N = {
-    {"my_info",        {"nav.myCard",    QStringLiteral("My Card")}},
-    {"contacts",       {"nav.contacts",  QStringLiteral("Contacts")}},
-    {"exchange",       {"nav.exchange",  QStringLiteral("Exchange")}},
-    {"groups",         {"nav.groups",    QStringLiteral("Groups")}},
-    {"more",           {"nav.more",      QStringLiteral("More")}},
-    {"onboarding",     {"nav.onboarding", QStringLiteral("Onboarding")}},
-    {"settings",       {"nav.settings",  QStringLiteral("Settings")}},
-    {"help",           {"nav.help",      QStringLiteral("Help")}},
-    {"recovery",       {"nav.recovery",  QStringLiteral("Recovery")}},
-    {"backup",         {"nav.backup",    QStringLiteral("Backup")}},
-    {"sync",           {"nav.sync",      QStringLiteral("Sync")}},
-    {"activity_log",   {"nav.activity",  QStringLiteral("Activity")}},
-    {"privacy",        {"nav.privacy",   QStringLiteral("Privacy")}},
-    {"device_linking", {"nav.devices",   QStringLiteral("Devices")}},
-    {"device_management", {"nav.devices", QStringLiteral("Devices")}},
-    {"support",        {"nav.support",   QStringLiteral("Support")}},
-};
-
-static QString screenLabel(const QString &screenId) {
-    auto it = SCREEN_I18N.find(screenId);
-    if (it != SCREEN_I18N.end()) {
-        const char *key = it.value().first;
-        if (key) return tr_vauchi(key, it.value().second);
-        return it.value().second;
-    }
-    // Fallback: capitalize + replace underscores
-    QString label = screenId;
-    if (!label.isEmpty()) label[0] = label[0].toUpper();
-    label.replace('_', ' ');
-    return label;
-}
-
 void VauchiWindow::refreshSidebar() {
     m_sidebar->clear();
     if (!m_app) return;
 
-    char *json = vauchi_app_available_screens(m_app);
+    // Core owns both the screen set and the localized labels — no
+    // local SCREEN_I18N table needed. Each TabInfo.label is already
+    // resolved against the requested locale, with an English
+    // fallback baked in when the key is missing (see
+    // `AppEngine::sidebar_items` in vauchi-app).
+    const QByteArray locale = systemLocaleCode().toUtf8();
+    char *json = vauchi_app_sidebar_items(m_app, locale.constData());
     if (!json) return;
 
-    QJsonArray screens = QJsonDocument::fromJson(json).array();
+    QJsonArray tabs = QJsonDocument::fromJson(json).array();
     vauchi_string_free(json);
 
-    for (const auto &screen : screens) {
-        m_sidebar->addItem(screenLabel(screen.toString()));
+    for (const auto &tab : tabs) {
+        m_sidebar->addItem(tab.toObject()["label"].toString());
     }
 }
 
