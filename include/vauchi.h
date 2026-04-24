@@ -230,6 +230,17 @@ char *vauchi_app_handle_action(struct VauchiApp *handle, const char *action_json
 char *vauchi_app_navigate_to(struct VauchiApp *handle, const char *screen_name);
 
 /**
+ * Navigate to a parameterized screen (e.g. contact_detail with a contact_id).
+ *
+ * # Safety
+ * `handle` must be a valid app handle or null.
+ * `screen_name` and `param` must be valid NUL-terminated UTF-8 strings or null.
+ */
+char *vauchi_app_navigate_to_param(struct VauchiApp *handle,
+                                   const char *screen_name,
+                                   const char *param);
+
+/**
  * Get available screens as a JSON array of strings.
  *
  * # Safety
@@ -360,8 +371,25 @@ char *vauchi_app_device_link_sync_complete(struct VauchiApp *handle);
 /**
  * Import contacts from vCard (.vcf) data.
  *
- * Returns a JSON object: `{"imported":N,"skipped":N,"warnings":["..."]}`,
- * or `{"error":"..."}` on failure. Returns null if `handle` or `data` is null.
+ * Returns a JSON object on success:
+ * ```json
+ * {
+ *   "imported": 3,
+ *   "skipped": 1,
+ *   "warnings": [
+ *     {"key": "import.warning.duplicate_uid", "args": {"uid": "abc"}, "legacy_text": "Skipped duplicate (UID: abc)"}
+ *   ]
+ * }
+ * ```
+ *
+ * Each warning object carries the stable i18n `key`, a string map of
+ * placeholder `args`, and a pre-rendered English `legacy_text` frontends
+ * may use as a fallback. The shape matches the UniFFI
+ * `MobileImportWarning` record so CABI + UniFFI consumers stay aligned
+ * (G6 of the pure-renderer remediation).
+ *
+ * Returns `{"error":"..."}` on failure. Returns null if `handle` or
+ * `data` is null.
  *
  * The caller must free the returned string with `vauchi_string_free`.
  *
@@ -391,47 +419,43 @@ char *vauchi_app_import_contacts_from_vcf(struct VauchiApp *handle,
 char *vauchi_app_drain_notifications(struct VauchiApp *handle);
 
 /**
- * Check if audio proximity verification is available on this platform.
+ * Return the mobile tab-bar metadata as a JSON array.
  *
- * Returns 1 if cpal can enumerate at least one output and one input device,
- * 0 otherwise. Always safe to call (never panics).
+ * Mirrors `PlatformAppEngine::tab_info(MobileLocale)` (UniFFI) — each
+ * element is `{id, label, icon, badge_count}`. Pre-identity the
+ * result is a single-element `[{onboarding ...}]` array; post-identity
+ * it is the 5-element bottom-tab set (MyInfo / Contacts / Exchange /
+ * Groups / More). Labels are pre-localized via core i18n, with an
+ * English fallback when the key is missing.
+ *
+ * `locale_code` is a null-terminated ISO code (`"en"`, `"de"`, ...).
+ * Null, malformed, or unknown codes fall back to the default locale.
+ *
+ * Returns null when `handle` is null. The caller must free the
+ * returned string with `vauchi_string_free`.
  *
  * # Safety
- * No special requirements.
+ * `handle` must be a valid app handle or null. `locale_code` must be
+ * a valid null-terminated C string or null.
  */
-int32_t vauchi_audio_is_available(void);
+char *vauchi_app_tab_info(struct VauchiApp *handle, const char *locale_code);
 
 /**
- * Emit an ultrasonic challenge signal containing `data`.
+ * Return the desktop sidebar metadata as a JSON array.
  *
- * Blocks until the signal has been emitted. Returns 1 on success, 0 on failure.
- * `data` must point to at least `data_len` valid bytes.
+ * Mirrors `PlatformAppEngine::sidebar_items(MobileLocale)` (UniFFI) —
+ * the broader 14-entry top-level set used by desktop frames
+ * (MyInfo, Contacts, Exchange, Groups, Settings, Recovery,
+ * DeviceManagement, Backup, Privacy, Support, Help, ActivityLog,
+ * Sync, More). Pre-identity returns a single-element `[{onboarding}]`
+ * array.
  *
- * # Safety
- * `data` must be a valid pointer to `data_len` bytes, or null.
- */
-int32_t vauchi_audio_emit(const uint8_t *data, uintptr_t data_len);
-
-/**
- * Listen for an ultrasonic response within `timeout_ms` milliseconds.
- *
- * Blocks until a response is received or the timeout expires.
- * Returns a JSON string `{"data":[1,2,3,...]}` on success, or null on
- * failure/timeout. The caller must free the returned string with
- * `vauchi_string_free`.
+ * `locale_code`: see `vauchi_app_tab_info`.
  *
  * # Safety
- * No special requirements.
+ * Same as `vauchi_app_tab_info`.
  */
-char *vauchi_audio_listen(uint64_t timeout_ms);
-
-/**
- * Stop all audio operations. Cancels any in-flight emit or listen.
- *
- * # Safety
- * No special requirements.
- */
-void vauchi_audio_stop(void);
+char *vauchi_app_sidebar_items(struct VauchiApp *handle, const char *locale_code);
 
 /**
  * Start a device link as the existing device (initiator).
