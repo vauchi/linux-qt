@@ -300,9 +300,18 @@ void VauchiWindow::importContactsFromFile() {
 
     int imported = obj["imported"].toInt();
     int skipped = obj["skipped"].toInt();
-    QString msg = skipped > 0
-        ? QString("Imported %1 contact(s), skipped %2").arg(imported).arg(skipped)
-        : QString("Imported %1 contact(s)").arg(imported);
+    QString importedLine = tr_vauchi("import_contacts.result_imported",
+                                     QStringLiteral("{count} contact(s) imported"))
+                               .replace(QStringLiteral("{count}"),
+                                        QString::number(imported));
+    QString msg = importedLine;
+    if (skipped > 0) {
+        QString skippedLine = tr_vauchi("import_contacts.result_skipped",
+                                        QStringLiteral("{count} skipped (duplicates or invalid)"))
+                                  .replace(QStringLiteral("{count}"),
+                                           QString::number(skipped));
+        msg = importedLine + QStringLiteral(" — ") + skippedLine;
+    }
 
     QJsonArray warnings = obj["warnings"].toArray();
     if (warnings.isEmpty()) {
