@@ -22,9 +22,14 @@ QWidget *CardPreviewComponent::render(const QJsonObject &data,
     name->setAccessibleName(data["name"].toString());
     layout->addWidget(name);
 
-    // Render top-level fields
-    QJsonArray fields = data["fields"].toArray();
-    for (const auto &field : fields) {
+    // Render top-level fields — G1 (ADR-021/043): use core's pre-filtered
+    // `visible_fields` list instead of the raw `fields` array. The previous
+    // render of `data["fields"]` leaked Hidden-visibility fields into the
+    // preview. `visible_fields` is computed by core's `build_visible_fields`
+    // helper and respects both the per-group selection and the global
+    // Shown/Groups/Hidden filter.
+    QJsonArray visibleFields = data["visible_fields"].toArray();
+    for (const auto &field : visibleFields) {
         QJsonObject f = field.toObject();
         auto *row = new QHBoxLayout;
         auto *label = new QLabel(f["label"].toString() + ":");
