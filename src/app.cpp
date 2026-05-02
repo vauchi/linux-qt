@@ -86,15 +86,11 @@ VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
     }
 #endif
 
-    // Navigate to dynamic default screen (MyInfo with 0 contacts, Contacts with >=1)
-    if (m_app) {
-        char *defaultScreen = vauchi_app_default_screen(m_app);
-        if (defaultScreen) {
-            char *resultJson = vauchi_app_navigate_to(m_app, defaultScreen);
-            if (resultJson) vauchi_string_free(resultJson);
-            vauchi_string_free(defaultScreen);
-        }
-    }
+    // Initial screen comes from `vauchi_app_create*` (Onboarding /
+    // Lock / MyInfo). The render path reads
+    // `vauchi_app_current_screen()`, so no explicit navigate is
+    // needed — and an explicit `vauchi_app_default_screen()` call
+    // would bypass the Lock state for password-protected installs.
 
     auto *central = new QWidget(this);
     auto *layout = new QHBoxLayout(central);
