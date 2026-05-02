@@ -63,6 +63,9 @@ set(QVAUCHI_SOURCES
     src/coreui/components/editabletextcomponent.cpp
     src/coreui/components/bannercomponent.cpp
     src/coreui/components/dividercomponent.cpp
+    src/coreui/components/dropdowncomponent.cpp
+    src/coreui/components/avatarpreviewcomponent.cpp
+    src/coreui/components/slidercomponent.cpp
     src/platform/systemtray.cpp
     src/platform/menubar.cpp
     src/platform/hardwarebackend.cpp
