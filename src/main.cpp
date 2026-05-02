@@ -4,11 +4,13 @@
 /// Vauchi — native Linux desktop app (Qt6).
 
 #include "app.h"
+#include "platform/screencaptureprotection.h"
 #include <QApplication>
 #include <QIcon>
 
 int main(int argc, char *argv[]) {
     QApplication qtApp(argc, argv);
+    enableScreenCaptureProtection();
     qtApp.setApplicationName("vauchi");
     qtApp.setApplicationVersion("0.5.0");
     qtApp.setOrganizationName("vauchi");

@@ -70,6 +70,7 @@ set(QVAUCHI_SOURCES
     src/platform/menubar.cpp
     src/platform/hardwarebackend.cpp
     src/platform/directsendworker.cpp
+    src/platform/screencaptureprotection.cpp
     resources/resources.qrc
 )
 
