@@ -143,6 +143,18 @@ VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
 
     }
 
+    // Foreground hook: re-fetch the current screen on
+    // background→foreground transition. Listener events cover most
+    // state changes during backgrounding, but a missed event would
+    // leave the UI stale until the next user action.
+    connect(qApp, &QApplication::applicationStateChanged, this,
+            [this](Qt::ApplicationState state) {
+                if (state == Qt::ApplicationActive && m_renderer) {
+                    m_renderer->refresh();
+                    drainAndShowNotifications();
+                }
+            });
+
     buildSidebar();
 
     // Refresh sidebar when screen changes (e.g., after onboarding completes)
