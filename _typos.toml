@@ -1,0 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+[default.extend-identifiers]
+# PN532 is the NXP NFC chip used by ACR122U USB readers — flagged
+# by typos as a typo of ON.
+PN532 = "PN532"

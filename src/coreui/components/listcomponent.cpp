@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "contactlistcomponent.h"
+#include "listcomponent.h"
 #include "../../i18n.h"
 #include <QVBoxLayout>
 #include <QListWidget>
 #include <QLineEdit>
 #include <QJsonArray>
 
-QWidget *ContactListComponent::render(const QJsonObject &data,
+QWidget *ListComponent::render(const QJsonObject &data,
                                       const OnAction &onAction) {
     auto *container = new QWidget;
     auto *layout = new QVBoxLayout(container);

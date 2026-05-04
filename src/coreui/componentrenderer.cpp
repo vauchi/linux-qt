@@ -7,9 +7,9 @@
 #include "components/textinputcomponent.h"
 #include "components/togglelistcomponent.h"
 #include "components/fieldlistcomponent.h"
-#include "components/cardpreviewcomponent.h"
+#include "components/previewcomponent.h"
 #include "components/infopanelcomponent.h"
-#include "components/contactlistcomponent.h"
+#include "components/listcomponent.h"
 #include "components/settingsgroupcomponent.h"
 #include "components/actionlistcomponent.h"
 #include "components/statusindicatorcomponent.h"
@@ -32,9 +32,9 @@ QWidget *ComponentRenderer::render(const QJsonObject &component,
     if (component.contains("TextInput")) return TextInputComponent::render(component["TextInput"].toObject(), onAction);
     if (component.contains("ToggleList")) return ToggleListComponent::render(component["ToggleList"].toObject(), onAction);
     if (component.contains("FieldList")) return FieldListComponent::render(component["FieldList"].toObject(), onAction);
-    if (component.contains("Preview")) return CardPreviewComponent::render(component["Preview"].toObject(), onAction);
+    if (component.contains("Preview")) return PreviewComponent::render(component["Preview"].toObject(), onAction);
     if (component.contains("InfoPanel")) return InfoPanelComponent::render(component["InfoPanel"].toObject());
-    if (component.contains("List")) return ContactListComponent::render(component["List"].toObject(), onAction);
+    if (component.contains("List")) return ListComponent::render(component["List"].toObject(), onAction);
     if (component.contains("SettingsGroup")) return SettingsGroupComponent::render(component["SettingsGroup"].toObject(), onAction);
     if (component.contains("ActionList")) return ActionListComponent::render(component["ActionList"].toObject(), onAction);
     if (component.contains("StatusIndicator")) return StatusIndicatorComponent::render(component["StatusIndicator"].toObject());

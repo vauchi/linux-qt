@@ -51,9 +51,9 @@ set(QVAUCHI_SOURCES
     src/coreui/components/textinputcomponent.cpp
     src/coreui/components/togglelistcomponent.cpp
     src/coreui/components/fieldlistcomponent.cpp
-    src/coreui/components/cardpreviewcomponent.cpp
+    src/coreui/components/previewcomponent.cpp
     src/coreui/components/infopanelcomponent.cpp
-    src/coreui/components/contactlistcomponent.cpp
+    src/coreui/components/listcomponent.cpp
     src/coreui/components/settingsgroupcomponent.cpp
     src/coreui/components/actionlistcomponent.cpp
     src/coreui/components/statusindicatorcomponent.cpp
