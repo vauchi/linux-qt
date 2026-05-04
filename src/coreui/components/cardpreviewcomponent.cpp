@@ -41,17 +41,17 @@ QWidget *CardPreviewComponent::render(const QJsonObject &data,
         layout->addLayout(row);
     }
 
-    // Render group views as tabs if present
-    QJsonArray groups = data["group_views"].toArray();
-    if (!groups.isEmpty()) {
+    // Render preview variants as tabs if present (per-group, per-locale, etc.)
+    QJsonArray variants = data["variants"].toArray();
+    if (!variants.isEmpty()) {
         auto *tabs = new QTabWidget;
-        for (const auto &group : groups) {
-            QJsonObject g = group.toObject();
+        for (const auto &variant : variants) {
+            QJsonObject v = variant.toObject();
             auto *page = new QWidget;
             auto *pageLayout = new QVBoxLayout(page);
-            QJsonArray gFields = g["visible_fields"].toArray();
-            for (const auto &gf : gFields) {
-                QJsonObject f = gf.toObject();
+            QJsonArray vFields = v["visible_fields"].toArray();
+            for (const auto &vf : vFields) {
+                QJsonObject f = vf.toObject();
                 auto *row = new QHBoxLayout;
                 auto *label = new QLabel(f["label"].toString() + ":");
                 label->setStyleSheet("font-weight: bold;");
@@ -62,27 +62,29 @@ QWidget *CardPreviewComponent::render(const QJsonObject &data,
                 pageLayout->addLayout(row);
             }
             pageLayout->addStretch();
-            tabs->addTab(page, g["display_name"].toString());
+            tabs->addTab(page, v["display_name"].toString());
         }
-        // Select the active group if specified
-        QString selectedGroup = data["selected_group"].toString();
-        if (!selectedGroup.isEmpty()) {
-            for (int i = 0; i < groups.size(); ++i) {
-                if (groups[i].toObject()["group_name"].toString() == selectedGroup) {
+        // Select the active variant if specified
+        QString selectedVariant = data["selected_variant"].toString();
+        if (!selectedVariant.isEmpty()) {
+            for (int i = 0; i < variants.size(); ++i) {
+                if (variants[i].toObject()["variant_id"].toString() == selectedVariant) {
                     tabs->setCurrentIndex(i);
                     break;
                 }
             }
         }
-        // Wire tab switch to emit GroupViewSelected
+        // Wire tab switch to emit GroupViewSelected (frontend → core wire
+        // surface; renamed to a UI-shaped action is a separate sweep
+        // post-Wire-Humble Tier 1)
         if (onAction) {
             QObject::connect(tabs, &QTabWidget::currentChanged, tabs,
-                             [onAction, groups](int index) {
-                                 if (index < 0 || index >= groups.size()) return;
-                                 QString groupName = groups[index].toObject()["group_name"].toString();
+                             [onAction, variants](int index) {
+                                 if (index < 0 || index >= variants.size()) return;
+                                 QString variantId = variants[index].toObject()["variant_id"].toString();
                                  QJsonObject action;
                                  QJsonObject inner;
-                                 inner["group_name"] = groupName;
+                                 inner["group_name"] = variantId;
                                  action["GroupViewSelected"] = inner;
                                  onAction(action);
                              });

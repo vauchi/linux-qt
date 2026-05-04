@@ -40,12 +40,12 @@ QWidget *ContactListComponent::render(const QJsonObject &data,
     list->setObjectName(componentId);
     list->setAccessibleName(QStringLiteral("Contacts"));
 
-    QJsonArray contacts = data["contacts"].toArray();
-    for (const auto &contact : contacts) {
-        QJsonObject contactObj = contact.toObject();
-        auto *item = new QListWidgetItem(contactObj["name"].toString());
-        item->setData(Qt::UserRole, contactObj["id"].toString());
-        list->addItem(item);
+    QJsonArray items = data["items"].toArray();
+    for (const auto &entry : items) {
+        QJsonObject obj = entry.toObject();
+        auto *widgetItem = new QListWidgetItem(obj["name"].toString());
+        widgetItem->setData(Qt::UserRole, obj["id"].toString());
+        list->addItem(widgetItem);
     }
 
     if (onAction) {
