@@ -212,11 +212,11 @@ void ScreenRenderer::processActionResult(const char *resultJson) {
     } else if (result.contains("WipeComplete")) {
         refresh();
         emit screenChanged();
-    } else if (result.contains("ExchangeCommands")) {
+    } else if (result.contains("Commands")) {
         // ADR-031: Dispatch exchange commands to hardware backends.
         // Camera/BLE/NFC backends handle their respective commands;
         // unavailable hardware triggers HardwareUnavailable events back to core.
-        QJsonObject cmds = result["ExchangeCommands"].toObject();
+        QJsonObject cmds = result["Commands"].toObject();
         QJsonArray commands = cmds["commands"].toArray();
         refresh();
         m_hardware->dispatchCommands(commands);

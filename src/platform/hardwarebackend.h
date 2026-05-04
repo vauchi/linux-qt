@@ -13,8 +13,8 @@ class AudioBackend;
 class NfcBackend;
 class DirectSendWorker;
 
-/// Dispatches ExchangeCommands to hardware backends and sends
-/// ExchangeHardwareEvents back to core via CABI.
+/// Dispatches Commands to hardware backends and sends
+/// Events back to core via CABI.
 class HardwareBackend : public QObject {
     Q_OBJECT
 
