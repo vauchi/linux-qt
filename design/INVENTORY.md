@@ -14,9 +14,9 @@ Each component maps a vauchi-core JSON `Component` variant to Qt6 widgets.
 | 2 | TextInput | `textinputcomponent.cpp` | `QLineEdit` | Yes (TextChanged on Enter/focus-leave) | Onboarding, Settings |
 | 3 | PinInput | `pininputcomponent.cpp` | `QLineEdit` (password echo) | Yes (TextChanged) | Lock, DuressPin |
 | 4 | ToggleList | `togglelistcomponent.cpp` | `QCheckBox` (multiple) | Yes (ItemToggled) | Onboarding (groups), Exchange |
-| 5 | ContactList | `contactlistcomponent.cpp` | `QListWidget` | Yes (ListItemSelected) | Contacts |
+| 5 | List | `listcomponent.cpp` | `QListWidget` | Yes (ListItemSelected) | Contacts |
 | 6 | FieldList | `fieldlistcomponent.cpp` | `QListWidget` with headers | Yes (ListItemSelected) | MyInfo, ContactDetail |
-| 7 | CardPreview | `cardpreviewcomponent.cpp` | `QFrame` + `QTabWidget` | Yes (GroupViewSelected) | MyInfo, ContactDetail |
+| 7 | Preview | `previewcomponent.cpp` | `QFrame` + `QTabWidget` | Yes (GroupViewSelected) | MyInfo, ContactDetail |
 | 8 | QrCode | `qrcodecomponent.cpp` | `QLabel` (QPixmap via libqrencode) | Yes (scan via CameraBackend, paste fallback) | Exchange |
 | 9 | InfoPanel | `infopanelcomponent.cpp` | `QLabel` + `QVBoxLayout` | No | Help, Support |
 | 10 | StatusIndicator | `statusindicatorcomponent.cpp` | `QLabel` with icon | No | DeliveryStatus |
@@ -28,7 +28,7 @@ Each component maps a vauchi-core JSON `Component` variant to Qt6 widgets.
 | 16 | Banner | `bannercomponent.cpp` | `QLabel` + `QPushButton` (horizontal) | Yes (ActionPressed) | Informational bar with optional action |
 | 17 | Dropdown | `dropdowncomponent.cpp` | `QComboBox` | Yes (ListItemSelected) | Settings, forms |
 | 18 | Slider | `slidercomponent.cpp` | `QSlider` (Horizontal) | Yes (SliderChanged) | Avatar editor (brightness) |
-| 19 | AvatarPreview | `avatarpreviewcomponent.cpp` | `QLabel` (QPixmap or initials) | No (editable click is iOS/Android UX, not wired) | CardPreview, AvatarEditor |
+| 19 | AvatarPreview | `avatarpreviewcomponent.cpp` | `QLabel` (QPixmap or initials) | No (editable click is iOS/Android UX, not wired) | Preview, AvatarEditor |
 
 ## Navigation
 
@@ -38,8 +38,8 @@ Built dynamically from `vauchi_app_available_screens()`. When no identity exists
 
 | # | Screen | CABI Name | Key Components |
 |---|--------|-----------|----------------|
-| 1 | My Info | `my_info` | CardPreview, FieldList, ActionList |
-| 2 | Contacts | `contacts` | ContactList |
+| 1 | My Info | `my_info` | Preview, FieldList, ActionList |
+| 2 | Contacts | `contacts` | List |
 | 3 | Exchange | `exchange` | QrCode, Text |
 | 4 | Groups | `groups` | ToggleList, ActionList |
 | 5 | More | `more` | ActionList (navigation hub) |
@@ -100,8 +100,8 @@ Exchange screen → Show QR (QrCode display)
 ### W3: Contact Management
 
 ```text
-Contacts → Select contact (ContactList)
-  → Contact detail (CardPreview, FieldList)
+Contacts → Select contact (List)
+  → Contact detail (Preview, FieldList)
   → Action handling via CABI
 ```
 
