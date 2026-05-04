@@ -201,11 +201,6 @@ void ScreenRenderer::processActionResult(const char *resultJson) {
         if (r) vauchi_string_free(r);
         refresh();
         emit screenChanged();
-    } else if (result.contains("StartBackupImport")) {
-        char *r = vauchi_app_navigate_to(m_app, "backup");
-        if (r) vauchi_string_free(r);
-        refresh();
-        emit screenChanged();
     } else if (result.contains("OpenContact")) {
         // CABI doesn't support parameterized navigation yet — refresh as fallback
         refresh();
