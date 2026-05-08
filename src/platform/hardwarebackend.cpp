@@ -308,6 +308,12 @@ void HardwareBackend::dispatchCommands(const QJsonArray &commands) {
             sendUnavailable(QStringLiteral("camera_switch"));
             continue;
         }
+        // Phase 2c: orientation lock is a mobile concept — desktop
+        // windows are user-resizable and don't rotate with the device.
+        if (cmdObj.contains("SetOrientationLock")) {
+            sendUnavailable(QStringLiteral("orientation_lock"));
+            continue;
+        }
     }
 }
 
