@@ -285,6 +285,29 @@ void HardwareBackend::dispatchCommands(const QJsonArray &commands) {
             worker->start();
             continue;
         }
+
+        // Phase 2b screen-presentation lifecycle commands. Linux desktop
+        // has no programmatic brightness control (user owns it via
+        // system settings), the OS-level idle timer / screensaver is
+        // owned by KDE / GNOME, ShowShareSheet has no system equivalent,
+        // and webcams have no front/rear distinction. Answer
+        // HardwareUnavailable so core does not retry.
+        if (cmdObj.contains("SetScreenBrightness")) {
+            sendUnavailable(QStringLiteral("screen_brightness"));
+            continue;
+        }
+        if (cmdObj.contains("SetIdleTimerDisabled")) {
+            sendUnavailable(QStringLiteral("idle_timer"));
+            continue;
+        }
+        if (cmdObj.contains("ShowShareSheet")) {
+            sendUnavailable(QStringLiteral("share_sheet"));
+            continue;
+        }
+        if (cmdObj.contains("SwitchCamera")) {
+            sendUnavailable(QStringLiteral("camera_switch"));
+            continue;
+        }
     }
 }
 
