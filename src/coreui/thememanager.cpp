@@ -23,6 +23,10 @@ void ThemeManager::applyDefaultTheme() {
     applyTheme(QJsonObject{{"colors", defaultColors()}});
 }
 
+void ThemeManager::applyDefaultLightTheme() {
+    applyTheme(QJsonObject{{"colors", defaultLightColors()}});
+}
+
 void ThemeManager::applyTheme(const QJsonObject &theme) {
     QJsonObject colors = theme["colors"].toObject();
     if (colors.isEmpty()) return;
@@ -197,5 +201,25 @@ QJsonObject ThemeManager::defaultColors() {
     colors["error"]          = QStringLiteral("#f38ba8");
     colors["warning"]        = QStringLiteral("#fab387");
     colors["border"]         = QStringLiteral("#45475a");
+    return colors;
+}
+
+QJsonObject ThemeManager::defaultLightColors() {
+    // Catppuccin Latte — the light counterpart to defaultColors()'s
+    // Catppuccin Mocha. Values resolved from themes/themes.json
+    // `catppuccin-latte` (semantic → primitive map) at the time of
+    // writing; mirror updates here when themes.json drifts.
+    QJsonObject colors;
+    colors["bg-primary"]     = QStringLiteral("#eff1f5");
+    colors["bg-secondary"]   = QStringLiteral("#e6e9ef");
+    colors["bg-tertiary"]    = QStringLiteral("#ccd0da");
+    colors["text-primary"]   = QStringLiteral("#4c4f69");
+    colors["text-secondary"] = QStringLiteral("#6a6d82");
+    colors["accent"]         = QStringLiteral("#1e66f5");
+    colors["accent-dark"]    = QStringLiteral("#209fb5");
+    colors["success"]        = QStringLiteral("#40a02b");
+    colors["error"]          = QStringLiteral("#d20f39");
+    colors["warning"]        = QStringLiteral("#fe640b");
+    colors["border"]         = QStringLiteral("#9ca0b0");
     return colors;
 }

@@ -27,8 +27,21 @@ VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
     setWindowTitle("Vauchi");
     resize(700, 600);
 
-    // Apply core theme colors via QPalette (runtime-switchable)
-    ThemeManager::applyDefaultTheme();
+    // Apply core theme colors via QPalette (runtime-switchable).
+    //
+    // VAUCHI_THEME=light selects the bundled Catppuccin Latte palette;
+    // anything else (or unset) keeps the Catppuccin Mocha default.
+    // The hook exists so the dark-mode snapshot parity test can launch
+    // two qvauchi processes with identical inputs but opposite themes.
+    // The env var is also a stable handle for any future user-mode
+    // theme switching that needs to bootstrap before settings load.
+    const QString themeChoice =
+        QProcessEnvironment::systemEnvironment().value("VAUCHI_THEME").toLower();
+    if (themeChoice == QStringLiteral("light")) {
+        ThemeManager::applyDefaultLightTheme();
+    } else {
+        ThemeManager::applyDefaultTheme();
+    }
 
     // Persistent storage: XDG_DATA_HOME/vauchi/
     QString dataDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);

@@ -32,6 +32,41 @@ static void test_default_colors() {
     printf("  PASS: default_colors\n");
 }
 
+// --- Test: light colors match Catppuccin Latte ---
+static void test_default_light_colors() {
+    QJsonObject colors = ThemeManager::defaultLightColors();
+    assert(colors["bg-primary"].toString() == "#eff1f5");
+    assert(colors["bg-secondary"].toString() == "#e6e9ef");
+    assert(colors["bg-tertiary"].toString() == "#ccd0da");
+    assert(colors["text-primary"].toString() == "#4c4f69");
+    assert(colors["text-secondary"].toString() == "#6a6d82");
+    assert(colors["accent"].toString() == "#1e66f5");
+    assert(colors["accent-dark"].toString() == "#209fb5");
+    assert(colors["success"].toString() == "#40a02b");
+    assert(colors["error"].toString() == "#d20f39");
+    assert(colors["warning"].toString() == "#fe640b");
+    assert(colors["border"].toString() == "#9ca0b0");
+    // Sanity: dark default must not equal the light default on any
+    // semantic role, otherwise the snapshot pair would compare equal
+    // and the new gate would silently pass.
+    QJsonObject dark = ThemeManager::defaultColors();
+    assert(dark["bg-primary"].toString() != colors["bg-primary"].toString());
+    assert(dark["text-primary"].toString() != colors["text-primary"].toString());
+    printf("  PASS: default_light_colors\n");
+}
+
+// --- Test: applyDefaultLightTheme switches currentColors to Latte ---
+static void test_apply_default_light_theme() {
+    ThemeManager::applyDefaultLightTheme();
+    QJsonObject seen = ThemeManager::currentColors();
+    assert(seen["bg-primary"].toString() == "#eff1f5");
+    assert(seen["accent"].toString() == "#1e66f5");
+    // Restore Catppuccin Mocha so subsequent tests see the default.
+    ThemeManager::applyDefaultTheme();
+    assert(ThemeManager::currentColors()["accent"].toString() == "#89b4fa");
+    printf("  PASS: apply_default_light_theme\n");
+}
+
 // --- Test: palette generation maps colors correctly ---
 static void test_palette_from_colors() {
     QJsonObject colors = ThemeManager::defaultColors();
@@ -237,6 +272,8 @@ int main(int argc, char *argv[]) {
 
     printf("ThemeManager tests:\n");
     test_default_colors();
+    test_default_light_colors();
+    test_apply_default_light_theme();
     test_palette_from_colors();
     test_different_themes_different_palettes();
     test_stylesheet_from_colors();

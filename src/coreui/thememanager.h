@@ -35,6 +35,11 @@ public:
     /// Apply the default bundled theme (Catppuccin Mocha).
     static void applyDefaultTheme();
 
+    /// Apply the bundled light theme (Catppuccin Latte). Used by the
+    /// dark-mode snapshot parity test pair — invoked via the
+    /// `VAUCHI_THEME=light` env var read at startup.
+    static void applyDefaultLightTheme();
+
     /// Apply a theme from a JSON object (same schema as themes.json entries).
     static void applyTheme(const QJsonObject &theme);
 
@@ -50,6 +55,10 @@ public:
 
     /// Returns the default theme colors as a JSON object (Catppuccin Mocha).
     static QJsonObject defaultColors();
+
+    /// Returns the bundled light theme colors as a JSON object
+    /// (Catppuccin Latte).
+    static QJsonObject defaultLightColors();
 
     /// Returns the colors from the most-recently applied theme, falling back
     /// to defaultColors() until applyTheme()/applyDefaultTheme() is called.
