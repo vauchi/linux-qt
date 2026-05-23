@@ -179,11 +179,19 @@ test:a11y:
 # flaky, so the gate is safe to activate here. If the flip destabilises
 # MR pass rate, revert this commit — the record-side sibling is
 # unchanged.
+#
+# 2026-05-23: layout split to `baseline/{dark,light}/` to support the
+# dark-mode snapshot parity gate (record
+# `2026-05-01-dark-mode-snapshot-parity`). VRT_SCREENSHOT_DIR points
+# at the dark subdir because the shared `vrt-upload.sh` uses
+# `find -maxdepth 1 -name '*.png'` and is consumed by 8 repos — a
+# cross-cutting maxdepth bump belongs in its own MR. Light baselines
+# still ship as job artifacts under the parent `baseline/` glob.
 test:snapshots:
   extends: .atspi-base
   variables:
     VRT_PLATFORM: linux-qt
-    VRT_SCREENSHOT_DIR: tests/atspi/snapshots/baseline
+    VRT_SCREENSHOT_DIR: tests/atspi/snapshots/baseline/dark
   script:
     - tests/atspi/run-tests.sh -v --tb=short -k "test_snapshots"
   after_script:
