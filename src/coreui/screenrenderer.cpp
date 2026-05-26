@@ -201,14 +201,6 @@ void ScreenRenderer::processActionResult(const char *resultJson) {
         if (r) vauchi_string_free(r);
         refresh();
         emit screenChanged();
-    } else if (result.contains("OpenContact")) {
-        // CABI doesn't support parameterized navigation yet — refresh as fallback
-        refresh();
-        emit screenChanged();
-    } else if (result.contains("EditContact")) {
-        // CABI doesn't support parameterized navigation yet — refresh as fallback
-        refresh();
-        emit screenChanged();
     } else if (result.contains("WipeComplete")) {
         refresh();
         emit screenChanged();
@@ -249,7 +241,9 @@ void ScreenRenderer::processActionResult(const char *resultJson) {
         QString message = err["message"].toString();
         showValidationError(componentId, message);
     } else {
-        // OpenEntryDetail, etc.
+        // Navigation actions resolved to NavigateTo by core (`route_result`)
+        // before reaching the frontend — OpenContact / EditContact /
+        // OpenEntryDetail / etc. never arrive raw (ADR-043 Humble UI).
         refresh();
     }
 }
