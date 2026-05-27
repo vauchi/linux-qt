@@ -113,6 +113,43 @@ static void test_navigate_unknown() {
     vauchi_app_destroy(app);
 }
 
+// --- Test: NavigateToTab routes an opaque tab token to NavigateTo (ADR-043 Am4) ---
+// The sidebar tab tap forwards UserAction::NavigateToTab{action_id} — the opaque
+// token core minted on TabInfo.action_id (vauchi_app_sidebar_items) — through
+// vauchi_app_handle_action; core resolves it to NavigateTo carrying the canonical
+// screen_id. This is the contract app.cpp's sidebar slot relies on (Tier-1).
+static void test_navigate_to_tab() {
+    VauchiApp *app = vauchi_app_create();
+    assert(app != nullptr);
+
+    const char *action = R"({"NavigateToTab":{"action_id":"contacts"}})";
+    char *result = vauchi_app_handle_action(app, action);
+    assert(result != nullptr);
+    std::string s(result);
+    // Core returns NavigateTo carrying the resolved screen's canonical id.
+    assert(s.find("NavigateTo") != std::string::npos);
+    assert(s.find("contacts") != std::string::npos);
+    vauchi_string_free(result);
+    vauchi_app_destroy(app);
+}
+
+// --- Test: NavigateToTab with an unknown token does not navigate (CC-11) ---
+// An unknown/stale/adversarial action_id leaves the engine where it is rather
+// than navigating somewhere wrong (core returns UpdateScreen, not NavigateTo).
+static void test_navigate_to_tab_unknown_token() {
+    VauchiApp *app = vauchi_app_create();
+    assert(app != nullptr);
+
+    const char *action = R"({"NavigateToTab":{"action_id":"nonexistent_tab"}})";
+    char *result = vauchi_app_handle_action(app, action);
+    assert(result != nullptr);
+    std::string s(result);
+    // No navigation: the unknown token resolves to UpdateScreen, never NavigateTo.
+    assert(s.find("NavigateTo") == std::string::npos);
+    vauchi_string_free(result);
+    vauchi_app_destroy(app);
+}
+
 // --- Test: handle hardware event on non-exchange screen returns null ---
 static void test_hardware_event_no_exchange() {
     VauchiApp *app = vauchi_app_create();
@@ -196,6 +233,8 @@ int main() {
     test_current_screen();
     test_handle_action();
     test_navigate_unknown();
+    test_navigate_to_tab();
+    test_navigate_to_tab_unknown_token();
     test_hardware_event_no_exchange();
     test_hardware_event_null_safety();
     test_hardware_event_invalid_json();
