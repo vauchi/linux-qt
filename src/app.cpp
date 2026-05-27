@@ -198,8 +198,18 @@ VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
         vauchi_string_free(json);
 
         if (row < tabs.size()) {
-            QString screenId = tabs[row].toObject()["id"].toString();
-            char *resultJson = vauchi_app_navigate_to(m_app, screenId.toUtf8().constData());
+            // ADR-043 Amendment 4 / Tier-1: forward the opaque action_id core
+            // minted on the tab. Core routes UserAction::NavigateToTab to a
+            // NavigateTo result — the frontend never constructs a navigation
+            // target or parses the token.
+            QString actionId = tabs[row].toObject()["action_id"].toString();
+            QJsonObject action;
+            QJsonObject inner;
+            inner["action_id"] = actionId;
+            action["NavigateToTab"] = inner;
+            QByteArray actionJson =
+                QJsonDocument(action).toJson(QJsonDocument::Compact);
+            char *resultJson = vauchi_app_handle_action(m_app, actionJson.constData());
             if (resultJson) {
                 vauchi_string_free(resultJson);
             }
