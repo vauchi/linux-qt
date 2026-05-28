@@ -3,7 +3,7 @@
 
 # qVauchi (Qt) — Design Inventory
 
-## Components (19 types)
+## Components (21 types)
 
 All components are rendered by `src/coreui/componentrenderer.cpp` via `ComponentRenderer::render()`.
 Each component maps a vauchi-core JSON `Component` variant to Qt6 widgets.
@@ -29,6 +29,8 @@ Each component maps a vauchi-core JSON `Component` variant to Qt6 widgets.
 | 17 | Dropdown | `dropdowncomponent.cpp` | `QComboBox` | Yes (ListItemSelected) | Settings, forms |
 | 18 | Slider | `slidercomponent.cpp` | `QSlider` (Horizontal) | Yes (SliderChanged) | Avatar editor (brightness) |
 | 19 | AvatarPreview | `avatarpreviewcomponent.cpp` | `QLabel` (QPixmap or initials) | No (editable click is iOS/Android UX, not wired) | Preview, AvatarEditor |
+| 20 | Indicator | `indicatorcomponent.cpp` | `QLabel` chip (icon + text) wrapped in optional `QPushButton` | Yes when `action_id` set (ActionPressed) | Chrome-positioned ongoing status (sync, offline, update) |
+| 21 | SectionedActionList | `sectionedactionlistcomponent.cpp` | Per-section `QLabel` header + `QPushButton` list | Yes (ListItemSelected) | Structured menus (More — primary/secondary/data/legal) |
 
 ## Navigation
 
