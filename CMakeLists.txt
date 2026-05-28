@@ -66,6 +66,8 @@ set(QVAUCHI_SOURCES
     src/coreui/components/dropdowncomponent.cpp
     src/coreui/components/avatarpreviewcomponent.cpp
     src/coreui/components/slidercomponent.cpp
+    src/coreui/components/indicatorcomponent.cpp
+    src/coreui/components/sectionedactionlistcomponent.cpp
     src/platform/systemtray.cpp
     src/platform/menubar.cpp
     src/platform/hardwarebackend.cpp
@@ -123,6 +125,7 @@ endif()
 
 add_executable(qvauchi ${QVAUCHI_SOURCES})
 target_include_directories(qvauchi PRIVATE ${QVAUCHI_INCLUDES})
+target_link_directories(qvauchi PRIVATE ${QRENCODE_LIBRARY_DIRS})
 target_link_libraries(qvauchi PRIVATE ${QVAUCHI_LIBS})
 target_compile_definitions(qvauchi PRIVATE ${QVAUCHI_DEFINES})
 
@@ -149,3 +152,41 @@ add_executable(theme_test tests/theme_test.cpp src/coreui/thememanager.cpp)
 target_include_directories(theme_test PRIVATE include ${VAUCHI_TOKENS_INCLUDE})
 target_link_libraries(theme_test PRIVATE Qt6::Widgets Qt6::Core)
 add_test(NAME theme_test COMMAND theme_test)
+
+# ComponentRenderer test: variant dispatch + Indicator + SectionedActionList
+# renderers. Compiles every component source so the dispatch table is
+# realistic. Links vauchi-cabi because i18n.h (used by list/qrcode
+# components) calls vauchi_string_free.
+set(COMPONENTRENDERER_TEST_SOURCES
+    tests/componentrenderer_test.cpp
+    src/coreui/componentrenderer.cpp
+    src/coreui/thememanager.cpp
+    src/coreui/components/textcomponent.cpp
+    src/coreui/components/textinputcomponent.cpp
+    src/coreui/components/togglelistcomponent.cpp
+    src/coreui/components/fieldlistcomponent.cpp
+    src/coreui/components/previewcomponent.cpp
+    src/coreui/components/infopanelcomponent.cpp
+    src/coreui/components/listcomponent.cpp
+    src/coreui/components/settingsgroupcomponent.cpp
+    src/coreui/components/actionlistcomponent.cpp
+    src/coreui/components/statusindicatorcomponent.cpp
+    src/coreui/components/pininputcomponent.cpp
+    src/coreui/components/qrcodecomponent.cpp
+    src/coreui/components/inlineconfirmcomponent.cpp
+    src/coreui/components/editabletextcomponent.cpp
+    src/coreui/components/bannercomponent.cpp
+    src/coreui/components/dividercomponent.cpp
+    src/coreui/components/dropdowncomponent.cpp
+    src/coreui/components/avatarpreviewcomponent.cpp
+    src/coreui/components/slidercomponent.cpp
+    src/coreui/components/indicatorcomponent.cpp
+    src/coreui/components/sectionedactionlistcomponent.cpp
+)
+add_executable(componentrenderer_test ${COMPONENTRENDERER_TEST_SOURCES})
+target_include_directories(componentrenderer_test PRIVATE
+    include ${QRENCODE_INCLUDE_DIRS} ${VAUCHI_CABI_INCLUDE} ${VAUCHI_TOKENS_INCLUDE})
+target_link_directories(componentrenderer_test PRIVATE ${QRENCODE_LIBRARY_DIRS})
+target_link_libraries(componentrenderer_test PRIVATE
+    Qt6::Widgets Qt6::Core ${QRENCODE_LIBRARIES} ${VAUCHI_CABI})
+add_test(NAME componentrenderer_test COMMAND componentrenderer_test)
