@@ -24,11 +24,6 @@ typedef struct CabiConfig CabiConfig;
 typedef struct VauchiApp VauchiApp;
 
 /**
- * Opaque handle to a device link initiator.
- */
-typedef struct VauchiDeviceLinkInitiator VauchiDeviceLinkInitiator;
-
-/**
  * Opaque handle to an exchange session.
  */
 typedef struct VauchiExchange VauchiExchange;
@@ -223,22 +218,16 @@ char *vauchi_app_handle_action(struct VauchiApp *handle, const char *action_json
  * "sync", "recovery", "groups", "privacy", "support",
  * "contact_duplicates", "contact_limit", "more".
  *
+ * **Deprecated (Tier-0 d, ADR-043 Amendment 4):** a forward-navigate surface.
+ * Desktop frontends should forward tab taps via `UserAction::NavigateToTab`
+ * (carrying the `TabInfo.action_id` core minted) and render the returned
+ * `NavigateTo`. Do not add new callers; retires once frontends migrate.
+ *
  * # Safety
  * `handle` must be a valid app handle or null.
  * `screen_name` must be a valid null-terminated C string, or null.
  */
 char *vauchi_app_navigate_to(struct VauchiApp *handle, const char *screen_name);
-
-/**
- * Navigate to a parameterized screen (e.g. contact_detail with a contact_id).
- *
- * # Safety
- * `handle` must be a valid app handle or null.
- * `screen_name` and `param` must be valid NUL-terminated UTF-8 strings or null.
- */
-char *vauchi_app_navigate_to_param(struct VauchiApp *handle,
-                                   const char *screen_name,
-                                   const char *param);
 
 /**
  * Get available screens as a JSON array of strings.
@@ -255,6 +244,25 @@ char *vauchi_app_available_screens(struct VauchiApp *handle);
  * `handle` must be a valid app handle or null.
  */
 char *vauchi_app_default_screen(struct VauchiApp *handle);
+
+/**
+ * Get the canonical screen-id of the parent tab the active screen
+ * belongs to under the requested layout.
+ *
+ * `layout` selects the tab universe:
+ * - `0` = Mobile (5-tab bottom nav, matches `vauchi_app_tab_info`)
+ * - `1` = Desktop (14-tab sidebar, matches `vauchi_app_sidebar_items`)
+ *
+ * Returns:
+ * - A C string with the parent tab's screen_id (caller must free
+ *   with `vauchi_string_free`)
+ * - Null when the active screen is a transient overlay (Lock,
+ *   FormDialog) — frontend should leave selection unchanged.
+ *
+ * # Safety
+ * `handle` must be a valid app handle or null.
+ */
+char *vauchi_app_current_tab_id(struct VauchiApp *handle, int32_t layout);
 
 /**
  * Check whether the app has an identity.
@@ -281,7 +289,7 @@ int32_t vauchi_app_create_identity(struct VauchiApp *handle, const char *display
 /**
  * Handle a hardware event during an exchange (ADR-031).
  *
- * `event_json` must be a JSON-encoded `ExchangeHardwareEvent`.
+ * `event_json` must be a JSON-encoded `Event`.
  * Returns the action result as JSON, or null if the event was ignored
  * (e.g., not on the exchange screen).
  *
@@ -342,31 +350,6 @@ void vauchi_app_set_event_callback(struct VauchiApp *handle,
  * string, or null.
  */
 struct VauchiApp *vauchi_app_create_with_keyring(const char *data_dir, const char *relay_url);
-
-/**
- * Signal that a peer device has connected during device linking.
- *
- * `verification_code` is the code to display for manual confirmation.
- * Returns the updated screen JSON, or null if not on the device linking
- * screen.
- *
- * # Safety
- * `handle` must be a valid app handle or null.
- * `verification_code` must be a valid null-terminated C string, or null.
- */
-char *vauchi_app_device_link_peer_connected(struct VauchiApp *handle,
-                                            const char *verification_code);
-
-/**
- * Signal that data sync has completed during device linking.
- *
- * Returns the updated screen JSON, or null if not on the device linking
- * screen.
- *
- * # Safety
- * `handle` must be a valid app handle or null.
- */
-char *vauchi_app_device_link_sync_complete(struct VauchiApp *handle);
 
 /**
  * Import contacts from vCard (.vcf) data.
@@ -456,106 +439,6 @@ char *vauchi_app_tab_info(struct VauchiApp *handle, const char *locale_code);
  * Same as `vauchi_app_tab_info`.
  */
 char *vauchi_app_sidebar_items(struct VauchiApp *handle, const char *locale_code);
-
-/**
- * Start a device link as the existing device (initiator).
- *
- * Creates an initiator from the app's identity and device registry.
- * Returns null if no identity exists or on error.
- *
- * # Safety
- * `handle` must be a valid app handle or null.
- */
-struct VauchiDeviceLinkInitiator *vauchi_device_link_start(struct VauchiApp *handle);
-
-/**
- * Destroy a device link initiator.
- *
- * # Safety
- * `initiator` must be a pointer returned by `vauchi_device_link_start`, or null.
- */
-void vauchi_device_link_initiator_destroy(struct VauchiDeviceLinkInitiator *initiator);
-
-/**
- * Get the QR data string from the initiator.
- *
- * # Safety
- * `initiator` must be a valid initiator handle or null.
- */
-char *vauchi_device_link_qr_data(struct VauchiDeviceLinkInitiator *initiator);
-
-/**
- * Get the expiry timestamp (Unix seconds) of the QR code.
- *
- * Returns 0 on error.
- *
- * # Safety
- * `initiator` must be a valid initiator handle or null.
- */
-uint64_t vauchi_device_link_expires_at(struct VauchiDeviceLinkInitiator *initiator);
-
-/**
- * Decrypt an incoming link request and return confirmation details.
- *
- * `encrypted_request_b64` is the base64-encoded encrypted request from
- * the new device. Returns a JSON string:
- * `{"device_name":"...","confirmation_code":"...","identity_fingerprint":"..."}`
- * or `{"error":"..."}` on failure. Returns null on null inputs.
- *
- * # Safety
- * `initiator` must be a valid initiator handle or null.
- * `encrypted_request_b64` must be a valid null-terminated C string, or null.
- */
-char *vauchi_device_link_prepare_confirmation(struct VauchiDeviceLinkInitiator *initiator,
-                                              const char *encrypted_request_b64);
-
-/**
- * Confirm the device link with manual code verification.
- *
- * Must call `vauchi_device_link_prepare_confirmation` first.
- * `confirmation_code` is the human-readable code (e.g. "123-456").
- * Rust computes the HMAC internally — the link key never crosses FFI.
- * `confirmed_at` is the Unix timestamp (seconds).
- *
- * Returns JSON: `{"encrypted_response":"base64...","device_name":"...","device_index":N}`
- * or `{"error":"..."}`. Returns null on null inputs.
- *
- * # Safety
- * `initiator` must be a valid initiator handle or null.
- * `confirmation_code` must be a valid null-terminated C string, or null.
- */
-char *vauchi_device_link_confirm_manual(struct VauchiDeviceLinkInitiator *initiator,
-                                        const char *confirmation_code,
-                                        uint64_t confirmed_at);
-
-/**
- * Listen for an incoming device link request via relay (blocking).
- *
- * Creates an exchange offer with the identity, then polls until the new
- * device claims it. Blocks up to `timeout_secs` seconds.
- *
- * Returns JSON: `{"encrypted_payload":"base64...","sender_token":"..."}`
- * or `{"error":"..."}`. Returns null on null handle.
- *
- * # Safety
- * `handle` must be a valid app handle or null.
- */
-char *vauchi_device_link_listen(struct VauchiApp *handle, uint64_t timeout_secs);
-
-/**
- * Send device link response back via relay.
- *
- * Claims the return channel created by the new device.
- * Returns 0 on success, -1 on error.
- *
- * # Safety
- * `handle` must be a valid app handle or null.
- * `sender_token` and `encrypted_response_b64` must be valid null-terminated
- * C strings, or null.
- */
-int32_t vauchi_device_link_send_response(struct VauchiApp *handle,
-                                         const char *sender_token,
-                                         const char *encrypted_response_b64);
 
 /**
  * Create a new QR exchange session using the app's identity.
