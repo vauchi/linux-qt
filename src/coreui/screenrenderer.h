@@ -38,15 +38,7 @@ private:
                                    const QString &undoActionId);
 
     struct ::VauchiApp *m_app;
-    // Outer layout owns either a QScrollArea (default "Scroll" layout) or
-    // the content widget directly ("Fixed" layout, e.g. the QR exchange
-    // screen — a moving/reflowing QR breaks the peer camera's lock).
     QVBoxLayout *m_layout;
-    // Layout the per-screen widgets (title, components, actions) are added
-    // to. Lives inside the scroll area's inner widget when scrollable, so
-    // showValidationError() can locate a target widget's row regardless of
-    // the scroll wrapping.
-    QVBoxLayout *m_contentLayout = nullptr;
     QVector<QPair<QString, QPointer<QPushButton>>> m_buttons;
     HardwareBackend *m_hardware = nullptr;
 };
