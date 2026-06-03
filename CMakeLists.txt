@@ -68,6 +68,7 @@ set(QVAUCHI_SOURCES
     src/coreui/components/slidercomponent.cpp
     src/coreui/components/indicatorcomponent.cpp
     src/coreui/components/sectionedactionlistcomponent.cpp
+    src/coreui/components/rowcomponent.cpp
     src/platform/systemtray.cpp
     src/platform/menubar.cpp
     src/platform/hardwarebackend.cpp
@@ -182,6 +183,7 @@ set(COMPONENTRENDERER_TEST_SOURCES
     src/coreui/components/slidercomponent.cpp
     src/coreui/components/indicatorcomponent.cpp
     src/coreui/components/sectionedactionlistcomponent.cpp
+    src/coreui/components/rowcomponent.cpp
 )
 add_executable(componentrenderer_test ${COMPONENTRENDERER_TEST_SOURCES})
 target_include_directories(componentrenderer_test PRIVATE

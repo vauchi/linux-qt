@@ -24,6 +24,7 @@
 #include "components/slidercomponent.h"
 #include "components/indicatorcomponent.h"
 #include "components/sectionedactionlistcomponent.h"
+#include "components/rowcomponent.h"
 
 #include <QLabel>
 
@@ -50,6 +51,7 @@ QWidget *ComponentRenderer::render(const QJsonObject &component,
     if (component.contains("Slider")) return SliderComponent::render(component["Slider"].toObject(), onAction);
     if (component.contains("Indicator")) return IndicatorComponent::render(component["Indicator"].toObject(), onAction);
     if (component.contains("SectionedActionList")) return SectionedActionListComponent::render(component["SectionedActionList"].toObject(), onAction);
+    if (component.contains("Row")) return RowComponent::render(component["Row"].toObject(), onAction);
 
     // Divider is serialized as just the string "Divider"
     if (component.isEmpty() || component.contains("Divider")

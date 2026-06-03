@@ -9,6 +9,8 @@
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QScrollArea>
+#include <QFrame>
 #include <QLabel>
 #include <QPushButton>
 #include <QJsonDocument>
@@ -86,22 +88,38 @@ static void clearLayout(QLayout *layout) {
 }
 
 void ScreenRenderer::renderScreen(const QJsonObject &screen) {
-    // Clear existing widgets and nested layouts
+    // Clear existing widgets and nested layouts (the scroll area / content
+    // widget from the previous render, including m_contentLayout's tree).
     clearLayout(m_layout);
+
+    // ScreenModel.layout: "Scroll" (default, omitted when Scroll) wraps the
+    // content in a QScrollArea; "Fixed" places it directly so it cannot
+    // scroll or reflow (e.g. the QR exchange screen — a moving QR breaks
+    // the peer camera's lock). Mirrors android ScreenLayout / ADR-043.
+    const bool fixedLayout =
+        screen.value("layout").toString(QStringLiteral("Scroll")) ==
+        QStringLiteral("Fixed");
+
+    // Build all per-screen widgets into a content widget. For "Scroll" it
+    // becomes the scroll area's inner widget; for "Fixed" it is added to
+    // the outer layout directly.
+    auto *content = new QWidget;
+    m_contentLayout = new QVBoxLayout(content);
+    m_contentLayout->setContentsMargins(0, 0, 0, 0);
 
     // Title
     auto *title = new QLabel(screen["title"].toString());
     title->setStyleSheet("font-size: 24px; font-weight: bold;");
     title->setObjectName(QStringLiteral("screen_title"));
     title->setAccessibleName(screen["title"].toString());
-    m_layout->addWidget(title);
+    m_contentLayout->addWidget(title);
 
     // Subtitle
     if (screen.contains("subtitle") && !screen["subtitle"].isNull()) {
         auto *subtitle = new QLabel(screen["subtitle"].toString());
         subtitle->setAccessibleName(screen["subtitle"].toString());
         subtitle->setStyleSheet(ThemeManager::styleForRole(ThemeRole::SecondaryText));
-        m_layout->addWidget(subtitle);
+        m_contentLayout->addWidget(subtitle);
     }
 
     // Components — pass unified action callback
@@ -112,7 +130,7 @@ void ScreenRenderer::renderScreen(const QJsonObject &screen) {
     for (const auto &comp : components) {
         QWidget *widget = ComponentRenderer::render(comp.toObject(), onAction);
         if (widget) {
-            m_layout->addWidget(widget);
+            m_contentLayout->addWidget(widget);
         }
     }
 
@@ -153,8 +171,23 @@ void ScreenRenderer::renderScreen(const QJsonObject &screen) {
 
         buttonLayout->addWidget(btn);
     }
-    m_layout->addLayout(buttonLayout);
-    m_layout->addStretch();
+    m_contentLayout->addLayout(buttonLayout);
+    m_contentLayout->addStretch();
+
+    if (fixedLayout) {
+        // No scroll area: content sits directly in the outer layout and
+        // keeps a stable geometry (the QR must not move/reflow).
+        m_layout->addWidget(content);
+    } else {
+        auto *scroll = new QScrollArea;
+        scroll->setObjectName(QStringLiteral("screen_scroll"));
+        scroll->setWidgetResizable(true);
+        scroll->setFrameShape(QFrame::NoFrame);
+        scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+        scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+        scroll->setWidget(content);
+        m_layout->addWidget(scroll);
+    }
 }
 
 void ScreenRenderer::handleComponentAction(const QJsonObject &action) {
@@ -291,11 +324,15 @@ void ScreenRenderer::showValidationError(const QString &componentId,
     errorLabel->setStyleSheet(ThemeManager::styleForRole(ThemeRole::DestructiveText) +
                               QStringLiteral(" font-size: 12px;"));
 
-    // Find the target's position in the layout and insert after it
-    for (int i = 0; i < m_layout->count(); ++i) {
-        if (m_layout->itemAt(i)->widget() == target) {
-            m_layout->insertWidget(i + 1, errorLabel);
-            break;
+    // Find the target's position in the content layout and insert after it.
+    // (Content lives in m_contentLayout, inside the scroll area's inner
+    // widget when scrollable; m_layout only holds the wrapper.)
+    if (m_contentLayout) {
+        for (int i = 0; i < m_contentLayout->count(); ++i) {
+            if (m_contentLayout->itemAt(i)->widget() == target) {
+                m_contentLayout->insertWidget(i + 1, errorLabel);
+                break;
+            }
         }
     }
 

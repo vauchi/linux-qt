@@ -13,6 +13,8 @@
 #include "../src/coreui/thememanager.h"
 
 #include <QApplication>
+#include <QHBoxLayout>
+#include <QLayout>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -334,6 +336,56 @@ static void test_sectioned_action_list_item_with_detail_renders_detail() {
     printf("  PASS: sectioned_action_list_item_with_detail_renders_detail\n");
 }
 
+// ---- Row (horizontal container) ------------------------------------
+
+static void test_row_renders_children_horizontally_with_equal_stretch() {
+    // Row is a horizontal container: each child is rendered via the same
+    // dispatcher and given equal stretch so a child that fills its own
+    // max width shares the row instead of overlapping its siblings.
+    QJsonObject json = parse(R"({
+        "Row": {
+            "id": "exchange_preview_row",
+            "items": [
+                {"Text": {"id": "a", "content": "left"}},
+                {"Text": {"id": "b", "content": "right"}}
+            ]
+        }
+    })");
+    QWidget *w = ComponentRenderer::render(json, nullptr);
+    assert(w != nullptr);
+    assert(w->objectName() == QStringLiteral("exchange_preview_row"));
+
+    auto *box = qobject_cast<QHBoxLayout *>(w->layout());
+    assert(box != nullptr);
+    assert(box->count() == 2);
+    // Both children carry equal stretch (1) so neither overflows.
+    assert(box->stretch(0) == 1);
+    assert(box->stretch(1) == 1);
+    delete w;
+    printf("  PASS: row_renders_children_horizontally_with_equal_stretch\n");
+}
+
+static void test_row_nested_does_not_crash() {
+    // A Row may contain any Component, including another Row (recursive
+    // dispatch). Empty inner items list is also tolerated.
+    QJsonObject json = parse(R"({
+        "Row": {
+            "id": "outer",
+            "items": [
+                {"Row": {"id": "inner", "items": []}},
+                {"Text": {"id": "t", "content": "x"}}
+            ]
+        }
+    })");
+    QWidget *w = ComponentRenderer::render(json, nullptr);
+    assert(w != nullptr);
+    auto *box = qobject_cast<QHBoxLayout *>(w->layout());
+    assert(box != nullptr);
+    assert(box->count() == 2);
+    delete w;
+    printf("  PASS: row_nested_does_not_crash\n");
+}
+
 // ---- forward-compat unknown variants -------------------------------
 
 static void test_unknown_component_variant_does_not_crash() {
@@ -366,6 +418,8 @@ int main(int argc, char *argv[]) {
     test_sectioned_action_list_empty_sections_renders_empty();
     test_sectioned_action_list_section_with_no_items();
     test_sectioned_action_list_item_with_detail_renders_detail();
+    test_row_renders_children_horizontally_with_equal_stretch();
+    test_row_nested_does_not_crash();
     test_unknown_component_variant_does_not_crash();
     printf("All ComponentRenderer tests passed.\n");
     return 0;
