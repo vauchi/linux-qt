@@ -89,6 +89,21 @@ void ScreenRenderer::renderScreen(const QJsonObject &screen) {
     // Clear existing widgets and nested layouts
     clearLayout(m_layout);
 
+    // Core-driven back chrome: when the engine reports a back step
+    // (`can_go_back`), render a leading back control that calls
+    // navigate_back — so sub-screens no longer rely on a footer "Back"
+    // action. Roots omit `can_go_back`, so the control only appears where
+    // a back step exists.
+    if (screen["can_go_back"].toBool(false)) {
+        auto *backBtn = new QPushButton(
+            QStringLiteral("‹ ") + tr_vauchi("action.back", QStringLiteral("Back")));
+        backBtn->setObjectName(QStringLiteral("nav_back"));
+        backBtn->setFlat(true);
+        backBtn->setAccessibleName(tr_vauchi("action.back", QStringLiteral("Back")));
+        connect(backBtn, &QPushButton::clicked, this, [this]() { navigateBack(); });
+        m_layout->addWidget(backBtn, 0, Qt::AlignLeft);
+    }
+
     // Title
     auto *title = new QLabel(screen["title"].toString());
     title->setStyleSheet("font-size: 24px; font-weight: bold;");
@@ -167,6 +182,19 @@ void ScreenRenderer::handleComponentAction(const QJsonObject &action) {
 
     // Update button enabled states without rebuilding the widget tree
     updateButtonStates();
+}
+
+void ScreenRenderer::navigateBack() {
+    if (!m_app) return;
+    // navigate_back mutates the engine's nav state and returns the new
+    // ScreenModel; we discard it and refresh() (which re-reads
+    // current_screen), matching the handle_action → refresh path.
+    char *result = vauchi_app_navigate_back(m_app);
+    if (result) {
+        vauchi_string_free(result);
+    }
+    refresh();
+    emit screenChanged();
 }
 
 void ScreenRenderer::processActionResult(const char *resultJson) {

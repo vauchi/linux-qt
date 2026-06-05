@@ -30,6 +30,9 @@ private:
     void processActionResult(const char *resultJson);
     void updateButtonStates();
     void handleAction(const QString &actionId);
+    // Core-driven back chrome: calls vauchi_app_navigate_back and
+    // re-renders, so sub-screens no longer need a footer "Back" action.
+    void navigateBack();
     void showValidationError(const QString &componentId, const QString &message);
     void promptQrPaste();
     void saveBackupToFile(const QString &hexData);
