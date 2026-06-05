@@ -174,7 +174,12 @@ def qt_app_themed(qt_binary, request):
         stderr=subprocess.PIPE,
     )
 
-    app_root = find_app("vauchi", timeout=15.0)
+    # Bind to THIS themed process by pid. The session-scoped qt_app
+    # registers under the same name "vauchi"; a name-only find_app
+    # returned that (dark) window instead, so the light-themed snapshot
+    # captured the wrong screen
+    # (2026-06-05-linux-qt-snapshot-find-app-collision).
+    app_root = find_app("vauchi", timeout=15.0, pid=proc.pid)
     if app_root is None:
         proc.kill()
         stdout, stderr = proc.communicate(timeout=5)

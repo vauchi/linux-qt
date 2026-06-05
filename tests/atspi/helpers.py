@@ -11,15 +11,29 @@ gi.require_version("Atspi", "2.0")
 from gi.repository import Atspi  # noqa: E402
 
 
-def find_app(name: str, timeout: float = 10.0) -> Atspi.Accessible | None:
-    """Find an application in the AT-SPI tree by name."""
+def find_app(
+    name: str, timeout: float = 10.0, pid: int | None = None
+) -> Atspi.Accessible | None:
+    """Find an application in the AT-SPI tree by name.
+
+    When ``pid`` is given, only an app whose AT-SPI ``get_process_id()``
+    matches is returned — required when several processes register under
+    the same application name (e.g. a session-scoped instance plus a
+    per-test themed instance). Without it the first name match wins,
+    which binds callers to the wrong window
+    (2026-06-05-linux-qt-snapshot-find-app-collision). A ``pid`` that
+    owns no matching app yields ``None`` — never a name-only fall-back.
+    """
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         desktop = Atspi.get_desktop(0)
         for i in range(desktop.get_child_count()):
             child = desktop.get_child_at_index(i)
-            if child and child.get_name() == name:
-                return child
+            if not child or child.get_name() != name:
+                continue
+            if pid is not None and child.get_process_id() != pid:
+                continue
+            return child
         time.sleep(0.3)
     return None
 

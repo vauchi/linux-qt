@@ -60,8 +60,11 @@ def qt_app(qt_binary, _qt_data_dir):
         stderr=subprocess.PIPE,
     )
 
-    # Wait for app to appear in AT-SPI tree
-    app_root = find_app("vauchi", timeout=15.0)
+    # Wait for THIS app to appear in AT-SPI tree. Filter by pid: a
+    # co-resident qvauchi (e.g. qt_app_themed) registers under the same
+    # name "vauchi", so a name-only lookup could bind the wrong window
+    # (2026-06-05-linux-qt-snapshot-find-app-collision).
+    app_root = find_app("vauchi", timeout=15.0, pid=proc.pid)
     if app_root is None:
         proc.kill()
         stdout, stderr = proc.communicate(timeout=5)
@@ -100,7 +103,9 @@ def qt_app_fresh(qt_binary):
         stderr=subprocess.PIPE,
     )
 
-    app_root = find_app("vauchi", timeout=15.0)
+    # pid filter: bind to the process we launched, not a co-resident
+    # qvauchi (2026-06-05-linux-qt-snapshot-find-app-collision).
+    app_root = find_app("vauchi", timeout=15.0, pid=proc.pid)
     if app_root is None:
         proc.kill()
         stdout, stderr = proc.communicate(timeout=5)
