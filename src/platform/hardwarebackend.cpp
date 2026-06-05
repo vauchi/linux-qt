@@ -286,6 +286,40 @@ void HardwareBackend::dispatchCommands(const QJsonArray &commands) {
             continue;
         }
 
+        // ── DirectSendCard (USB card-exchange second leg) ───────────
+        // The QR-payload leg above closes its socket, so the card swap runs
+        // over a fresh connection. Core decrypts the peer's card under the
+        // agreed shared key and completes the exchange.
+        if (cmdObj.contains("DirectSendCard")) {
+            QJsonObject data = cmdObj["DirectSendCard"].toObject();
+            QByteArray ciphertext = jsonArrayToBytes(data["ciphertext"].toArray());
+            bool isInitiator = data["is_initiator"].toBool();
+
+            auto *worker = new DirectSendWorker(ciphertext, isInitiator, this);
+            connect(worker, &DirectSendWorker::payloadReceived, this, [this](const QByteArray &received) {
+                QJsonObject event;
+                QJsonObject inner;
+                QJsonArray ctArr;
+                for (unsigned char byte : received) {
+                    ctArr.append(static_cast<int>(byte));
+                }
+                inner["ciphertext"] = ctArr;
+                event["DirectCardReceived"] = inner;
+                sendHardwareEvent(event);
+            });
+            connect(worker, &DirectSendWorker::errorOccurred, this, [this](const QString &error) {
+                QJsonObject event;
+                QJsonObject inner;
+                inner["transport"] = QString("USB");
+                inner["error"] = error;
+                event["HardwareError"] = inner;
+                sendHardwareEvent(event);
+            });
+            connect(worker, &DirectSendWorker::finished, worker, &QObject::deleteLater);
+            worker->start();
+            continue;
+        }
+
         // Phase 2b screen-presentation lifecycle commands. Linux desktop
         // has no programmatic brightness control (user owns it via
         // system settings), the OS-level idle timer / screensaver is
