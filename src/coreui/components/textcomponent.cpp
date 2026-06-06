@@ -13,12 +13,15 @@ QWidget *TextComponent::render(const QJsonObject &data) {
 
     QString style = data["style"].toString();
     if (style == "Title") {
-        label->setStyleSheet("font-size: 20px; font-weight: bold;");
+        label->setStyleSheet(ThemeManager::fontFamilyCss() +
+                             QStringLiteral("font-size: 20px; font-weight: bold;"));
     } else if (style == "Subtitle") {
-        label->setStyleSheet(QStringLiteral("font-size: 16px; ") +
+        label->setStyleSheet(ThemeManager::fontFamilyCss() +
+                             QStringLiteral("font-size: 16px; ") +
                              ThemeManager::styleForRole(ThemeRole::SecondaryText));
     } else if (style == "Caption") {
-        label->setStyleSheet(QStringLiteral("font-size: 12px; ") +
+        label->setStyleSheet(ThemeManager::fontFamilyCss() +
+                             QStringLiteral("font-size: 12px; ") +
                              ThemeManager::styleForRole(ThemeRole::SecondaryText));
     }
     // Body is the default — no extra styling needed

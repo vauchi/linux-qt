@@ -4,6 +4,7 @@
 #pragma once
 
 #include <QColor>
+#include <QFont>
 #include <QJsonObject>
 #include <QPalette>
 #include <QString>
@@ -32,6 +33,25 @@ enum class ThemeRole {
 /// Catppuccin Mocha default as vauchi-core for first-launch.
 class ThemeManager {
 public:
+    /// The pinned UI font. qvauchi sets no `font-family` in its
+    /// component stylesheets, so without this every label would inherit
+    /// Qt's default application font — which on a developer host can
+    /// resolve to a monospace coding font (e.g. FiraCode Nerd Font),
+    /// reflowing all text and breaking the snapshot pixel gate. Pinning
+    /// an explicit proportional family (with a sans-serif fallback hint)
+    /// makes rendering deterministic across machines. Applied once at
+    /// startup via QApplication::setFont().
+    static QFont uiFont();
+
+    /// A `font-family: "…"; ` CSS declaration for the pinned UI font.
+    /// Components that set `font-size` via `setStyleSheet` must prepend
+    /// this — a stylesheet that sets any font property otherwise resets
+    /// the family to Qt's style default, which neither
+    /// QApplication::setFont nor the global `QWidget` rule can override
+    /// on a widget that owns its stylesheet. Traces to uiFont() so the
+    /// family has a single source.
+    static QString fontFamilyCss();
+
     /// Apply the default bundled theme (Catppuccin Mocha).
     static void applyDefaultTheme();
 

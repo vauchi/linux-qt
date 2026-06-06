@@ -38,7 +38,8 @@ QWidget *EditableTextComponent::render(const QJsonObject &data,
     // Label
     auto *label = new QLabel(labelText);
     label->setAccessibleName(labelText);
-    label->setStyleSheet(QStringLiteral("font-size: 12px; ") +
+    label->setStyleSheet(ThemeManager::fontFamilyCss() +
+                         QStringLiteral("font-size: 12px; ") +
                          ThemeManager::styleForRole(ThemeRole::SecondaryText));
     layout->addWidget(label);
 

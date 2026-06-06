@@ -88,7 +88,8 @@ QWidget *QrcodeComponent::render(const QJsonObject &data) {
     if (!labelText.isEmpty()) {
         auto *textLabel = new QLabel(labelText);
         textLabel->setAlignment(Qt::AlignCenter);
-        textLabel->setStyleSheet(ThemeManager::styleForRole(ThemeRole::SecondaryText) +
+        textLabel->setStyleSheet(ThemeManager::fontFamilyCss() +
+                                 ThemeManager::styleForRole(ThemeRole::SecondaryText) +
                                  QStringLiteral(" font-size: 12px;"));
         layout->addWidget(textLabel);
     }

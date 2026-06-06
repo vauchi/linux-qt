@@ -50,7 +50,8 @@ QWidget *TextInputComponent::render(const QJsonObject &data,
     QString error = data["validation_error"].toString();
     if (!error.isEmpty()) {
         auto *errLabel = new QLabel(error);
-        errLabel->setStyleSheet(ThemeManager::styleForRole(ThemeRole::DestructiveText) +
+        errLabel->setStyleSheet(ThemeManager::fontFamilyCss() +
+                                ThemeManager::styleForRole(ThemeRole::DestructiveText) +
                                 QStringLiteral(" font-size: 12px;"));
         errLabel->setAccessibleName(error);
         layout->addWidget(errLabel);

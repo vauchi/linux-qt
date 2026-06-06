@@ -106,7 +106,8 @@ void ScreenRenderer::renderScreen(const QJsonObject &screen) {
 
     // Title
     auto *title = new QLabel(screen["title"].toString());
-    title->setStyleSheet("font-size: 24px; font-weight: bold;");
+    title->setStyleSheet(ThemeManager::fontFamilyCss() +
+                         QStringLiteral("font-size: 24px; font-weight: bold;"));
     title->setObjectName(QStringLiteral("screen_title"));
     title->setAccessibleName(screen["title"].toString());
     m_layout->addWidget(title);
@@ -316,7 +317,8 @@ void ScreenRenderer::showValidationError(const QString &componentId,
     // Insert error label below the target widget
     auto *errorLabel = new QLabel(message, this);
     errorLabel->setObjectName(componentId + "_error");
-    errorLabel->setStyleSheet(ThemeManager::styleForRole(ThemeRole::DestructiveText) +
+    errorLabel->setStyleSheet(ThemeManager::fontFamilyCss() +
+                              ThemeManager::styleForRole(ThemeRole::DestructiveText) +
                               QStringLiteral(" font-size: 12px;"));
 
     // Find the target's position in the layout and insert after it

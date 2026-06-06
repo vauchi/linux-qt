@@ -5,6 +5,8 @@
 
 #include "../src/coreui/thememanager.h"
 #include <QApplication>
+#include <QFont>
+#include <QFontInfo>
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QPalette>
@@ -267,10 +269,28 @@ static void test_style_for_role_updates_after_apply() {
     printf("  PASS: style_for_role_updates_after_apply\n");
 }
 
+// --- Test: uiFont pins a deterministic proportional UI font ---
+static void test_ui_font_is_pinned_proportional() {
+    QFont f = ThemeManager::uiFont();
+    // Contract: a deterministic UI family is pinned with a sans-serif
+    // fallback hint, so rendering never inherits the host's default Qt
+    // font. On dev boxes that default can resolve to a monospace coding
+    // font (FiraCode Nerd Font), which reflowed every label and broke the
+    // snapshot pixel gate (2026-06-05-linux-qt-snapshot-find-app-collision).
+    assert(f.family() == "DejaVu Sans");
+    assert(f.styleHint() == QFont::SansSerif);
+    // The resolved font must be proportional — a monospace substitution
+    // is exactly the regression this pins against.
+    QFontInfo info(f);
+    assert(!info.fixedPitch());
+    printf("  PASS: ui_font_is_pinned_proportional\n");
+}
+
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
 
     printf("ThemeManager tests:\n");
+    test_ui_font_is_pinned_proportional();
     test_default_colors();
     test_default_light_colors();
     test_apply_default_light_theme();

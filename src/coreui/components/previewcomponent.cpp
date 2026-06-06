@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "previewcomponent.h"
+#include "../thememanager.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -18,7 +19,8 @@ QWidget *PreviewComponent::render(const QJsonObject &data,
     auto *layout = new QVBoxLayout(frame);
 
     auto *name = new QLabel(data["name"].toString());
-    name->setStyleSheet("font-size: 18px; font-weight: bold;");
+    name->setStyleSheet(ThemeManager::fontFamilyCss() +
+                        QStringLiteral("font-size: 18px; font-weight: bold;"));
     name->setAccessibleName(data["name"].toString());
     layout->addWidget(name);
 

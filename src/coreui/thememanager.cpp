@@ -19,6 +19,21 @@ QJsonObject &mutableCurrentColors() {
 }
 }
 
+QFont ThemeManager::uiFont() {
+    // "DejaVu Sans" is a hard transitive dependency of every Linux
+    // desktop and the CI snapshot container, so pinning it by name needs
+    // no bundled asset. The SansSerif style hint steers Qt's substitution
+    // toward a proportional family if the host somehow lacks it — never
+    // back to the monospace default that caused the font-drift.
+    QFont font(QStringLiteral("DejaVu Sans"));
+    font.setStyleHint(QFont::SansSerif);
+    return font;
+}
+
+QString ThemeManager::fontFamilyCss() {
+    return QStringLiteral("font-family: \"%1\"; ").arg(uiFont().family());
+}
+
 void ThemeManager::applyDefaultTheme() {
     applyTheme(QJsonObject{{"colors", defaultColors()}});
 }
@@ -118,7 +133,14 @@ QString ThemeManager::stylesheetFromColors(const QJsonObject &colors) {
     QString errorColor = colors["error"].toString();
     QString border = colors["border"].toString();
 
+    // A QWidget base rule pins the font-family globally. The per-component
+    // `setStyleSheet("font-size: …")` calls would otherwise reset the
+    // family to Qt's style default (which QApplication::setFont cannot
+    // override once a widget stylesheet sets any font property) — the
+    // root cause of the snapshot font-drift
+    // (2026-06-05-linux-qt-snapshot-find-app-collision).
     return QStringLiteral(
+        "QWidget { font-family: \"%7\"; }"
         "QMainWindow { background-color: %1; color: %2; }"
         "QListWidget#sidebar { background-color: %3; border-right: 1px solid %4; }"
         "QListWidget#sidebar::item:selected { background-color: %5; }"
@@ -128,7 +150,8 @@ QString ThemeManager::stylesheetFromColors(const QJsonObject &colors) {
         "  padding: 6px 16px; border-radius: 4px; }"
         "QPushButton:hover { background-color: %6; }"
     )
-        .arg(bgPrimary, textPrimary, bgSecondary, border, bgTertiary, accent);
+        .arg(bgPrimary, textPrimary, bgSecondary, border, bgTertiary, accent,
+             uiFont().family());
 }
 
 QJsonObject ThemeManager::currentColors() {
