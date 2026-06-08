@@ -13,7 +13,6 @@ QWidget *StatusIndicatorComponent::render(const QJsonObject &data) {
     auto *layout = new QHBoxLayout(container);
     layout->setContentsMargins(0, 0, 0, 0);
 
-    // Status dot with color
     auto *dot = new QLabel(QStringLiteral("\u25CF"));
     QString status = data["status"].toString();
     if (status == "Success") {
@@ -33,7 +32,6 @@ QWidget *StatusIndicatorComponent::render(const QJsonObject &data) {
     layout->addWidget(dot);
     layout->addWidget(title);
 
-    // Optional detail text
     QString detail = data["detail"].toString();
     if (!detail.isEmpty()) {
         auto *detailLabel = new QLabel(detail);

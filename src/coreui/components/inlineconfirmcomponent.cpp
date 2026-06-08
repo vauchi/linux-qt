@@ -34,17 +34,14 @@ QWidget *InlineConfirmComponent::render(const QJsonObject &data,
     warningRow->addWidget(warningLabel, 1);
     layout->addLayout(warningRow);
 
-    // Button row
     auto *buttonRow = new QHBoxLayout;
     buttonRow->addStretch();
 
-    // Cancel button
     QString cancelText = data["cancel_text"].toString("Cancel");
     auto *cancelBtn = new QPushButton(cancelText);
     cancelBtn->setFlat(true);
     buttonRow->addWidget(cancelBtn);
 
-    // Confirm button
     QString confirmText = data["confirm_text"].toString("Confirm");
     auto *confirmBtn = new QPushButton(confirmText);
     if (data["destructive"].toBool()) {

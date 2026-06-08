@@ -104,7 +104,6 @@ void ScreenRenderer::renderScreen(const QJsonObject &screen) {
         m_layout->addWidget(backBtn, 0, Qt::AlignLeft);
     }
 
-    // Title
     auto *title = new QLabel(screen["title"].toString());
     title->setStyleSheet(ThemeManager::fontFamilyCss() +
                          QStringLiteral("font-size: 24px; font-weight: bold;"));
@@ -112,7 +111,6 @@ void ScreenRenderer::renderScreen(const QJsonObject &screen) {
     title->setAccessibleName(screen["title"].toString());
     m_layout->addWidget(title);
 
-    // Subtitle
     if (screen.contains("subtitle") && !screen["subtitle"].isNull()) {
         auto *subtitle = new QLabel(screen["subtitle"].toString());
         subtitle->setAccessibleName(screen["subtitle"].toString());

@@ -35,7 +35,6 @@ QWidget *EditableTextComponent::render(const QJsonObject &data,
         }
     }
 
-    // Label
     auto *label = new QLabel(labelText);
     label->setAccessibleName(labelText);
     label->setStyleSheet(ThemeManager::fontFamilyCss() +
@@ -79,7 +78,6 @@ QWidget *EditableTextComponent::render(const QJsonObject &data,
 
         layout->addLayout(editRow);
 
-        // Validation error
         QString error = data["validation_error"].toString();
         if (!error.isEmpty()) {
             auto *errLabel = new QLabel(error);
