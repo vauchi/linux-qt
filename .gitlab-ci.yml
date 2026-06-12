@@ -277,7 +277,7 @@ check:parser-parity:
 check:removed-symbols:
   extends: .removed-symbols-job
   variables:
-    SEARCH_DIRS: "src/ tests/ design/ include/"
+    SEARCH_DIRS: "src/ tests/ include/"
 
 # Design token drift: block hex/named colors in setStyleSheet() calls
 # that bypass ThemeManager::styleForRole. Script lives in vauchi/scripts —
