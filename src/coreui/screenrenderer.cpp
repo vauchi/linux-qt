@@ -73,6 +73,10 @@ void ScreenRenderer::refresh() {
     }
 }
 
+void ScreenRenderer::renderFixture(const QJsonObject &screen) {
+    renderScreen(screen);
+}
+
 static void clearLayout(QLayout *layout) {
     QLayoutItem *item;
     while ((item = layout->takeAt(0)) != nullptr) {

@@ -192,3 +192,13 @@ target_link_directories(componentrenderer_test PRIVATE ${QRENCODE_LIBRARY_DIRS})
 target_link_libraries(componentrenderer_test PRIVATE
     Qt6::Widgets Qt6::Core ${QRENCODE_LIBRARIES} ${VAUCHI_CABI})
 add_test(NAME componentrenderer_test COMMAND componentrenderer_test)
+
+# render-fixture catalog harness smoke: a golden fixture must render to a valid
+# PNG via `qvauchi --render-fixture` (offscreen). See render_fixture_smoke.cmake.
+add_test(NAME render_fixture_smoke
+    COMMAND ${CMAKE_COMMAND}
+        -DBIN=$<TARGET_FILE:qvauchi>
+        -DFIXTURE=${CMAKE_SOURCE_DIR}/../core/vauchi-core/tests/fixtures/golden/identity_check.json
+        -DPNG_OUT=${CMAKE_CURRENT_BINARY_DIR}/render_fixture_smoke.png
+        -DCABI_DIR=${VAUCHI_CABI_DIR}
+        -P ${CMAKE_SOURCE_DIR}/tests/render_fixture_smoke.cmake)

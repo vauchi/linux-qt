@@ -21,6 +21,12 @@ public:
     explicit ScreenRenderer(struct ::VauchiApp *app, QWidget *parent = nullptr);
     void refresh();
 
+    /// Renders a ScreenModel JSON directly, bypassing the live engine's
+    /// current screen. Used only by the `--render-fixture` catalog harness
+    /// (problem 2026-06-12-device-screenshot-catalog) to capture an arbitrary
+    /// screen in isolation; the app itself always renders via refresh().
+    void renderFixture(const QJsonObject &screen);
+
 signals:
     void screenChanged();
 
