@@ -38,7 +38,7 @@ make
 This app implements the core-driven UI contract:
 
 - **ScreenRenderer** renders `ScreenModel` from core (JSON via C ABI)
-- **14 component widgets** map to core's `Component` enum variants
+- **Component widgets** (one per core `Component` enum variant)
 - **ActionHandler** maps user input to `UserAction` JSON
 - **Platform chrome**: QSystemTrayIcon, QMenuBar
 
@@ -46,9 +46,8 @@ All business logic lives in `vauchi-core` (Rust). This repo is a pure rendering 
 
 ## Packaging
 
-- AppImage
-- .deb
-- .rpm
+- RPM spec (`packaging/vauchi-qt.spec`)
+- Desktop entry (`packaging/vauchi-qt.desktop`)
 
 ## License
 
