@@ -13,6 +13,7 @@ VauchiMenuBar::VauchiMenuBar(QWidget *parent) : QMenuBar(parent) {
 
     // File menu (no i18n key — desktop convention, not app content)
     auto *fileMenu = addMenu(QStringLiteral("&File"));
+    // TODO(HUMBLE): W — menu uses contacts.importContacts domain label; menu should be neutral or core-driven (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations)
     auto *importAction = fileMenu->addAction(
         tr_vauchi("contacts.importContacts",
                   QStringLiteral("Import Contacts...")));

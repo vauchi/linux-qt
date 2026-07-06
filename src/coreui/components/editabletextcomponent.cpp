@@ -55,6 +55,7 @@ QWidget *EditableTextComponent::render(const QJsonObject &data,
         saveBtn->setStyleSheet(ThemeManager::styleForRole(ThemeRole::PrimaryButton));
         editRow->addWidget(saveBtn);
 
+        // TODO(HUMBLE): T — editable text synthesizes {id}_save action ID; core should supply explicit save_action_id (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations)
         if (onAction) {
             // Shared save handler: emit TextChanged then ActionPressed
             auto emitSave = [onAction, componentId, input]() {
@@ -95,6 +96,7 @@ QWidget *EditableTextComponent::render(const QJsonObject &data,
         editBtn->setFlat(true);
         displayRow->addWidget(editBtn);
 
+        // TODO(HUMBLE): T — editable text synthesizes {id}_edit action ID; core should supply explicit edit_action_id (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations)
         if (onAction) {
             QObject::connect(editBtn, &QPushButton::clicked, editBtn,
                              [onAction, componentId]() {

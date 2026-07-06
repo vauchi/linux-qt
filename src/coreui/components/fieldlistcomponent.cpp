@@ -17,6 +17,7 @@ QWidget *FieldListComponent::render(const QJsonObject &data,
     auto *layout = new QVBoxLayout(container);
     layout->setContentsMargins(0, 0, 0, 0);
 
+    // TODO(HUMBLE): D/T — frontend interprets visibility_mode (ShowHide/PerGroup) to build visibility controls (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations)
     QString visibilityMode = data["visibility_mode"].toString();
     QJsonArray availableGroups = data["available_groups"].toArray();
     QJsonArray fields = data["fields"].toArray();

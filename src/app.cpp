@@ -268,6 +268,7 @@ void VauchiWindow::drainAndShowNotifications() {
     vauchi_string_free(json);
 
     for (const auto &n : notifications) {
+        // TODO(HUMBLE): D — frontend maps notification category "EmergencyAlert" to OS tray icon severity; core should supply generic urgency hint (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations)
         QJsonObject obj = n.toObject();
         QString title = obj["title"].toString();
         QString body = obj["body"].toString();
@@ -318,6 +319,7 @@ void VauchiWindow::importContactsFromFile() {
     QJsonObject obj = QJsonDocument::fromJson(result).object();
     vauchi_string_free(result);
 
+    // TODO(HUMBLE): T — frontend assembles contact-import result messages from imported/skipped/warnings; core should return localized summary or Banner/Toast component (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations)
     if (obj.contains("error")) {
         statusBar()->showMessage(
             tr_vauchi("platform.error_import_failed",

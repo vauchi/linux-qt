@@ -21,6 +21,7 @@ QWidget *PinInputComponent::render(const QJsonObject &data,
     input->setEchoMode(QLineEdit::Password);
     input->setAccessibleName(data["label"].toString());
     input->setObjectName(data["id"].toString() + "_input");
+    // TODO(HUMBLE): D — PIN input defaults length to 6 when core omits it; core should always supply length (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations)
     input->setMaxLength(data["length"].toInt(6));
     input->setAlignment(Qt::AlignCenter);
 

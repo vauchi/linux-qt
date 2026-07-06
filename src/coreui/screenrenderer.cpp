@@ -228,6 +228,7 @@ void ScreenRenderer::processActionResult(const char *resultJson) {
                                            "URL scheme not allowed: %1").arg(url.scheme()));
         }
     } else if (result.contains("StartDeviceLink")) {
+        // TODO(HUMBLE): D — frontend routes StartDeviceLink to "device_linking" screen; core should emit NavigateTo directly (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations)
         char *r = vauchi_app_navigate_to(m_app, "device_linking");
         if (r) vauchi_string_free(r);
         refresh();
@@ -344,6 +345,7 @@ void ScreenRenderer::promptQrPaste() {
         QLineEdit::Normal, QString(), &ok);
     if (ok && !data.isEmpty()) {
         // Send as TextChanged action with component_id "scanned_data"
+        // TODO(HUMBLE): W — QR-paste fallback hardcodes target component id "scanned_data"; core should include target component_id in RequestCamera result or dedicated QrPasted event (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations)
         QJsonObject action;
         QJsonObject inner;
         inner["component_id"] = QStringLiteral("scanned_data");
@@ -409,6 +411,7 @@ void ScreenRenderer::handleAction(const QString &actionId) {
 }
 
 void ScreenRenderer::saveBackupToFile(const QString &hexData) {
+    // TODO(HUMBLE): W — backup export dialog hardcodes filename pattern and file filter; core should provide suggested_filename and file_filter (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations)
     QString defaultName = QStringLiteral("vauchi-backup-%1.vbk")
         .arg(QDateTime::currentDateTime().toString(QStringLiteral("yyyy-MM-dd")));
 

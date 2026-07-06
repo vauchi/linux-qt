@@ -64,6 +64,7 @@ QWidget *InlineConfirmComponent::render(const QJsonObject &data,
         }
     }
 
+    // TODO(HUMBLE): T — inline confirm synthesizes {id}_cancel / {id}_confirm action IDs; core should supply explicit action IDs (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations)
     if (onAction) {
         QString dialogId = data["id"].toString();
 
