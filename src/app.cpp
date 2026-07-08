@@ -322,8 +322,8 @@ void VauchiWindow::importContactsFromFile() {
     if (obj.contains("error")) {
         statusBar()->showMessage(
             tr_vauchi("platform.error_import_failed_with_reason",
-                      "Import failed: %1")
-            .arg(obj["error"].toString()),
+                      "Import failed: {error}")
+            .replace(QStringLiteral("{error}"), obj["error"].toString()),
             4000);
         return;
     }

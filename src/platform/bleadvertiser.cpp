@@ -111,8 +111,8 @@ void BleAdvertiser::startAdvertising(const QString &serviceUuid,
         QJsonObject event, inner;
         inner["transport"] = QStringLiteral("BLE");
         inner["error"] = tr_vauchi("bluetooth.register_advertisement_failed",
-                                   "RegisterAdvertisement failed: %1")
-                             .arg(reply.error().message());
+                                   "RegisterAdvertisement failed: {error}")
+                             .replace(QStringLiteral("{error}"), reply.error().message());
         event["HardwareError"] = inner;
         m_backend->sendHardwareEvent(event);
         bus.unregisterObject(kAdvObjectPath);

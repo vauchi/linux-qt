@@ -63,7 +63,9 @@ QWidget *ComponentRenderer::render(const QJsonObject &component,
     // Unknown component type — render a visible warning instead of silently falling through
     QString type = component.keys().isEmpty() ? QStringLiteral("(empty)")
                                               : component.keys().first();
-    auto *placeholder = new QLabel(tr_vauchi("component.unknown", "Unknown component: %1").arg(type));
+    QString msg = tr_vauchi("component.unknown", "Unknown component: {type}");
+    msg.replace(QStringLiteral("{type}"), type);
+    auto *placeholder = new QLabel(msg);
     placeholder->setStyleSheet(ThemeManager::styleForRole(ThemeRole::StatusWarning));
     return placeholder;
 }

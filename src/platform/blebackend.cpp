@@ -210,8 +210,8 @@ void BleBackend::writeCharacteristic(const QString &uuid, const QByteArray &data
         QJsonObject inner;
         inner["transport"] = QStringLiteral("BLE");
         inner["error"] = tr_vauchi("bluetooth.characteristic_not_found",
-                                   "Characteristic not found: %1")
-                             .arg(uuid);
+                                   "Characteristic not found: {uuid}")
+                             .replace(QStringLiteral("{uuid}"), uuid);
         event["HardwareError"] = inner;
         m_backend->sendHardwareEvent(event);
         return;
@@ -240,8 +240,8 @@ void BleBackend::readCharacteristic(const QString &uuid) {
         QJsonObject inner;
         inner["transport"] = QStringLiteral("BLE");
         inner["error"] = tr_vauchi("bluetooth.characteristic_not_found",
-                                   "Characteristic not found: %1")
-                             .arg(uuid);
+                                   "Characteristic not found: {uuid}")
+                             .replace(QStringLiteral("{uuid}"), uuid);
         event["HardwareError"] = inner;
         m_backend->sendHardwareEvent(event);
         return;

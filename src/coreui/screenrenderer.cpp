@@ -225,7 +225,8 @@ void ScreenRenderer::processActionResult(const char *resultJson) {
                                  tr_vauchi("platform.error_could_not_open_link",
                                            "Cannot open link"),
                                  tr_vauchi("platform.error_url_scheme_not_allowed",
-                                           "URL scheme not allowed: %1").arg(url.scheme()));
+                                           "URL scheme not allowed: {url}")
+                                           .replace(QStringLiteral("{url}"), url.scheme()));
         }
     } else if (result.contains("StartDeviceLink")) {
         // TODO(HUMBLE): D — frontend routes StartDeviceLink to "device_linking" screen; core should emit NavigateTo directly (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations)
