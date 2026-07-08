@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "actionlistcomponent.h"
+#include "../../i18n.h"
 #include <QVBoxLayout>
 #include <QPushButton>
 #include <QJsonArray>
@@ -12,7 +13,7 @@ QWidget *ActionListComponent::render(const QJsonObject &data,
     auto *layout = new QVBoxLayout(container);
     layout->setContentsMargins(0, 0, 0, 0);
     container->setObjectName(data["id"].toString());
-    container->setAccessibleName(QStringLiteral("Actions"));
+    container->setAccessibleName(tr_vauchi("action_list.title", "Actions"));
 
     QString componentId = data["id"].toString();
 

@@ -59,7 +59,7 @@ public:
 
     QString type() const { return QStringLiteral("peripheral"); }
     QStringList serviceUUIDs() const { return m_serviceUUIDs; }
-    QString localName() const { return QStringLiteral("Vauchi"); }
+    QString localName() const { return QString("Vauchi"); }
 
 public slots:
     /// Called by BlueZ when the advertisement is released.

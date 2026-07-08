@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "sectionedactionlistcomponent.h"
+#include "../../i18n.h"
 #include "../thememanager.h"
 
 #include <QHBoxLayout>
@@ -75,7 +76,7 @@ QWidget *SectionedActionListComponent::render(const QJsonObject &data,
                                               const OnAction &onAction) {
     auto *container = new QWidget;
     container->setObjectName(data[QLatin1String("id")].toString());
-    container->setAccessibleName(QStringLiteral("Menu"));
+    container->setAccessibleName(tr_vauchi("sectioned_action_list.title", "Menu"));
 
     auto *layout = new QVBoxLayout(container);
     layout->setContentsMargins(0, 0, 0, 0);

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "componentrenderer.h"
+#include "../i18n.h"
 #include "thememanager.h"
 #include "components/textcomponent.h"
 #include "components/textinputcomponent.h"
@@ -62,7 +63,7 @@ QWidget *ComponentRenderer::render(const QJsonObject &component,
     // Unknown component type — render a visible warning instead of silently falling through
     QString type = component.keys().isEmpty() ? QStringLiteral("(empty)")
                                               : component.keys().first();
-    auto *placeholder = new QLabel(QStringLiteral("Unknown component: ") + type);
+    auto *placeholder = new QLabel(tr_vauchi("component.unknown", "Unknown component: %1").arg(type));
     placeholder->setStyleSheet(ThemeManager::styleForRole(ThemeRole::StatusWarning));
     return placeholder;
 }

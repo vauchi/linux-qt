@@ -4,6 +4,7 @@
 #include "blebackend.h"
 #include "bleadvertiser.h"
 #include "hardwarebackend.h"
+#include "../i18n.h"
 
 #include <QJsonDocument>
 #include <QJsonArray>
@@ -208,7 +209,9 @@ void BleBackend::writeCharacteristic(const QString &uuid, const QByteArray &data
         QJsonObject event;
         QJsonObject inner;
         inner["transport"] = QStringLiteral("BLE");
-        inner["error"] = QStringLiteral("Characteristic not found: ") + uuid;
+        inner["error"] = tr_vauchi("bluetooth.characteristic_not_found",
+                                   "Characteristic not found: %1")
+                             .arg(uuid);
         event["HardwareError"] = inner;
         m_backend->sendHardwareEvent(event);
         return;
@@ -236,7 +239,9 @@ void BleBackend::readCharacteristic(const QString &uuid) {
         QJsonObject event;
         QJsonObject inner;
         inner["transport"] = QStringLiteral("BLE");
-        inner["error"] = QStringLiteral("Characteristic not found: ") + uuid;
+        inner["error"] = tr_vauchi("bluetooth.characteristic_not_found",
+                                   "Characteristic not found: %1")
+                             .arg(uuid);
         event["HardwareError"] = inner;
         m_backend->sendHardwareEvent(event);
         return;

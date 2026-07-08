@@ -3,6 +3,7 @@
 
 #include "nfcbackend.h"
 #include "hardwarebackend.h"
+#include "../i18n.h"
 
 #include <QCoreApplication>
 #include <QJsonObject>
@@ -59,8 +60,8 @@ NfcBackend::NfcBackend(HardwareBackend *parent)
         if (rv != SCARD_S_SUCCESS) {
             QJsonObject event, inner;
             inner["transport"] = QStringLiteral("NFC");
-            inner["error"] = QStringLiteral("PC/SC context failed: ")
-                             + QString::fromUtf8(pcsc_stringify_error(rv));
+            inner["error"] = tr_vauchi("nfc.pcsc_failed", "PC/SC context failed: %1")
+                             .arg(QString::fromUtf8(pcsc_stringify_error(rv)));
             event["HardwareError"] = inner;
             QMetaObject::invokeMethod(m_backend, [this, event]() {
                 m_backend->sendHardwareEvent(event);

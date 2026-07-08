@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "editabletextcomponent.h"
+#include "../../i18n.h"
 #include "../thememanager.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -51,7 +52,7 @@ QWidget *EditableTextComponent::render(const QJsonObject &data,
         input->setObjectName(componentId + "_input");
         editRow->addWidget(input, 1);
 
-        auto *saveBtn = new QPushButton(QStringLiteral("Save"));
+        auto *saveBtn = new QPushButton(tr_vauchi("action.save", "Save"));
         saveBtn->setStyleSheet(ThemeManager::styleForRole(ThemeRole::PrimaryButton));
         editRow->addWidget(saveBtn);
 
@@ -92,7 +93,7 @@ QWidget *EditableTextComponent::render(const QJsonObject &data,
         auto *valueLabel = new QLabel(value);
         displayRow->addWidget(valueLabel, 1);
 
-        auto *editBtn = new QPushButton(QStringLiteral("Edit"));
+        auto *editBtn = new QPushButton(tr_vauchi("action.edit", "Edit"));
         editBtn->setFlat(true);
         displayRow->addWidget(editBtn);
 

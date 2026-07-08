@@ -24,7 +24,7 @@
 #include <QStatusBar>
 
 VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
-    setWindowTitle("Vauchi");
+    setWindowTitle(tr_vauchi("app.name", "Vauchi"));
     resize(700, 600);
 
     // Apply core theme colors via QPalette (runtime-switchable).
@@ -111,7 +111,7 @@ VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
     m_sidebar = new QListWidget;
     m_sidebar->setFixedWidth(200);
     m_sidebar->setObjectName(QStringLiteral("sidebar"));
-    m_sidebar->setAccessibleName(QStringLiteral("Navigation"));
+    m_sidebar->setAccessibleName(tr_vauchi("app.navigation", "Navigation"));
     layout->addWidget(m_sidebar);
 
     m_renderer = new ScreenRenderer(m_app, this);
@@ -285,17 +285,16 @@ void VauchiWindow::importContactsFromFile() {
 
     QString path = QFileDialog::getOpenFileName(
         this,
-        tr_vauchi("contacts.importContacts",
-                  QStringLiteral("Import Contacts")),
+        tr_vauchi("contacts.importContacts", "Import Contacts"),
         QString(),
-        QStringLiteral("vCard Files (*.vcf)"));
+        tr_vauchi("contacts.import_file_filter", "vCard Files (*.vcf)"));
     if (path.isEmpty()) return;
 
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly)) {
         statusBar()->showMessage(
             tr_vauchi("platform.error_could_not_read_file",
-                      QStringLiteral("Could not read file")),
+                      "Could not read file"),
             4000);
         return;
     }
@@ -311,7 +310,7 @@ void VauchiWindow::importContactsFromFile() {
     if (!result) {
         statusBar()->showMessage(
             tr_vauchi("platform.error_import_failed",
-                      QStringLiteral("Import failed")),
+                      "Import failed"),
             4000);
         return;
     }
@@ -322,9 +321,9 @@ void VauchiWindow::importContactsFromFile() {
     // TODO(HUMBLE): T — frontend assembles contact-import result messages from imported/skipped/warnings; core should return localized summary or Banner/Toast component (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations)
     if (obj.contains("error")) {
         statusBar()->showMessage(
-            tr_vauchi("platform.error_import_failed",
-                      QStringLiteral("Import failed: "))
-            + obj["error"].toString(),
+            tr_vauchi("platform.error_import_failed_with_reason",
+                      "Import failed: %1")
+            .arg(obj["error"].toString()),
             4000);
         return;
     }

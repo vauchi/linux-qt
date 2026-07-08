@@ -3,6 +3,7 @@
 
 #include "audiobackend.h"
 #include "hardwarebackend.h"
+#include "../i18n.h"
 
 #include <QAudioFormat>
 #include <QMediaDevices>
@@ -41,8 +42,8 @@ AudioBackend::AudioBackend(HardwareBackend *parent)
         auto outputDevice = QMediaDevices::defaultAudioOutput();
         if (outputDevice.isNull()) {
             QJsonObject event, inner;
-            inner["transport"] = QStringLiteral("Audio");
-            inner["error"] = QStringLiteral("No audio output device");
+            inner["transport"] = QString("Audio");
+            inner["error"] = tr_vauchi("audio.no_output_device", "No audio output device");
             event["HardwareError"] = inner;
             QMetaObject::invokeMethod(m_backend, [this, event]() {
                 m_backend->sendHardwareEvent(event);
@@ -76,8 +77,8 @@ AudioBackend::AudioBackend(HardwareBackend *parent)
         auto inputDevice = QMediaDevices::defaultAudioInput();
         if (inputDevice.isNull()) {
             QJsonObject event, inner;
-            inner["transport"] = QStringLiteral("Audio");
-            inner["error"] = QStringLiteral("No audio input device");
+            inner["transport"] = QString("Audio");
+            inner["error"] = tr_vauchi("audio.no_input_device", "No audio input device");
             event["HardwareError"] = inner;
             QMetaObject::invokeMethod(m_backend, [this, event]() {
                 m_backend->sendHardwareEvent(event);
@@ -164,8 +165,8 @@ AudioBackend::AudioBackend(HardwareBackend *parent)
 
         // Timed out without decoding a signal
         QJsonObject event, inner;
-        inner["transport"] = QStringLiteral("Audio");
-        inner["error"] = QStringLiteral("No ultrasonic signal detected within timeout");
+        inner["transport"] = QString("Audio");
+        inner["error"] = tr_vauchi("audio.no_signal", "No ultrasonic signal detected within timeout");
         event["HardwareError"] = inner;
         QMetaObject::invokeMethod(m_backend, [this, event]() {
             m_backend->sendHardwareEvent(event);

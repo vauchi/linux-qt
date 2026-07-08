@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "fieldlistcomponent.h"
+#include "../../i18n.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -13,7 +14,7 @@ QWidget *FieldListComponent::render(const QJsonObject &data,
                                      const OnAction &onAction) {
     auto *container = new QWidget;
     container->setObjectName(data["id"].toString());
-    container->setAccessibleName(QStringLiteral("Fields"));
+    container->setAccessibleName(tr_vauchi("contact_card.fields", "Fields"));
     auto *layout = new QVBoxLayout(container);
     layout->setContentsMargins(0, 0, 0, 0);
 

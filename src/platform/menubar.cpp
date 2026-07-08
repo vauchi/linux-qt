@@ -12,11 +12,10 @@ VauchiMenuBar::VauchiMenuBar(QWidget *parent) : QMenuBar(parent) {
     // the i18n value because accelerator assignment is platform-local.
 
     // File menu (no i18n key — desktop convention, not app content)
-    auto *fileMenu = addMenu(QStringLiteral("&File"));
+    auto *fileMenu = addMenu(QStringLiteral("&") + tr_vauchi("menu.file", "File"));
     // TODO(HUMBLE): W — menu uses contacts.importContacts domain label; menu should be neutral or core-driven (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations)
     auto *importAction = fileMenu->addAction(
-        tr_vauchi("contacts.importContacts",
-                  QStringLiteral("Import Contacts...")));
+        tr_vauchi("contacts.importContacts", "Import Contacts"));
     importAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_I));
     connect(importAction, &QAction::triggered,
             this, &VauchiMenuBar::importContactsRequested);
@@ -25,7 +24,7 @@ VauchiMenuBar::VauchiMenuBar(QWidget *parent) : QMenuBar(parent) {
 
     auto *quitAction = fileMenu->addAction(
         QStringLiteral("&")
-        + tr_vauchi("help.quit", QStringLiteral("Quit")));
+        + tr_vauchi("help.quit", "Quit"));
     quitAction->setShortcut(QKeySequence::Quit);
     connect(quitAction, &QAction::triggered,
             this, &VauchiMenuBar::quitRequested);
@@ -33,21 +32,21 @@ VauchiMenuBar::VauchiMenuBar(QWidget *parent) : QMenuBar(parent) {
     // Help menu
     auto *helpMenu = addMenu(
         QStringLiteral("&")
-        + tr_vauchi("nav.help", QStringLiteral("Help")));
+        + tr_vauchi("nav.help", "Help"));
     QString aboutLabel =
-        tr_vauchi("settings.about", QStringLiteral("About"))
+        tr_vauchi("settings.about", "About")
         + QStringLiteral(" Vauchi");
     auto *aboutAction = helpMenu->addAction(
         QStringLiteral("&") + aboutLabel);
     connect(aboutAction, &QAction::triggered, this, [this]() {
         QString title =
-            tr_vauchi("settings.about", QStringLiteral("About"))
+            tr_vauchi("settings.about", "About")
             + QStringLiteral(" Vauchi");
         QMessageBox::about(this, title,
-            QStringLiteral(
-                "Vauchi \u2014 Privacy-focused updatable "
-                "contact cards.\n\n"
-                "Version 0.5.0\n"
-                "License: GPL-3.0-or-later"));
+            tr_vauchi("about.body",
+                      "Vauchi \u2014 Privacy-focused updatable "
+                      "contact cards.\n\n"
+                      "Version 0.5.0\n"
+                      "License: GPL-3.0-or-later"));
     });
 }

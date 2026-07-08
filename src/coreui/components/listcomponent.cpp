@@ -21,9 +21,9 @@ QWidget *ListComponent::render(const QJsonObject &data,
     // TODO(HUMBLE): W — list uses "Search contacts" placeholder/accessible name instead of core-supplied generic labels (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations)
     if (searchable && onAction) {
         auto *search = new QLineEdit;
-        search->setPlaceholderText(tr_vauchi("search.contacts", "Search contacts..."));
+        search->setPlaceholderText(tr_vauchi("search.contacts", "Search contacts"));
         search->setClearButtonEnabled(true);
-        search->setAccessibleName(QStringLiteral("Search contacts"));
+        search->setAccessibleName(tr_vauchi("a11y.search_contacts", "Search contacts"));
         layout->addWidget(search);
 
         QObject::connect(search, &QLineEdit::textChanged, search,
@@ -40,7 +40,7 @@ QWidget *ListComponent::render(const QJsonObject &data,
     auto *list = new QListWidget;
     list->setObjectName(componentId);
     // TODO(HUMBLE): W — list hardcodes "Contacts" accessible name instead of core-supplied label (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations)
-    list->setAccessibleName(QStringLiteral("Contacts"));
+    list->setAccessibleName(tr_vauchi("contacts.title", "Contacts"));
 
     QJsonArray items = data["items"].toArray();
     for (const auto &entry : items) {

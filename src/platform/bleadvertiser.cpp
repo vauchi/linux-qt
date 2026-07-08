@@ -3,6 +3,7 @@
 
 #include "bleadvertiser.h"
 #include "hardwarebackend.h"
+#include "../i18n.h"
 
 #include <QDBusInterface>
 #include <QDBusReply>
@@ -61,7 +62,7 @@ void BleAdvertiser::startAdvertising(const QString &serviceUuid,
     if (m_adapterPath.isEmpty()) {
         QJsonObject event, inner;
         inner["transport"] = QStringLiteral("BLE");
-        inner["error"] = QStringLiteral("No BlueZ adapter found for advertising");
+        inner["error"] = tr_vauchi("bluetooth.no_adapter", "No BlueZ adapter found for advertising");
         event["HardwareError"] = inner;
         m_backend->sendHardwareEvent(event);
         return;
@@ -77,7 +78,7 @@ void BleAdvertiser::startAdvertising(const QString &serviceUuid,
                             | QDBusConnection::ExportAllProperties)) {
         QJsonObject event, inner;
         inner["transport"] = QStringLiteral("BLE");
-        inner["error"] = QStringLiteral("Failed to register D-Bus advertisement object");
+        inner["error"] = tr_vauchi("bluetooth.register_advertisement_error", "Failed to register D-Bus advertisement object");
         event["HardwareError"] = inner;
         m_backend->sendHardwareEvent(event);
         delete advObj;
@@ -92,7 +93,7 @@ void BleAdvertiser::startAdvertising(const QString &serviceUuid,
     if (!advManager.isValid()) {
         QJsonObject event, inner;
         inner["transport"] = QStringLiteral("BLE");
-        inner["error"] = QStringLiteral("LEAdvertisingManager1 not available on adapter");
+        inner["error"] = tr_vauchi("bluetooth.advertising_manager_unavailable", "LEAdvertisingManager1 not available on adapter");
         event["HardwareError"] = inner;
         m_backend->sendHardwareEvent(event);
         bus.unregisterObject(kAdvObjectPath);
@@ -109,8 +110,9 @@ void BleAdvertiser::startAdvertising(const QString &serviceUuid,
     if (!reply.isValid()) {
         QJsonObject event, inner;
         inner["transport"] = QStringLiteral("BLE");
-        inner["error"] = QStringLiteral("RegisterAdvertisement failed: ")
-                         + reply.error().message();
+        inner["error"] = tr_vauchi("bluetooth.register_advertisement_failed",
+                                   "RegisterAdvertisement failed: %1")
+                             .arg(reply.error().message());
         event["HardwareError"] = inner;
         m_backend->sendHardwareEvent(event);
         bus.unregisterObject(kAdvObjectPath);

@@ -23,9 +23,9 @@ QWidget *QrcodeComponent::render(const QJsonObject &data) {
 
     // TODO(HUMBLE): W — QR component hardcodes mode-dependent accessible names instead of core-supplied a11y.label (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations)
     if (mode == "Scan") {
-        container->setAccessibleName(QStringLiteral("Scan QR code"));
+        container->setAccessibleName(tr_vauchi("qr.scan", "Scan QR code"));
     } else {
-        container->setAccessibleName(QStringLiteral("QR code for contact exchange"));
+        container->setAccessibleName(tr_vauchi("qr.exchange.description", "QR code for contact exchange"));
     }
 
     if (mode == "Scan") {

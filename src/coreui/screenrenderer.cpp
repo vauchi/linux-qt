@@ -100,10 +100,10 @@ void ScreenRenderer::renderScreen(const QJsonObject &screen) {
     // a back step exists.
     if (screen["can_go_back"].toBool(false)) {
         auto *backBtn = new QPushButton(
-            QStringLiteral("‹ ") + tr_vauchi("action.back", QStringLiteral("Back")));
+            QStringLiteral("‹ ") + tr_vauchi("action.back", "Back"));
         backBtn->setObjectName(QStringLiteral("nav_back"));
         backBtn->setFlat(true);
-        backBtn->setAccessibleName(tr_vauchi("action.back", QStringLiteral("Back")));
+        backBtn->setAccessibleName(tr_vauchi("action.back", "Back"));
         connect(backBtn, &QPushButton::clicked, this, [this]() { navigateBack(); });
         m_layout->addWidget(backBtn, 0, Qt::AlignLeft);
     }
@@ -417,9 +417,9 @@ void ScreenRenderer::saveBackupToFile(const QString &hexData) {
 
     QString path = QFileDialog::getSaveFileName(
         this,
-        tr_vauchi("backup.save_title", QStringLiteral("Save Backup")),
+        tr_vauchi("backup.save_title", "Save Backup"),
         QDir::homePath() + QStringLiteral("/") + defaultName,
-        QStringLiteral("Vauchi Backup (*.vbk)"));
+        tr_vauchi("backup.file_filter", "Vauchi Backup (*.vbk)"));
 
     if (path.isEmpty()) return;
 
@@ -428,7 +428,7 @@ void ScreenRenderer::saveBackupToFile(const QString &hexData) {
     if (!file.open(QIODevice::WriteOnly)) {
         showStatusMessage(
             tr_vauchi("platform.error_could_not_write_file",
-                      QStringLiteral("Could not save backup file")));
+                      "Could not save backup file"));
         return;
     }
     file.write(raw);
@@ -436,5 +436,5 @@ void ScreenRenderer::saveBackupToFile(const QString &hexData) {
 
     showStatusMessage(
         tr_vauchi("backup.export_success",
-                  QStringLiteral("Backup saved successfully")));
+                  "Backup saved successfully"));
 }

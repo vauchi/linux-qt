@@ -25,7 +25,7 @@ QFont ThemeManager::uiFont() {
     // no bundled asset. The SansSerif style hint steers Qt's substitution
     // toward a proportional family if the host somehow lacks it — never
     // back to the monospace default that caused the font-drift.
-    QFont font(QStringLiteral("DejaVu Sans"));
+    QFont font(QString("DejaVu Sans"));
     font.setStyleHint(QFont::SansSerif);
     return font;
 }
