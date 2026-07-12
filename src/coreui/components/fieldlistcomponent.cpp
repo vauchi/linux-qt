@@ -20,7 +20,7 @@ QWidget *FieldListComponent::render(const QJsonObject &data,
 
     // TODO(HUMBLE): D/T — frontend interprets visibility_mode (ShowHide/PerGroup) to build visibility controls (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations)
     QString visibilityMode = data["visibility_mode"].toString();
-    QJsonArray availableGroups = data["available_groups"].toArray();
+    QJsonArray availableGroups = data["available_scopes"].toArray();
     QJsonArray fields = data["fields"].toArray();
 
     for (const auto &field : fields) {
@@ -63,7 +63,7 @@ QWidget *FieldListComponent::render(const QJsonObject &data,
             QJsonValue vis = fieldObj["visibility"];
             QStringList activeGroups;
             if (vis.isObject()) {
-                QJsonArray groups = vis.toObject()["Groups"].toArray();
+                QJsonArray groups = vis.toObject()["Scopes"].toArray();
                 for (const auto &g : groups) {
                     activeGroups.append(g.toString());
                 }

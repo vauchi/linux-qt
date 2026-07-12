@@ -77,9 +77,8 @@ QWidget *PreviewComponent::render(const QJsonObject &data,
                 }
             }
         }
-        // Wire tab switch to emit GroupViewSelected (frontend → core wire
-        // surface; renamed to a UI-shaped action is a separate sweep
-        // post-Wire-Humble Tier 1)
+        // Tab switch emits the VariantSelected user action (frontend → core
+        // wire surface).
         if (onAction) {
             QObject::connect(tabs, &QTabWidget::currentChanged, tabs,
                              [onAction, variants](int index) {
@@ -87,8 +86,8 @@ QWidget *PreviewComponent::render(const QJsonObject &data,
                                  QString variantId = variants[index].toObject()["variant_id"].toString();
                                  QJsonObject action;
                                  QJsonObject inner;
-                                 inner["group_name"] = variantId;
-                                 action["GroupViewSelected"] = inner;
+                                 inner["variant_id"] = variantId;
+                                 action["VariantSelected"] = inner;
                                  onAction(action);
                              });
         }
