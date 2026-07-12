@@ -64,7 +64,7 @@ set(QVAUCHI_SOURCES
     src/coreui/components/bannercomponent.cpp
     src/coreui/components/dividercomponent.cpp
     src/coreui/components/dropdowncomponent.cpp
-    src/coreui/components/avatarpreviewcomponent.cpp
+    src/coreui/components/imagecirclecomponent.cpp
     src/coreui/components/slidercomponent.cpp
     src/coreui/components/indicatorcomponent.cpp
     src/coreui/components/sectionedactionlistcomponent.cpp
@@ -179,7 +179,7 @@ set(COMPONENTRENDERER_TEST_SOURCES
     src/coreui/components/bannercomponent.cpp
     src/coreui/components/dividercomponent.cpp
     src/coreui/components/dropdowncomponent.cpp
-    src/coreui/components/avatarpreviewcomponent.cpp
+    src/coreui/components/imagecirclecomponent.cpp
     src/coreui/components/slidercomponent.cpp
     src/coreui/components/indicatorcomponent.cpp
     src/coreui/components/sectionedactionlistcomponent.cpp

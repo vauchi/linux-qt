@@ -6,7 +6,7 @@
 #include <QJsonObject>
 #include "../componentrenderer.h"
 
-class AvatarPreviewComponent {
+class ImageCircleComponent {
 public:
     static QWidget *render(const QJsonObject &data,
                            const OnAction &onAction = nullptr);

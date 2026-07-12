@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "avatarpreviewcomponent.h"
+#include "imagecirclecomponent.h"
 #include <QByteArray>
 #include <QJsonArray>
 #include <QLabel>
@@ -22,8 +22,8 @@ QString bgColorStyle(const QJsonObject &data) {
 }
 } // namespace
 
-QWidget *AvatarPreviewComponent::render(const QJsonObject &data,
-                                        const OnAction &onAction) {
+QWidget *ImageCircleComponent::render(const QJsonObject &data,
+                                      const OnAction &onAction) {
     auto *container = new QWidget;
     auto *layout = new QVBoxLayout(container);
     layout->setContentsMargins(0, 0, 0, 0);
