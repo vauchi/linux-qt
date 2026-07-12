@@ -15,8 +15,6 @@ QWidget *PreviewComponent::render(const QJsonObject &data,
     auto *frame = new QFrame;
     frame->setFrameStyle(QFrame::Box | QFrame::Raised);
     frame->setObjectName(QStringLiteral("card_preview"));
-    // TODO(HUMBLE): W — preview hardcodes "Contact card" accessible name instead of core-supplied a11y.label (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations)
-    frame->setAccessibleName("Contact card: " + data["name"].toString());
     auto *layout = new QVBoxLayout(frame);
 
     auto *name = new QLabel(data["name"].toString());
