@@ -126,7 +126,7 @@ endif()
 
 add_executable(qvauchi ${QVAUCHI_SOURCES})
 target_include_directories(qvauchi PRIVATE ${QVAUCHI_INCLUDES})
-target_link_directories(qvauchi PRIVATE ${QRENCODE_LIBRARY_DIRS})
+target_link_directories(qvauchi PRIVATE ${QRENCODE_LIBRARY_DIRS} ${ZBAR_LIBRARY_DIRS})
 target_link_libraries(qvauchi PRIVATE ${QVAUCHI_LIBS})
 target_compile_definitions(qvauchi PRIVATE ${QVAUCHI_DEFINES})
 

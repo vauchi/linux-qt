@@ -9,6 +9,7 @@
 #include <cstring>
 #include <filesystem>
 #include <string>
+#include <unistd.h>
 
 namespace fs = std::filesystem;
 
@@ -212,6 +213,62 @@ static void test_create_with_keyring_null_dir() {
     assert(app == nullptr);
 }
 
+// --- Test: on_wakeup returns a valid notifications+commands envelope ---
+static void test_on_wakeup() {
+    VauchiApp *app = vauchi_app_create();
+    assert(app != nullptr);
+
+    char *json = vauchi_app_on_wakeup(app);
+    assert(json != nullptr);
+    std::string s(json);
+    assert(s.find("\"notifications\"") != std::string::npos);
+    assert(s.find("\"commands\"") != std::string::npos);
+    vauchi_string_free(json);
+    vauchi_app_destroy(app);
+}
+
+// --- Test: NavigateBack action returns PerformNativeBack at a root ---
+static void test_navigate_back_action() {
+    VauchiApp *app = vauchi_app_create();
+    assert(app != nullptr);
+    // Seed an identity so the engine is on a tab root (MyInfo), a back-stopper.
+    if (vauchi_app_has_identity(app) != 1) {
+        assert(vauchi_app_create_identity(app, "Test User") == 0);
+    }
+
+    const char *action = "\"NavigateBack\"";
+    char *result = vauchi_app_handle_action(app, action);
+    assert(result != nullptr);
+    std::string s(result);
+    // At a root there is nothing to pop; core returns PerformNativeBack.
+    assert(s.find("PerformNativeBack") != std::string::npos);
+    vauchi_string_free(result);
+    vauchi_app_destroy(app);
+}
+
+// --- Test: ScreenModel carries nav_actions / nav_tab_id (ADR-044 Am2a) ---
+static void test_screen_model_nav_fields() {
+    VauchiApp *app = vauchi_app_create();
+    assert(app != nullptr);
+    if (vauchi_app_has_identity(app) != 1) {
+        assert(vauchi_app_create_identity(app, "Test User") == 0);
+    }
+
+    char *navJson = vauchi_app_navigate_to(app, "settings");
+    assert(navJson != nullptr);
+    vauchi_string_free(navJson);
+
+    char *screenJson = vauchi_app_current_screen(app);
+    assert(screenJson != nullptr);
+    std::string s(screenJson);
+    assert(s.find("\"nav_actions\"") != std::string::npos);
+    assert(s.find("\"nav_tab_id\"") != std::string::npos);
+    assert(s.find("\"go_back\"") != std::string::npos);
+    assert(s.find("\"more\"") != std::string::npos);
+    vauchi_string_free(screenJson);
+    vauchi_app_destroy(app);
+}
+
 // --- Test: null handle safety ---
 static void test_null_safety() {
     vauchi_app_destroy(nullptr);  // should not crash
@@ -222,6 +279,7 @@ static void test_null_safety() {
     assert(vauchi_app_default_screen(nullptr) == nullptr);
     assert(vauchi_app_create_with_config(nullptr, nullptr) == nullptr);
     assert(vauchi_app_handle_hardware_event(nullptr, "{}") == nullptr);
+    assert(vauchi_app_on_wakeup(nullptr) == nullptr);
 }
 
 int main() {
@@ -240,5 +298,8 @@ int main() {
     test_hardware_event_invalid_json();
     test_create_with_keyring();
     test_create_with_keyring_null_dir();
+    test_on_wakeup();
+    test_navigate_back_action();
+    test_screen_model_nav_fields();
     return 0;
 }

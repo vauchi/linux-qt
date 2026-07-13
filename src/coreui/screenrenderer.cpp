@@ -7,6 +7,7 @@
 #include "../platform/hardwarebackend.h"
 #include "../i18n.h"
 
+#include <QApplication>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -93,19 +94,46 @@ void ScreenRenderer::renderScreen(const QJsonObject &screen) {
     // Clear existing widgets and nested layouts
     clearLayout(m_layout);
 
-    // Core-driven back chrome: when the engine reports a back step
-    // (`can_go_back`), render a leading back control that calls
-    // navigate_back — so sub-screens no longer rely on a footer "Back"
-    // action. Roots omit `can_go_back`, so the control only appears where
-    // a back step exists.
-    if (screen["can_go_back"].toBool(false)) {
-        auto *backBtn = new QPushButton(
-            QStringLiteral("‹ ") + tr_vauchi("action.back", "Back"));
-        backBtn->setObjectName(QStringLiteral("nav_back"));
-        backBtn->setFlat(true);
-        backBtn->setAccessibleName(tr_vauchi("action.back", "Back"));
-        connect(backBtn, &QPushButton::clicked, this, [this]() { navigateBack(); });
-        m_layout->addWidget(backBtn, 0, Qt::AlignLeft);
+    // Top/leading chrome actions (ADR-044 Am2a). Core owns which chrome
+    // affordances exist; the frontend renders them without interpreting the
+    // screen role. The reserved `go_back` id dispatches the system-back
+    // `UserAction` so the visible button and the Escape gesture share one
+    // code path.
+    QJsonArray navActions = screen["nav_actions"].toArray();
+    if (!navActions.isEmpty()) {
+        auto *navLayout = new QHBoxLayout;
+        for (const auto &nav : navActions) {
+            QJsonObject navObj = nav.toObject();
+            QString navId = navObj["id"].toString();
+            QString label = navObj["label"].toString();
+            if (navId == QStringLiteral("go_back")) {
+                label = QStringLiteral("‹ ") + label;
+            }
+            auto *btn = new QPushButton(label);
+            btn->setEnabled(navObj["enabled"].toBool(true));
+            btn->setObjectName(navId);
+            btn->setFlat(true);
+
+            QJsonObject a11y = navObj["a11y"].toObject();
+            if (a11y.contains("label")) {
+                btn->setAccessibleName(a11y["label"].toString());
+            }
+            if (a11y.contains("hint")) {
+                btn->setAccessibleDescription(a11y["hint"].toString());
+            }
+
+            connect(btn, &QPushButton::clicked, this, [this, navId]() {
+                if (navId == QStringLiteral("go_back")) {
+                    dispatchNavigateBack();
+                } else {
+                    handleNavAction(navId);
+                }
+            });
+
+            navLayout->addWidget(btn);
+        }
+        navLayout->addStretch();
+        m_layout->addLayout(navLayout);
     }
 
     auto *title = new QLabel(screen["title"].toString());
@@ -187,17 +215,32 @@ void ScreenRenderer::handleComponentAction(const QJsonObject &action) {
     updateButtonStates();
 }
 
-void ScreenRenderer::navigateBack() {
+void ScreenRenderer::dispatchNavigateBack() {
     if (!m_app) return;
-    // navigate_back mutates the engine's nav state and returns the new
-    // ScreenModel; we discard it and refresh() (which re-reads
-    // current_screen), matching the handle_action → refresh path.
-    char *result = vauchi_app_navigate_back(m_app);
+    // ADR-044 Am2a: forward the OS back gesture as a typed UserAction.
+    // Core owns the pop-or-stop decision and returns PerformNativeBack
+    // when there is nothing to pop.
+    QByteArray json = QStringLiteral("\"NavigateBack\"").toUtf8();
+    char *result = vauchi_app_handle_action(m_app, json.constData());
     if (result) {
+        processActionResult(result);
         vauchi_string_free(result);
     }
-    refresh();
-    emit screenChanged();
+}
+
+void ScreenRenderer::handleNavAction(const QString &actionId) {
+    // Non-`go_back` nav actions (e.g. `open_settings`) use the same
+    // ActionPressed lane as per-screen actions so core can resolve them.
+    handleAction(actionId);
+}
+
+void ScreenRenderer::dispatchCommands(const QJsonArray &commands) {
+    QJsonObject wrapper;
+    QJsonObject inner;
+    inner["commands"] = commands;
+    wrapper["Commands"] = inner;
+    QByteArray json = QJsonDocument(wrapper).toJson(QJsonDocument::Compact);
+    processActionResult(json.constData());
 }
 
 void ScreenRenderer::processActionResult(const char *resultJson) {
@@ -213,6 +256,10 @@ void ScreenRenderer::processActionResult(const char *resultJson) {
         // Core already updated internal state; refresh to display the new screen
         refresh();
         emit screenChanged();
+    } else if (result.contains("PerformNativeBack")) {
+        // ADR-044 Am2a: back reached a back-stopping root. Desktop's native
+        // default is to exit the application.
+        QApplication::quit();
     } else if (result.contains("ShowAlert")) {
         QJsonObject alert = result["ShowAlert"].toObject();
         QMessageBox::information(this, alert["title"].toString(), alert["message"].toString());

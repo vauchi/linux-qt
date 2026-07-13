@@ -10,12 +10,15 @@
 
 #include <QApplication>
 #include <QHBoxLayout>
+#include <QKeyEvent>
 #include <QListWidget>
+#include <algorithm>
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QShortcut>
 #include <QStandardPaths>
+#include <QTimer>
 #include <QDir>
 #include <QFile>
 #include <QFileDialog>
@@ -168,9 +171,34 @@ VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
 
     buildSidebar();
 
+    // Core-driven wakeup tick (ADR-044 Am2a). Replaces any frontend-owned
+    // poll loop with on_wakeup(); core decides when work is due and emits
+    // the next ScheduleWakeup command.
+    m_wakeupTimer = new QTimer(this);
+    m_wakeupTimer->setSingleShot(true);
+    connect(m_wakeupTimer, &QTimer::timeout, this, &VauchiWindow::onWakeup);
+    onWakeup(); // bootstrap the schedule
+
+    // Set initial sidebar visibility/selection from the first screen.
+    if (m_app) {
+        char *json = vauchi_app_current_screen(m_app);
+        if (json) {
+            QJsonObject screen = QJsonDocument::fromJson(json).object();
+            vauchi_string_free(json);
+            updateSidebarForScreen(screen);
+        }
+    }
+
     // Refresh sidebar when screen changes (e.g., after onboarding completes)
     connect(m_renderer, &ScreenRenderer::screenChanged, this, [this]() {
         refreshSidebar();
+        if (!m_app) return;
+        char *json = vauchi_app_current_screen(m_app);
+        if (json) {
+            QJsonObject screen = QJsonDocument::fromJson(json).object();
+            vauchi_string_free(json);
+            updateSidebarForScreen(screen);
+        }
     });
 
     // Keyboard shortcuts: Alt+1..5 navigate sidebar screens
@@ -266,6 +294,11 @@ void VauchiWindow::drainAndShowNotifications() {
 
     QJsonArray notifications = QJsonDocument::fromJson(json).array();
     vauchi_string_free(json);
+    drainAndShowNotificationsArray(notifications);
+}
+
+void VauchiWindow::drainAndShowNotificationsArray(const QJsonArray &notifications) {
+    if (!m_tray) return;
 
     for (const auto &n : notifications) {
         // TODO(HUMBLE): D — frontend maps notification category "EmergencyAlert" to OS tray icon severity; core should supply generic urgency hint (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations)
@@ -278,6 +311,102 @@ void VauchiWindow::drainAndShowNotifications() {
                 : QSystemTrayIcon::Information;
         m_tray->showMessage(title, body, icon, 10000);
     }
+}
+
+void VauchiWindow::keyPressEvent(QKeyEvent *event) {
+    // ADR-044 Am2a: Escape is the desktop system-back gesture. Forward it
+    // unconditionally as UserAction::NavigateBack; core owns the pop-or-stop
+    // decision and returns PerformNativeBack when there is nothing to pop.
+    if (event->key() == Qt::Key_Escape && !(event->modifiers() & Qt::AltModifier)) {
+        if (m_renderer) {
+            m_renderer->dispatchNavigateBack();
+        }
+        event->accept();
+        return;
+    }
+    QMainWindow::keyPressEvent(event);
+}
+
+void VauchiWindow::updateSidebarForScreen(const QJsonObject &screen) {
+    if (!m_sidebar) return;
+
+    // nav_tab_id == null means the current screen is pre-auth or a transient
+    // overlay; the shell hides the sidebar. A non-null value selects the
+    // matching desktop sidebar row (the desktop sidebar lists the five tab
+    // roots directly).
+    QJsonValue tabIdValue = screen.value("nav_tab_id");
+    if (tabIdValue.isNull() || tabIdValue.isUndefined()) {
+        m_sidebar->hide();
+        return;
+    }
+
+    m_sidebar->show();
+    QString tabId = tabIdValue.toString();
+    if (tabId.isEmpty()) {
+        m_sidebar->setCurrentRow(-1);
+        return;
+    }
+
+    // Find the row whose TabInfo.id matches nav_tab_id.
+    const QByteArray locale = systemLocaleCode().toUtf8();
+    char *json = vauchi_app_sidebar_items(m_app, locale.constData());
+    if (!json) return;
+
+    QJsonArray tabs = QJsonDocument::fromJson(json).array();
+    vauchi_string_free(json);
+
+    for (int i = 0; i < tabs.size(); ++i) {
+        if (tabs[i].toObject()["id"].toString() == tabId) {
+            m_sidebar->setCurrentRow(i);
+            return;
+        }
+    }
+    m_sidebar->setCurrentRow(-1);
+}
+
+void VauchiWindow::scheduleWakeup(uint32_t seconds) {
+    if (!m_wakeupTimer) return;
+    // Cap at a sensible maximum to avoid a stray huge value stalling the loop.
+    constexpr uint32_t maxSeconds = 3600;
+    m_wakeupTimer->start(static_cast<int>(std::min(seconds, maxSeconds)) * 1000);
+}
+
+void VauchiWindow::onWakeup() {
+    if (!m_app) return;
+
+    char *json = vauchi_app_on_wakeup(m_app);
+    if (!json) return;
+
+    QJsonDocument doc = QJsonDocument::fromJson(json);
+    vauchi_string_free(json);
+    if (!doc.isObject()) return;
+
+    QJsonObject envelope = doc.object();
+    QJsonArray notifications = envelope["notifications"].toArray();
+    QJsonArray commands = envelope["commands"].toArray();
+
+    drainAndShowNotificationsArray(notifications);
+
+    QJsonArray hardwareCommands;
+    uint32_t nextWakeupSeconds = 30; // default fallback if no ScheduleWakeup
+    for (const auto &cmd : commands) {
+        if (cmd.isObject() && cmd.toObject().contains("ScheduleWakeup")) {
+            QJsonObject sched = cmd.toObject()["ScheduleWakeup"].toObject();
+            // Use deadline_secs as the next fire point; the shell only needs
+            // an interval, and deadline is the conservative choice.
+            nextWakeupSeconds = static_cast<uint32_t>(sched["deadline_secs"].toInt(30));
+            continue;
+        }
+        hardwareCommands.append(cmd);
+    }
+
+    if (!hardwareCommands.isEmpty() && m_renderer) {
+        // Reuse the renderer's hardware backend to dispatch non-wakeup
+        // commands exactly like ActionResult::Commands.
+        m_renderer->dispatchCommands(hardwareCommands);
+    }
+
+    scheduleWakeup(nextWakeupSeconds);
 }
 
 void VauchiWindow::importContactsFromFile() {
