@@ -147,6 +147,16 @@ coverage:unit:
   stage: test
   needs: [build:qt, build:cabi]
   tags: [linux, self-hosted]
+  # Self-heal AT-SPI startup-timing flakes ("qvauchi did not appear in
+  # the AT-SPI tree within Ns") shared by every job extending this base.
+  # A transient registration race heals on retry; a real regression
+  # fails all attempts, so retry cannot mask a true break.
+  retry:
+    max: 2
+    when:
+      - script_failure
+      - stuck_or_timeout_failure
+      - runner_system_failure
   variables:
     QT_ACCESSIBILITY: "1"
     LD_LIBRARY_PATH: "${CI_PROJECT_DIR}/cabi-lib"
