@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "editabletextcomponent.h"
-#include "../../i18n.h"
 #include "../thememanager.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -19,6 +18,12 @@ QWidget *EditableTextComponent::render(const QJsonObject &data,
     QString componentId = data["id"].toString();
     QString labelText = data["label"].toString();
     QString value = data["value"].toString();
+    QString editText = data["edit_text"].toString();
+    QString saveText = data["save_text"].toString();
+    QString cancelText = data["cancel_text"].toString();
+    QString editActionId = data["edit_action_id"].toString();
+    QString saveActionId = data["save_action_id"].toString();
+    QString cancelActionId = data["cancel_action_id"].toString();
     bool editing = data["editing"].toBool();
 
     container->setObjectName(componentId);
@@ -44,7 +49,7 @@ QWidget *EditableTextComponent::render(const QJsonObject &data,
     layout->addWidget(label);
 
     if (editing) {
-        // Edit mode: text entry + save button
+        // Edit mode: text entry + core-described cancel/save actions.
         auto *editRow = new QHBoxLayout;
 
         auto *input = new QLineEdit(value);
@@ -52,14 +57,26 @@ QWidget *EditableTextComponent::render(const QJsonObject &data,
         input->setObjectName(componentId + "_input");
         editRow->addWidget(input, 1);
 
-        auto *saveBtn = new QPushButton(tr_vauchi("action.save", "Save"));
+        auto *cancelBtn = new QPushButton(cancelText);
+        cancelBtn->setFlat(true);
+        editRow->addWidget(cancelBtn);
+
+        auto *saveBtn = new QPushButton(saveText);
         saveBtn->setStyleSheet(ThemeManager::styleForRole(ThemeRole::PrimaryButton));
         editRow->addWidget(saveBtn);
 
-        // TODO(HUMBLE): T — editable text synthesizes {id}_save action ID; core should supply explicit save_action_id (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations)
         if (onAction) {
+            QObject::connect(cancelBtn, &QPushButton::clicked, cancelBtn,
+                             [onAction, cancelActionId]() {
+                                 QJsonObject action;
+                                 QJsonObject inner;
+                                 inner["action_id"] = cancelActionId;
+                                 action["ActionPressed"] = inner;
+                                 onAction(action);
+                             });
+
             // Shared save handler: emit TextChanged then ActionPressed
-            auto emitSave = [onAction, componentId, input]() {
+            auto emitSave = [onAction, componentId, saveActionId, input]() {
                 QJsonObject textAction;
                 QJsonObject textInner;
                 textInner["component_id"] = componentId;
@@ -69,7 +86,7 @@ QWidget *EditableTextComponent::render(const QJsonObject &data,
 
                 QJsonObject pressAction;
                 QJsonObject pressInner;
-                pressInner["action_id"] = componentId + "_save";
+                pressInner["action_id"] = saveActionId;
                 pressAction["ActionPressed"] = pressInner;
                 onAction(pressAction);
             };
@@ -93,17 +110,16 @@ QWidget *EditableTextComponent::render(const QJsonObject &data,
         auto *valueLabel = new QLabel(value);
         displayRow->addWidget(valueLabel, 1);
 
-        auto *editBtn = new QPushButton(tr_vauchi("action.edit", "Edit"));
+        auto *editBtn = new QPushButton(editText);
         editBtn->setFlat(true);
         displayRow->addWidget(editBtn);
 
-        // TODO(HUMBLE): T — editable text synthesizes {id}_edit action ID; core should supply explicit edit_action_id (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations)
         if (onAction) {
             QObject::connect(editBtn, &QPushButton::clicked, editBtn,
-                             [onAction, componentId]() {
+                             [onAction, editActionId]() {
                                  QJsonObject action;
                                  QJsonObject inner;
-                                 inner["action_id"] = componentId + "_edit";
+                                 inner["action_id"] = editActionId;
                                  action["ActionPressed"] = inner;
                                  onAction(action);
                              });

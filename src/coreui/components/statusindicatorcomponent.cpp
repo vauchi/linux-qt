@@ -14,6 +14,7 @@ QWidget *StatusIndicatorComponent::render(const QJsonObject &data) {
     layout->setContentsMargins(0, 0, 0, 0);
 
     auto *dot = new QLabel(QStringLiteral("\u25CF"));
+    dot->setAccessibleName(data["status_label"].toString());
     QString status = data["status"].toString();
     if (status == "Success") {
         dot->setStyleSheet(ThemeManager::styleForRole(ThemeRole::StatusSuccess));
@@ -41,6 +42,11 @@ QWidget *StatusIndicatorComponent::render(const QJsonObject &data) {
     }
 
     layout->addStretch();
+
+    auto *statusLabel = new QLabel(data["status_label"].toString());
+    statusLabel->setObjectName(QStringLiteral("status_label"));
+    statusLabel->setAccessibleName(data["status_label"].toString());
+    layout->addWidget(statusLabel);
 
     if (data.contains("a11y") && data["a11y"].isObject()) {
         auto a11y = data["a11y"].toObject();

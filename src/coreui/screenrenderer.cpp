@@ -30,34 +30,38 @@ ScreenRenderer::ScreenRenderer(struct VauchiApp *app, QWidget *parent)
     : QWidget(parent), m_app(app) {
     m_layout = new QVBoxLayout(this);
 
-    // Hardware backend for exchange commands
-    m_hardware = new HardwareBackend(app, this);
-    connect(m_hardware, &HardwareBackend::actionResultReady, this, [this](const QJsonObject &result) {
-        QByteArray json = QJsonDocument(result).toJson(QJsonDocument::Compact);
-        processActionResult(json.constData());
-    });
-    connect(m_hardware, &HardwareBackend::qrScanned, this, [this](const QString &data) {
-        if (data.isEmpty()) {
-            // No camera or scan cancelled — fall back to paste dialog
-            promptQrPaste();
-        } else {
-            // Camera decoded QR — send as hardware event
-            QJsonObject event;
-            QJsonObject inner;
-            inner["data"] = data;
-            event["QrScanned"] = inner;
-            QByteArray json = QJsonDocument(event).toJson(QJsonDocument::Compact);
-            char *result = vauchi_app_handle_hardware_event(m_app, json.constData());
-            if (result) {
-                processActionResult(result);
-                vauchi_string_free(result);
+    // A null app is the deliberately inert fixture-rendering mode. It builds
+    // the production widget tree without starting core persistence, relay, or
+    // hardware services. The live app always supplies a non-null handle.
+    if (m_app) {
+        m_hardware = new HardwareBackend(app, this);
+        connect(m_hardware, &HardwareBackend::actionResultReady, this, [this](const QJsonObject &result) {
+            QByteArray json = QJsonDocument(result).toJson(QJsonDocument::Compact);
+            processActionResult(json.constData());
+        });
+        connect(m_hardware, &HardwareBackend::qrScanned, this, [this](const QString &data) {
+            if (data.isEmpty()) {
+                // No camera or scan cancelled — fall back to paste dialog
+                promptQrPaste();
             } else {
-                refresh();
+                // Camera decoded QR — send as hardware event
+                QJsonObject event;
+                QJsonObject inner;
+                inner["data"] = data;
+                event["QrScanned"] = inner;
+                QByteArray json = QJsonDocument(event).toJson(QJsonDocument::Compact);
+                char *result = vauchi_app_handle_hardware_event(m_app, json.constData());
+                if (result) {
+                    processActionResult(result);
+                    vauchi_string_free(result);
+                } else {
+                    refresh();
+                }
             }
-        }
-    });
+        });
 
-    refresh();
+        refresh();
+    }
 }
 
 void ScreenRenderer::refresh() {
@@ -204,6 +208,8 @@ void ScreenRenderer::renderScreen(const QJsonObject &screen) {
 }
 
 void ScreenRenderer::handleComponentAction(const QJsonObject &action) {
+    if (!m_app) return;
+
     QByteArray json = QJsonDocument(action).toJson(QJsonDocument::Compact);
     char *result = vauchi_app_handle_action(m_app, json.constData());
     if (result) {
@@ -291,7 +297,7 @@ void ScreenRenderer::processActionResult(const char *resultJson) {
         QJsonObject cmds = result["Commands"].toObject();
         QJsonArray commands = cmds["commands"].toArray();
         refresh();
-        m_hardware->dispatchCommands(commands);
+        if (m_hardware) m_hardware->dispatchCommands(commands);
     } else if (result.contains("RequestCamera")) {
         // Desktop fallback: prompt user to paste QR data manually
         refresh();
@@ -300,8 +306,9 @@ void ScreenRenderer::processActionResult(const char *resultJson) {
         QJsonObject toast = result["ShowToast"].toObject();
         QString message = toast["message"].toString();
         QString undoId = toast["undo_action_id"].toString();
-        if (!undoId.isEmpty()) {
-            showStatusMessageWithUndo(message, undoId);
+        QString undoLabel = toast["undo_label"].toString();
+        if (!undoId.isEmpty() && !undoLabel.isEmpty()) {
+            showStatusMessageWithUndo(message, undoId, undoLabel);
         } else {
             showStatusMessage(message);
         }
@@ -416,18 +423,19 @@ void ScreenRenderer::showStatusMessage(const QString &message) {
 }
 
 void ScreenRenderer::showStatusMessageWithUndo(
-    const QString &message, const QString &undoActionId) {
+    const QString &message, const QString &undoActionId,
+    const QString &undoLabel) {
     QWidget *w = parentWidget();
     while (w) {
         if (auto *mw = qobject_cast<QMainWindow *>(w)) {
             auto *bar = mw->statusBar();
             bar->showMessage(message);
-            auto *btn = new QPushButton(tr("Undo"), bar);
+            auto *btn = new QPushButton(undoLabel, bar);
             bar->addPermanentWidget(btn);
             connect(btn, &QPushButton::clicked, this,
                     [this, btn, undoActionId]() {
                         btn->deleteLater();
-                        handleAction(undoActionId);
+                        handleUndoAction(undoActionId);
                     });
             // Auto-dismiss after 4 seconds
             QTimer::singleShot(4000, btn, [btn, bar]() {
@@ -441,10 +449,32 @@ void ScreenRenderer::showStatusMessageWithUndo(
 }
 
 void ScreenRenderer::handleAction(const QString &actionId) {
+    if (!m_app) return;
+
     QJsonObject action;
     QJsonObject inner;
     inner["action_id"] = actionId;
     action["ActionPressed"] = inner;
+
+    QByteArray json = QJsonDocument(action).toJson(QJsonDocument::Compact);
+    char *result = vauchi_app_handle_action(m_app, json.constData());
+    if (result) {
+        processActionResult(result);
+        vauchi_string_free(result);
+        return;
+    }
+
+    refresh();
+    emit screenChanged();
+}
+
+void ScreenRenderer::handleUndoAction(const QString &actionId) {
+    if (!m_app) return;
+
+    QJsonObject action;
+    QJsonObject inner;
+    inner["action_id"] = actionId;
+    action["UndoPressed"] = inner;
 
     QByteArray json = QJsonDocument(action).toJson(QJsonDocument::Compact);
     char *result = vauchi_app_handle_action(m_app, json.constData());

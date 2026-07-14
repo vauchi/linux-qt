@@ -53,7 +53,9 @@ private:
     void saveBackupToFile(const QString &hexData);
     void showStatusMessage(const QString &message);
     void showStatusMessageWithUndo(const QString &message,
-                                   const QString &undoActionId);
+                                   const QString &undoActionId,
+                                   const QString &undoLabel);
+    void handleUndoAction(const QString &actionId);
 
     struct ::VauchiApp *m_app;
     QVBoxLayout *m_layout;

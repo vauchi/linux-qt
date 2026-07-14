@@ -46,14 +46,13 @@ static int maybeRenderFixture(const QStringList &args) {
     const QJsonObject screen = QJsonDocument::fromJson(f.readAll()).object();
 
     ThemeManager::applyDefaultTheme();
-    VauchiApp *app = vauchi_app_create();
-    auto *renderer = new ScreenRenderer(app, nullptr);
+    // Null app selects ScreenRenderer's inert render-only mode: fixture
+    // screenshots must not start persistence, network, audio, BLE, or NFC.
+    auto *renderer = new ScreenRenderer(nullptr, nullptr);
     renderer->renderFixture(screen);
     renderer->resize(width > 0 ? width : 900, height > 0 ? height : 1400);
-    // The renderer clears its previous screen (the constructor renders the
-    // app's initial screen) via deleteLater(); flush those deferred deletes
-    // now, since this harness grabs synchronously without ever running the
-    // event loop — otherwise the prior screen's widgets leak into the capture.
+    // Component replacement uses deleteLater(); flush deferred deletes now,
+    // since this harness grabs synchronously without running the event loop.
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
     QCoreApplication::processEvents();
     const QPixmap pixmap = renderer->grab();
@@ -62,7 +61,6 @@ static int maybeRenderFixture(const QStringList &args) {
                  ok ? "wrote" : "FAILED", qUtf8Printable(outPath),
                  pixmap.width(), pixmap.height());
     delete renderer;
-    vauchi_app_destroy(app);
     return ok ? 0 : 1;
 }
 

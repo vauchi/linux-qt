@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "qrcodecomponent.h"
-#include "../../i18n.h"
 #include "../thememanager.h"
 #include <QLabel>
 #include <QVBoxLayout>
@@ -20,43 +19,51 @@ QWidget *QrcodeComponent::render(const QJsonObject &data) {
 
     QString qrData = data["data"].toString();
     QString mode = data["mode"].toString();
+    QString labelText = data["label"].toString();
 
-    // TODO(HUMBLE): W — QR component hardcodes mode-dependent accessible names instead of core-supplied a11y.label (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations)
-    if (mode == "Scan") {
-        container->setAccessibleName(tr_vauchi("qr.scan", "Scan QR code"));
-    } else {
-        container->setAccessibleName(tr_vauchi("qr.exchange.description", "QR code for contact exchange"));
+    container->setAccessibleName(labelText);
+    if (data.contains("a11y") && data["a11y"].isObject()) {
+        auto a11y = data["a11y"].toObject();
+        auto a11yLabel = a11y.value("label").toString();
+        if (!a11yLabel.isEmpty()) {
+            container->setAccessibleName(a11yLabel);
+        }
+        auto hint = a11y.value("hint").toString();
+        if (!hint.isEmpty()) {
+            container->setAccessibleDescription(hint);
+        }
     }
 
     if (mode == "Scan") {
-        auto *label = new QLabel(tr_vauchi("platform.qr_waiting", "Waiting for QR scan\u2026"));
+        auto *label = new QLabel(labelText);
         label->setAlignment(Qt::AlignCenter);
         layout->addWidget(label);
         return container;
     }
 
+    auto addRenderWarning = [&]() {
+        auto *warning = new QLabel(QStringLiteral("⚠"));
+        warning->setAlignment(Qt::AlignCenter);
+        warning->setAccessibleName(container->accessibleName());
+        layout->addWidget(warning);
+    };
+
     if (qrData.isEmpty()) {
-        auto *label = new QLabel("No QR data");
-        label->setAlignment(Qt::AlignCenter);
-        layout->addWidget(label);
+        addRenderWarning();
         return container;
     }
 
     QByteArray utf8 = qrData.toUtf8();
     QRcode *code = QRcode_encodeString(utf8.constData(), 0, QR_ECLEVEL_M, QR_MODE_8, 1);
     if (!code) {
-        auto *label = new QLabel("Failed to generate QR code");
-        label->setAlignment(Qt::AlignCenter);
-        layout->addWidget(label);
+        addRenderWarning();
         return container;
     }
 
     int moduleCount = code->width;
     if (moduleCount <= 0) {
         QRcode_free(code);
-        auto *label = new QLabel("Invalid QR code dimensions");
-        label->setAlignment(Qt::AlignCenter);
-        layout->addWidget(label);
+        addRenderWarning();
         return container;
     }
     int scale = QR_SIZE / moduleCount;
@@ -85,7 +92,6 @@ QWidget *QrcodeComponent::render(const QJsonObject &data) {
     layout->addWidget(qrLabel);
 
     // Optional label below QR
-    QString labelText = data["label"].toString();
     if (!labelText.isEmpty()) {
         auto *textLabel = new QLabel(labelText);
         textLabel->setAlignment(Qt::AlignCenter);
@@ -93,18 +99,6 @@ QWidget *QrcodeComponent::render(const QJsonObject &data) {
                                  ThemeManager::styleForRole(ThemeRole::SecondaryText) +
                                  QStringLiteral(" font-size: 12px;"));
         layout->addWidget(textLabel);
-    }
-
-    if (data.contains("a11y") && data["a11y"].isObject()) {
-        auto a11y = data["a11y"].toObject();
-        auto a11yLabel = a11y.value("label").toString();
-        if (!a11yLabel.isEmpty()) {
-            container->setAccessibleName(a11yLabel);
-        }
-        auto hint = a11y.value("hint").toString();
-        if (!hint.isEmpty()) {
-            container->setAccessibleDescription(hint);
-        }
     }
 
     return container;

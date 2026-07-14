@@ -37,12 +37,12 @@ QWidget *InlineConfirmComponent::render(const QJsonObject &data,
     auto *buttonRow = new QHBoxLayout;
     buttonRow->addStretch();
 
-    QString cancelText = data["cancel_text"].toString("Cancel");
+    QString cancelText = data["cancel_text"].toString();
     auto *cancelBtn = new QPushButton(cancelText);
     cancelBtn->setFlat(true);
     buttonRow->addWidget(cancelBtn);
 
-    QString confirmText = data["confirm_text"].toString("Confirm");
+    QString confirmText = data["confirm_text"].toString();
     auto *confirmBtn = new QPushButton(confirmText);
     if (data["destructive"].toBool()) {
         confirmBtn->setStyleSheet(ThemeManager::styleForRole(ThemeRole::DestructiveButton));
@@ -64,24 +64,24 @@ QWidget *InlineConfirmComponent::render(const QJsonObject &data,
         }
     }
 
-    // TODO(HUMBLE): T — inline confirm synthesizes {id}_cancel / {id}_confirm action IDs; core should supply explicit action IDs (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations)
     if (onAction) {
-        QString dialogId = data["id"].toString();
+        const QString cancelActionId = data["cancel_action_id"].toString();
+        const QString confirmActionId = data["confirm_action_id"].toString();
 
         QObject::connect(cancelBtn, &QPushButton::clicked, cancelBtn,
-                         [onAction, dialogId]() {
+                         [onAction, cancelActionId]() {
                              QJsonObject action;
                              QJsonObject inner;
-                             inner["action_id"] = dialogId + "_cancel";
+                             inner["action_id"] = cancelActionId;
                              action["ActionPressed"] = inner;
                              onAction(action);
                          });
 
         QObject::connect(confirmBtn, &QPushButton::clicked, confirmBtn,
-                         [onAction, dialogId]() {
+                         [onAction, confirmActionId]() {
                              QJsonObject action;
                              QJsonObject inner;
-                             inner["action_id"] = dialogId + "_confirm";
+                             inner["action_id"] = confirmActionId;
                              action["ActionPressed"] = inner;
                              onAction(action);
                          });

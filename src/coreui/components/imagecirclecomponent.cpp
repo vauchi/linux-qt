@@ -3,9 +3,11 @@
 
 #include "imagecirclecomponent.h"
 #include <QByteArray>
+#include <QGridLayout>
 #include <QJsonArray>
 #include <QLabel>
 #include <QPixmap>
+#include <QPushButton>
 #include <QVBoxLayout>
 
 namespace {
@@ -31,6 +33,10 @@ QWidget *ImageCircleComponent::render(const QJsonObject &data,
     container->setObjectName(componentId);
 
     constexpr int kAvatarPx = 96;
+    auto *avatarHost = new QWidget;
+    avatarHost->setFixedSize(kAvatarPx, kAvatarPx);
+    auto *avatarLayout = new QGridLayout(avatarHost);
+    avatarLayout->setContentsMargins(0, 0, 0, 0);
     auto *avatar = new QLabel;
     avatar->setFixedSize(kAvatarPx, kAvatarPx);
     avatar->setAlignment(Qt::AlignCenter);
@@ -66,14 +72,38 @@ QWidget *ImageCircleComponent::render(const QJsonObject &data,
     if (data.contains("a11y") && data["a11y"].isObject()) {
         a11yLabel = data["a11y"].toObject().value("label").toString();
     }
+    QString a11yHint;
+    if (data.contains("a11y") && data["a11y"].isObject()) {
+        a11yHint = data["a11y"].toObject().value("hint").toString();
+    }
     if (!a11yLabel.isEmpty()) avatar->setAccessibleName(a11yLabel);
+    if (!a11yHint.isEmpty()) avatar->setAccessibleDescription(a11yHint);
+    avatarLayout->addWidget(avatar, 0, 0);
 
-    // Note: `editable: true` (avatar-editor click → edit_avatar action)
-    // is iOS/Android-specific UX and not currently exercised on the
-    // desktop screens linux-qt renders. Wire it via a click-detecting
-    // QLabel subclass when a desktop screen needs it.
-    (void)onAction;
+    const QString editActionId = data["edit_action_id"].toString();
+    const bool editable = data["editable"].toBool() && !editActionId.isEmpty();
+    if (editable) {
+        auto *editButton = new QPushButton(QStringLiteral("\u270e"), avatarHost);
+        editButton->setObjectName(QStringLiteral("image-edit-affordance"));
+        editButton->setFixedSize(32, 32);
+        editButton->setFlat(true);
+        editButton->setStyleSheet(QStringLiteral(
+            "QPushButton { border-radius: 16px; font-size: 18px; }"));
+        if (!a11yLabel.isEmpty()) editButton->setAccessibleName(a11yLabel);
+        if (!a11yHint.isEmpty()) editButton->setAccessibleDescription(a11yHint);
+        if (onAction) {
+            QObject::connect(editButton, &QPushButton::clicked, editButton,
+                             [onAction, editActionId]() {
+                                 QJsonObject action;
+                                 QJsonObject inner;
+                                 inner["action_id"] = editActionId;
+                                 action["ActionPressed"] = inner;
+                                 onAction(action);
+                             });
+        }
+        avatarLayout->addWidget(editButton, 0, 0, Qt::AlignRight | Qt::AlignBottom);
+    }
 
-    layout->addWidget(avatar, 0, Qt::AlignCenter);
+    layout->addWidget(avatarHost, 0, Qt::AlignCenter);
     return container;
 }
