@@ -292,10 +292,6 @@ void ScreenRenderer::processActionResult(const char *resultJson) {
         QJsonArray commands = cmds["commands"].toArray();
         refresh();
         if (m_hardware) m_hardware->dispatchCommands(commands);
-    } else if (result.contains("RequestCamera")) {
-        // Desktop fallback: prompt user to paste QR data manually
-        refresh();
-        promptQrPaste();
     } else if (result.contains("ShowToast")) {
         QJsonObject toast = result["ShowToast"].toObject();
         QString message = toast["message"].toString();
