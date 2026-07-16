@@ -281,12 +281,6 @@ void ScreenRenderer::processActionResult(const char *resultJson) {
                                            "URL scheme not allowed: {url}")
                                            .replace(QStringLiteral("{url}"), url.scheme()));
         }
-    } else if (result.contains("StartDeviceLink")) {
-        // TODO(HUMBLE): D — frontend routes StartDeviceLink to "device_linking" screen; core should emit NavigateTo directly (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations)
-        char *r = vauchi_app_navigate_to(m_app, "device_linking");
-        if (r) vauchi_string_free(r);
-        refresh();
-        emit screenChanged();
     } else if (result.contains("WipeComplete")) {
         refresh();
         emit screenChanged();
