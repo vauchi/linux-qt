@@ -19,7 +19,10 @@ variables:
   SAST_EXCLUDED_PATHS: "build/, vauchi-core/"
   SECRET_DETECTION_EXCLUDED_PATHS: "build/, vauchi-core/"
   SAST_ANALYZER_IMAGE_TAG: "5"
-  VAUCHI_CORE_REF: main
+  # Pinned core release for recorded build provenance (RG-8 rollout,
+  # problem 2026-07-15-ohttp-dynamic-direct-fallback-regression).
+  # Bump to a newer tag only through a reviewed MR.
+  VAUCHI_CORE_REF: v0.55.4
 
 stages:
   - lint
