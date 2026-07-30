@@ -1,0 +1,38 @@
+{
+  "surface_id": "fixture",
+  "revision": 1,
+  "title": "Vauchi",
+  "subtitle": "Core-driven presentation fixture",
+  "accessibility_label": "Vauchi presentation fixture",
+  "layout": "scroll",
+  "tokens": {
+    "spacing_small": 8,
+    "spacing_medium": 16,
+    "spacing_large": 24,
+    "corner_radius": 12,
+    "minimum_target_size": 44
+  },
+  "nodes": [
+    {
+      "Text": {
+        "id": null,
+        "content": "A humble native Qt surface",
+        "style": "heading",
+        "accessibility": {
+          "label": "A humble native Qt surface",
+          "description": null
+        }
+      }
+    },
+    {
+      "Progress": {
+        "label": "Ready",
+        "value": 1.0,
+        "accessibility": {
+          "label": "Ready",
+          "description": null
+        }
+      }
+    }
+  ]
+}

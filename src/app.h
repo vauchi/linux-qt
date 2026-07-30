@@ -8,9 +8,9 @@
 #include "vauchi.h"
 
 class QKeyEvent;
+class QResizeEvent;
 class QTimer;
-class ScreenRenderer;
-class QListWidget;
+class PresentationController;
 
 class VauchiWindow : public QMainWindow {
     Q_OBJECT
@@ -22,11 +22,9 @@ public:
 protected:
     void changeEvent(QEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
 
 private:
-    void buildSidebar();
-    void refreshSidebar();
-    void updateSidebarForScreen(const QJsonObject &screen);
     void drainAndShowNotifications();
     void drainAndShowNotificationsArray(const QJsonArray &notifications);
     void importContactsFromFile();
@@ -34,8 +32,7 @@ private:
     void onWakeup();
 
     struct ::VauchiApp *m_app = nullptr;
-    ScreenRenderer *m_renderer = nullptr;
-    QListWidget *m_sidebar = nullptr;
+    PresentationController *m_presentation = nullptr;
     class SystemTray *m_tray = nullptr;
     QTimer *m_wakeupTimer = nullptr;
 };

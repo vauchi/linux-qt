@@ -6,7 +6,6 @@
 #include <QObject>
 #include <QJsonObject>
 #include <QJsonArray>
-#include "vauchi.h"
 
 class BleBackend;
 class AudioBackend;
@@ -19,7 +18,7 @@ class HardwareBackend : public QObject {
     Q_OBJECT
 
 public:
-    explicit HardwareBackend(struct ::VauchiApp *app, QObject *parent = nullptr);
+    explicit HardwareBackend(QObject *parent = nullptr);
 
     /// Dispatch a list of exchange commands from an action result.
     void dispatchCommands(const QJsonArray &commands);
@@ -34,8 +33,8 @@ public:
     void sendHardwareEvent(const QJsonObject &event);
 
 signals:
-    /// Emitted when a hardware event produces a result that needs UI update.
-    void actionResultReady(const QJsonObject &result);
+    /// Raw platform event for the canonical Core reducer.
+    void eventReady(const QJsonObject &event);
 
     /// Emitted when QR scan completes (camera decoded a QR code).
     void qrScanned(const QString &data);
@@ -45,8 +44,6 @@ private:
 
     /// Extract a QByteArray from a JSON integer array (serde Vec<u8> format).
     static QByteArray jsonArrayToBytes(const QJsonArray &arr);
-
-    struct ::VauchiApp *m_app;
 
 #ifdef VAUCHI_HAS_BLUETOOTH
     BleBackend *m_ble = nullptr;

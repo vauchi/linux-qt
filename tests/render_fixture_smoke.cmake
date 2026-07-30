@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# Drives `qvauchi --render-fixture` on a golden ScreenModel fixture and asserts
+# Drives `qvauchi --render-fixture` on a generic surface fixture and asserts
 # a valid, non-trivial PNG comes out. Guards the design screenshot catalog
 # harness (problem 2026-06-12-device-screenshot-catalog). Invoked via add_test
 # with -DBIN / -DFIXTURE / -DPNG_OUT / -DCABI_DIR.

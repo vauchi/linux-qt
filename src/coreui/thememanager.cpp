@@ -142,16 +142,19 @@ QString ThemeManager::stylesheetFromColors(const QJsonObject &colors) {
     return QStringLiteral(
         "QWidget { font-family: \"%7\"; }"
         "QMainWindow { background-color: %1; color: %2; }"
-        "QListWidget#sidebar { background-color: %3; border-right: 1px solid %4; }"
-        "QListWidget#sidebar::item:selected { background-color: %5; }"
+        "QWidget#contextual-command-bar { background-color: %3; "
+        "  border-top: 1px solid %4; }"
         "QLineEdit { border: 1px solid %4; background-color: %3; color: %2; }"
         "QLabel { color: %2; }"
         "QPushButton { background-color: %5; color: %2; border: 1px solid %4; "
         "  padding: 6px 16px; border-radius: 4px; }"
         "QPushButton:hover { background-color: %6; }"
+        "QPushButton#context-primary { background-color: %6; color: %1; "
+        "  min-height: 44px; padding: 10px 24px; font-weight: bold; }"
+        "QPushButton[tone=\"destructive\"] { background-color: %8; color: %1; }"
     )
         .arg(bgPrimary, textPrimary, bgSecondary, border, bgTertiary, accent,
-             uiFont().family());
+             uiFont().family(), errorColor);
 }
 
 QJsonObject ThemeManager::currentColors() {

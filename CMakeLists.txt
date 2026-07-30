@@ -44,31 +44,14 @@ find_library(VAUCHI_CABI vauchi_cabi PATHS ${VAUCHI_CABI_DIR} REQUIRED)
 set(QVAUCHI_SOURCES
     src/main.cpp
     src/app.cpp
-    src/coreui/screenrenderer.cpp
-    src/coreui/componentrenderer.cpp
+    src/coreui/presentationstate.cpp
+    src/coreui/presentationcontroller.cpp
+    src/coreui/presentationcontroller_effects.cpp
+    src/coreui/presentationeffectpayload.cpp
+    src/coreui/presentationsurface.cpp
+    src/coreui/presentationsurface_nodes.cpp
+    src/coreui/presentationsurface_qr.cpp
     src/coreui/thememanager.cpp
-    src/coreui/components/textcomponent.cpp
-    src/coreui/components/textinputcomponent.cpp
-    src/coreui/components/togglelistcomponent.cpp
-    src/coreui/components/fieldlistcomponent.cpp
-    src/coreui/components/previewcomponent.cpp
-    src/coreui/components/infopanelcomponent.cpp
-    src/coreui/components/listcomponent.cpp
-    src/coreui/components/settingsgroupcomponent.cpp
-    src/coreui/components/actionlistcomponent.cpp
-    src/coreui/components/statusindicatorcomponent.cpp
-    src/coreui/components/pininputcomponent.cpp
-    src/coreui/components/qrcodecomponent.cpp
-    src/coreui/components/inlineconfirmcomponent.cpp
-    src/coreui/components/editabletextcomponent.cpp
-    src/coreui/components/bannercomponent.cpp
-    src/coreui/components/dividercomponent.cpp
-    src/coreui/components/dropdowncomponent.cpp
-    src/coreui/components/imagecirclecomponent.cpp
-    src/coreui/components/slidercomponent.cpp
-    src/coreui/components/indicatorcomponent.cpp
-    src/coreui/components/sectionedactionlistcomponent.cpp
-    src/coreui/components/rowcomponent.cpp
     src/platform/systemtray.cpp
     src/platform/menubar.cpp
     src/platform/hardwarebackend.cpp
@@ -129,6 +112,13 @@ target_include_directories(qvauchi PRIVATE ${QVAUCHI_INCLUDES})
 target_link_directories(qvauchi PRIVATE ${QRENCODE_LIBRARY_DIRS} ${ZBAR_LIBRARY_DIRS})
 target_link_libraries(qvauchi PRIVATE ${QVAUCHI_LIBS})
 target_compile_definitions(qvauchi PRIVATE ${QVAUCHI_DEFINES})
+add_custom_command(
+    TARGET qvauchi POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E rm -f
+            "${CMAKE_CURRENT_BINARY_DIR}/vauchi-qt"
+    COMMAND ${CMAKE_COMMAND} -E create_symlink
+            "$<TARGET_FILE_NAME:qvauchi>"
+            "${CMAKE_CURRENT_BINARY_DIR}/vauchi-qt")
 
 install(TARGETS qvauchi DESTINATION bin)
 install(FILES packaging/vauchi-qt.desktop DESTINATION share/applications)
@@ -148,57 +138,60 @@ target_include_directories(app_engine_test PRIVATE include)
 target_link_libraries(app_engine_test PRIVATE ${VAUCHI_CABI})
 add_test(NAME app_engine_test COMMAND app_engine_test)
 
+# Core presentation reducer state: multi-surface retention and active context.
+add_executable(presentation_state_test
+    tests/presentation_state_test.cpp
+    src/coreui/presentationstate.cpp)
+target_include_directories(presentation_state_test PRIVATE src)
+target_link_libraries(presentation_state_test PRIVATE Qt6::Core)
+add_test(NAME presentation_state_test COMMAND presentation_state_test)
+
+# Generic presentation surface: native controls emit only opaque protocol
+# identifiers and generic values.
+add_executable(presentation_surface_test
+    tests/presentation_surface_test.cpp
+    src/coreui/presentationsurface.cpp
+    src/coreui/presentationsurface_nodes.cpp
+    src/coreui/presentationsurface_qr.cpp)
+target_include_directories(presentation_surface_test PRIVATE
+    src ${QRENCODE_INCLUDE_DIRS})
+target_link_directories(presentation_surface_test PRIVATE
+    ${QRENCODE_LIBRARY_DIRS})
+target_link_libraries(presentation_surface_test PRIVATE
+    Qt6::Widgets Qt6::Core ${QRENCODE_LIBRARIES})
+add_test(NAME presentation_surface_test COMMAND presentation_surface_test)
+
+add_executable(presentation_controller_test
+    tests/presentation_controller_test.cpp
+    src/coreui/presentationcontroller.cpp
+    src/coreui/presentationcontroller_effects.cpp
+    src/coreui/presentationeffectpayload.cpp
+    src/coreui/presentationstate.cpp
+    src/coreui/presentationsurface.cpp
+    src/coreui/presentationsurface_nodes.cpp
+    src/coreui/presentationsurface_qr.cpp
+    src/platform/hardwarebackend.cpp
+    src/platform/directsendworker.cpp)
+target_include_directories(presentation_controller_test PRIVATE
+    include src ${VAUCHI_CABI_INCLUDE} ${QRENCODE_INCLUDE_DIRS})
+target_link_directories(presentation_controller_test PRIVATE
+    ${QRENCODE_LIBRARY_DIRS})
+target_link_libraries(presentation_controller_test PRIVATE
+    Qt6::Widgets Qt6::Core ${QRENCODE_LIBRARIES} ${VAUCHI_CABI})
+add_test(NAME presentation_controller_test COMMAND presentation_controller_test)
+
 # ThemeManager test: palette generation, stylesheet output, file loading
 add_executable(theme_test tests/theme_test.cpp src/coreui/thememanager.cpp)
 target_include_directories(theme_test PRIVATE include ${VAUCHI_TOKENS_INCLUDE})
 target_link_libraries(theme_test PRIVATE Qt6::Widgets Qt6::Core)
 add_test(NAME theme_test COMMAND theme_test)
 
-# ComponentRenderer test: variant dispatch + Indicator + SectionedActionList
-# renderers. Compiles every component source so the dispatch table is
-# realistic. Links vauchi-cabi because i18n.h (used by list/qrcode
-# components) calls vauchi_string_free.
-set(COMPONENTRENDERER_TEST_SOURCES
-    tests/componentrenderer_test.cpp
-    src/coreui/componentrenderer.cpp
-    src/coreui/thememanager.cpp
-    src/coreui/components/textcomponent.cpp
-    src/coreui/components/textinputcomponent.cpp
-    src/coreui/components/togglelistcomponent.cpp
-    src/coreui/components/fieldlistcomponent.cpp
-    src/coreui/components/previewcomponent.cpp
-    src/coreui/components/infopanelcomponent.cpp
-    src/coreui/components/listcomponent.cpp
-    src/coreui/components/settingsgroupcomponent.cpp
-    src/coreui/components/actionlistcomponent.cpp
-    src/coreui/components/statusindicatorcomponent.cpp
-    src/coreui/components/pininputcomponent.cpp
-    src/coreui/components/qrcodecomponent.cpp
-    src/coreui/components/inlineconfirmcomponent.cpp
-    src/coreui/components/editabletextcomponent.cpp
-    src/coreui/components/bannercomponent.cpp
-    src/coreui/components/dividercomponent.cpp
-    src/coreui/components/dropdowncomponent.cpp
-    src/coreui/components/imagecirclecomponent.cpp
-    src/coreui/components/slidercomponent.cpp
-    src/coreui/components/indicatorcomponent.cpp
-    src/coreui/components/sectionedactionlistcomponent.cpp
-    src/coreui/components/rowcomponent.cpp
-)
-add_executable(componentrenderer_test ${COMPONENTRENDERER_TEST_SOURCES})
-target_include_directories(componentrenderer_test PRIVATE
-    include ${QRENCODE_INCLUDE_DIRS} ${VAUCHI_CABI_INCLUDE} ${VAUCHI_TOKENS_INCLUDE})
-target_link_directories(componentrenderer_test PRIVATE ${QRENCODE_LIBRARY_DIRS})
-target_link_libraries(componentrenderer_test PRIVATE
-    Qt6::Widgets Qt6::Core ${QRENCODE_LIBRARIES} ${VAUCHI_CABI})
-add_test(NAME componentrenderer_test COMMAND componentrenderer_test)
-
 # render-fixture catalog harness smoke: a golden fixture must render to a valid
 # PNG via `qvauchi --render-fixture` (offscreen). See render_fixture_smoke.cmake.
 add_test(NAME render_fixture_smoke
     COMMAND ${CMAKE_COMMAND}
         -DBIN=$<TARGET_FILE:qvauchi>
-        -DFIXTURE=${CMAKE_SOURCE_DIR}/../core/vauchi-core/tests/fixtures/golden/identity_check.json
+        -DFIXTURE=${CMAKE_SOURCE_DIR}/tests/fixtures/generic_surface.json
         -DPNG_OUT=${CMAKE_CURRENT_BINARY_DIR}/render_fixture_smoke.png
         -DCABI_DIR=${VAUCHI_CABI_DIR}
         -P ${CMAKE_SOURCE_DIR}/tests/render_fixture_smoke.cmake)

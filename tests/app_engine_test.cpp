@@ -62,131 +62,26 @@ static void test_persistence() {
     fs::remove_all(dir);
 }
 
-// --- Test: available screens starts with onboarding ---
-static void test_available_screens() {
+// --- Test: canonical presentation reducer boundary ---
+static void test_presentation_reducer() {
     VauchiApp *app = vauchi_app_create();
     assert(app != nullptr);
 
-    char *json = vauchi_app_available_screens(app);
-    assert(json != nullptr);
-    // Should contain "onboarding" as the only screen before identity
-    std::string s(json);
-    assert(s.find("onboarding") != std::string::npos);
-    vauchi_string_free(json);
-    vauchi_app_destroy(app);
-}
+    char *initial = vauchi_app_initial_commands(app);
+    assert(initial != nullptr);
+    std::string initialJson(initial);
+    assert(initialJson.find("ReplaceSurface") != std::string::npos);
+    assert(initialJson.find("SetContextBar") != std::string::npos);
+    vauchi_string_free(initial);
 
-// --- Test: current screen returns valid JSON ---
-static void test_current_screen() {
-    VauchiApp *app = vauchi_app_create();
-    assert(app != nullptr);
-
-    char *json = vauchi_app_current_screen(app);
-    assert(json != nullptr);
-    std::string s(json);
-    // Should contain screen_id field
-    assert(s.find("screen_id") != std::string::npos);
-    vauchi_string_free(json);
-    vauchi_app_destroy(app);
-}
-
-// --- Test: handle action returns valid JSON ---
-static void test_handle_action() {
-    VauchiApp *app = vauchi_app_create();
-    assert(app != nullptr);
-
-    const char *action = R"({"ActionPressed":{"action_id":"create_new"}})";
-    char *result = vauchi_app_handle_action(app, action);
-    assert(result != nullptr);
-    assert(std::strlen(result) > 0);
-    vauchi_string_free(result);
-    vauchi_app_destroy(app);
-}
-
-// --- Test: navigate to unknown screen doesn't crash ---
-static void test_navigate_unknown() {
-    VauchiApp *app = vauchi_app_create();
-    assert(app != nullptr);
-
-    char *result = vauchi_app_navigate_to(app, "nonexistent_screen");
-    // May return null or error JSON, but should not crash
-    if (result) vauchi_string_free(result);
-    vauchi_app_destroy(app);
-}
-
-// --- Test: NavigateToTab routes an opaque tab token to NavigateTo (ADR-043 Am4) ---
-// The sidebar tab tap forwards UserAction::NavigateToTab{action_id} — the opaque
-// token core minted on TabInfo.action_id (vauchi_app_sidebar_items) — through
-// vauchi_app_handle_action; core resolves it to NavigateTo carrying the canonical
-// screen_id. This is the contract app.cpp's sidebar slot relies on (Tier-1).
-static void test_navigate_to_tab() {
-    VauchiApp *app = vauchi_app_create();
-    assert(app != nullptr);
-
-    const char *action = R"({"NavigateToTab":{"action_id":"contacts"}})";
-    char *result = vauchi_app_handle_action(app, action);
-    assert(result != nullptr);
-    std::string s(result);
-    // Core returns NavigateTo carrying the resolved screen's canonical id.
-    assert(s.find("NavigateTo") != std::string::npos);
-    assert(s.find("contacts") != std::string::npos);
-    vauchi_string_free(result);
-    vauchi_app_destroy(app);
-}
-
-// --- Test: NavigateToTab with an unknown token does not navigate (CC-11) ---
-// An unknown/stale/adversarial action_id leaves the engine where it is rather
-// than navigating somewhere wrong (core returns UpdateScreen, not NavigateTo).
-static void test_navigate_to_tab_unknown_token() {
-    VauchiApp *app = vauchi_app_create();
-    assert(app != nullptr);
-
-    const char *action = R"({"NavigateToTab":{"action_id":"nonexistent_tab"}})";
-    char *result = vauchi_app_handle_action(app, action);
-    assert(result != nullptr);
-    std::string s(result);
-    // No navigation: the unknown token resolves to UpdateScreen, never NavigateTo.
-    assert(s.find("NavigateTo") == std::string::npos);
-    vauchi_string_free(result);
-    vauchi_app_destroy(app);
-}
-
-// --- Test: handle hardware event on non-exchange screen returns null ---
-static void test_hardware_event_no_exchange() {
-    VauchiApp *app = vauchi_app_create();
-    assert(app != nullptr);
-
-    // Send a hardware event when not on exchange screen — should return null
-    const char *event = R"({"QrScanned":{"data":"wb://test"}})";
-    char *result = vauchi_app_handle_hardware_event(app, event);
-    // Not on exchange screen, so result may be null (event ignored)
-    if (result) vauchi_string_free(result);
-
-    vauchi_app_destroy(app);
-}
-
-// --- Test: handle hardware event with null inputs ---
-static void test_hardware_event_null_safety() {
-    // Null handle
-    char *r1 = vauchi_app_handle_hardware_event(nullptr, R"({"QrScanned":{"data":"wb://test"}})");
-    assert(r1 == nullptr);
-
-    // Null event
-    VauchiApp *app = vauchi_app_create();
-    assert(app != nullptr);
-    char *r2 = vauchi_app_handle_hardware_event(app, nullptr);
-    assert(r2 == nullptr);
-    vauchi_app_destroy(app);
-}
-
-// --- Test: handle hardware event with invalid JSON ---
-static void test_hardware_event_invalid_json() {
-    VauchiApp *app = vauchi_app_create();
-    assert(app != nullptr);
-
-    char *result = vauchi_app_handle_hardware_event(app, "not json");
-    // Should return null or error JSON, but not crash
-    if (result) vauchi_string_free(result);
+    const char *environment =
+        R"({"PresentationEnvironmentChanged":{"available_width":840,"available_height":700,"input_modes":["pointer","keyboard"],"motion":"reduced"}})";
+    char *commands = vauchi_app_dispatch(app, environment);
+    assert(commands != nullptr);
+    std::string commandJson(commands);
+    assert(commandJson.find("SetPresentationProfile") != std::string::npos);
+    assert(commandJson.find("\"expanded\"") != std::string::npos);
+    vauchi_string_free(commands);
     vauchi_app_destroy(app);
 }
 
@@ -197,11 +92,10 @@ static void test_create_with_keyring() {
     // On macOS or CI without a keyring, it may return null (expected).
     VauchiApp *app = vauchi_app_create_with_keyring(dir.c_str(), nullptr);
     if (app) {
-        // If it succeeded, verify basic operations work
-        char *screen = vauchi_app_current_screen(app);
-        assert(screen != nullptr);
-        assert(std::strlen(screen) > 0);
-        vauchi_string_free(screen);
+        char *commands = vauchi_app_initial_commands(app);
+        assert(commands != nullptr);
+        assert(std::strlen(commands) > 0);
+        vauchi_string_free(commands);
         vauchi_app_destroy(app);
     }
     fs::remove_all(dir);
@@ -227,58 +121,12 @@ static void test_on_wakeup() {
     vauchi_app_destroy(app);
 }
 
-// --- Test: NavigateBack action returns PerformNativeBack at a root ---
-static void test_navigate_back_action() {
-    VauchiApp *app = vauchi_app_create();
-    assert(app != nullptr);
-    // Seed an identity so the engine is on a tab root (MyInfo), a back-stopper.
-    if (vauchi_app_has_identity(app) != 1) {
-        assert(vauchi_app_create_identity(app, "Test User") == 0);
-    }
-
-    const char *action = "\"NavigateBack\"";
-    char *result = vauchi_app_handle_action(app, action);
-    assert(result != nullptr);
-    std::string s(result);
-    // At a root there is nothing to pop; core returns PerformNativeBack.
-    assert(s.find("PerformNativeBack") != std::string::npos);
-    vauchi_string_free(result);
-    vauchi_app_destroy(app);
-}
-
-// --- Test: ScreenModel carries nav_actions / nav_tab_id (ADR-044 Am2a) ---
-static void test_screen_model_nav_fields() {
-    VauchiApp *app = vauchi_app_create();
-    assert(app != nullptr);
-    if (vauchi_app_has_identity(app) != 1) {
-        assert(vauchi_app_create_identity(app, "Test User") == 0);
-    }
-
-    char *navJson = vauchi_app_navigate_to(app, "settings");
-    assert(navJson != nullptr);
-    vauchi_string_free(navJson);
-
-    char *screenJson = vauchi_app_current_screen(app);
-    assert(screenJson != nullptr);
-    std::string s(screenJson);
-    assert(s.find("\"nav_actions\"") != std::string::npos);
-    assert(s.find("\"nav_tab_id\"") != std::string::npos);
-    assert(s.find("\"go_back\"") != std::string::npos);
-    assert(s.find("\"more\"") != std::string::npos);
-    vauchi_string_free(screenJson);
-    vauchi_app_destroy(app);
-}
-
 // --- Test: null handle safety ---
 static void test_null_safety() {
     vauchi_app_destroy(nullptr);  // should not crash
-    assert(vauchi_app_current_screen(nullptr) == nullptr);
-    assert(vauchi_app_handle_action(nullptr, "{}") == nullptr);
-    assert(vauchi_app_navigate_to(nullptr, "home") == nullptr);
-    assert(vauchi_app_available_screens(nullptr) == nullptr);
-    assert(vauchi_app_default_screen(nullptr) == nullptr);
+    assert(vauchi_app_initial_commands(nullptr) == nullptr);
+    assert(vauchi_app_dispatch(nullptr, "{}") == nullptr);
     assert(vauchi_app_create_with_config(nullptr, nullptr) == nullptr);
-    assert(vauchi_app_handle_hardware_event(nullptr, "{}") == nullptr);
     assert(vauchi_app_on_wakeup(nullptr) == nullptr);
 }
 
@@ -287,19 +135,9 @@ int main() {
     test_create_with_config();
     test_create_with_relay();
     test_persistence();
-    test_available_screens();
-    test_current_screen();
-    test_handle_action();
-    test_navigate_unknown();
-    test_navigate_to_tab();
-    test_navigate_to_tab_unknown_token();
-    test_hardware_event_no_exchange();
-    test_hardware_event_null_safety();
-    test_hardware_event_invalid_json();
+    test_presentation_reducer();
     test_create_with_keyring();
     test_create_with_keyring_null_dir();
     test_on_wakeup();
-    test_navigate_back_action();
-    test_screen_model_nav_fields();
     return 0;
 }

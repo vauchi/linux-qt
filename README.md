@@ -17,7 +17,8 @@
 Native Linux desktop app (Qt variant) for Vauchi —
 living contact cards, exchanged in person.
 
-Built with Qt6 Widgets + C++. Uses `vauchi-cabi` C ABI bindings via `QJsonDocument`.
+Built with Qt6 Widgets + C++. Uses `vauchi-cabi` C ABI bindings via
+`QJsonDocument`.
 
 ## Prerequisites
 
@@ -37,12 +38,15 @@ make
 
 This app implements the core-driven UI contract:
 
-- **ScreenRenderer** renders `ScreenModel` from core (JSON via C ABI)
-- **Component widgets** (one per core `Component` enum variant)
-- **ActionHandler** maps user input to `UserAction` JSON
-- **Platform chrome**: QSystemTrayIcon, QMenuBar
+- **PresentationController** applies Core command batches atomically
+- **PresentationState** retains surfaces, active-pane composition, contextual
+  controls, and overlays by opaque identifier
+- **PresentationSurface** maps generic nodes to native Qt widgets
+- **Platform adapters** own focus, keyboard shortcuts, motion, file pickers,
+  hardware, `QSystemTrayIcon`, and `QMenuBar`
 
-All business logic lives in `vauchi-core` (Rust). This repo is a pure rendering layer.
+All business logic lives in `vauchi-core` (Rust). This repo is a pure
+rendering and platform-adapter layer.
 
 ## Packaging
 

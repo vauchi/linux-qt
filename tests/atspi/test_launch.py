@@ -3,7 +3,7 @@
 
 """Launch and basic AT-SPI tree verification tests for qVauchi."""
 
-from helpers import find_all, find_one, dump_tree
+from helpers import dump_tree, find_all
 
 
 class TestAppLaunch:
@@ -23,10 +23,6 @@ class TestAppLaunch:
         assert any("Vauchi" in name for name in window_names), (
             f"No window with 'Vauchi' in name. Found: {window_names}"
         )
-
-    def test_sidebar_exists(self, qt_app):
-        sidebar = find_one(qt_app, name="Navigation")
-        assert sidebar is not None, f"Sidebar not found. Tree:\n{dump_tree(qt_app, 5)}"
 
     def test_screen_title_exists(self, qt_app):
         labels = find_all(qt_app, role="label")

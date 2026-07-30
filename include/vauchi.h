@@ -31,8 +31,6 @@ typedef struct VauchiExchange VauchiExchange;
 /**
  * Opaque handle to a workflow engine instance.
  */
-typedef struct VauchiWorkflow VauchiWorkflow;
-
 /**
  * Type alias for the C event callback function pointer.
  *
@@ -181,14 +179,6 @@ struct VauchiApp *vauchi_app_create_with_key(const char *data_dir,
 void vauchi_app_destroy(struct VauchiApp *handle);
 
 /**
- * Get the current screen as a JSON string.
- *
- * # Safety
- * `handle` must be a valid app handle or null.
- */
-char *vauchi_app_current_screen(struct VauchiApp *handle);
-
-/**
  * Poll for any new OS notifications produced by the app engine.
  *
  * Returns a JSON-encoded array of `PendingNotification` objects, or
@@ -213,82 +203,14 @@ char *vauchi_app_poll_notifications(struct VauchiApp *app);
 char *vauchi_app_on_wakeup(struct VauchiApp *app);
 
 /**
- * Handle a user action (JSON) and return the result as JSON.
- *
- * # Safety
- * `handle` must be a valid app handle or null.
- * `action_json` must be a valid null-terminated C string, or null.
+ * Return the complete initial Core presentation command batch as JSON.
  */
-char *vauchi_app_handle_action(struct VauchiApp *handle, const char *action_json);
+char *vauchi_app_initial_commands(struct VauchiApp *handle);
 
 /**
- * Navigate to a screen by name. Returns the new screen as JSON.
- *
- * Supported screen names: "home", "contacts", "exchange", "settings",
- * "help", "backup", "lock", "onboarding", "emergency_shred",
- * "device_linking", "device_management", "duress_pin", "delivery_status",
- * "sync", "recovery", "groups", "privacy", "support",
- * "contact_duplicates", "contact_limit", "more".
- *
- * **Deprecated (Tier-0 d, ADR-043 Amendment 4):** a forward-navigate surface.
- * Desktop frontends should forward tab taps via `UserAction::NavigateToTab`
- * (carrying the `TabInfo.action_id` core minted) and render the returned
- * `NavigateTo`. Do not add new callers; retires once frontends migrate.
- *
- * # Safety
- * `handle` must be a valid app handle or null.
- * `screen_name` must be a valid null-terminated C string, or null.
+ * Reduce one canonical event into an ordered Core command batch as JSON.
  */
-char *vauchi_app_navigate_to(struct VauchiApp *handle, const char *screen_name);
-
-/**
- * Navigate back one step. Returns the resulting screen as JSON.
- *
- * Pops the engine's `AppScreen` nav history, or rewinds one in-engine
- * sub-flow step (the exchange flow). Frontends gate this on the
- * `can_go_back` field of the current screen and render a back affordance
- * in their own chrome — so C-ABI frontends (linux-qt, windows) no longer
- * depend on a footer "Back" action.
- *
- * # Safety
- * `handle` must be a valid app handle or null.
- */
-char *vauchi_app_navigate_back(struct VauchiApp *handle);
-
-/**
- * Get available screens as a JSON array of strings.
- *
- * # Safety
- * `handle` must be a valid app handle or null.
- */
-char *vauchi_app_available_screens(struct VauchiApp *handle);
-
-/**
- * Returns the default landing screen as a C string ("my_info" or "contacts").
- *
- * # Safety
- * `handle` must be a valid app handle or null.
- */
-char *vauchi_app_default_screen(struct VauchiApp *handle);
-
-/**
- * Get the canonical screen-id of the parent tab the active screen
- * belongs to under the requested layout.
- *
- * `layout` selects the tab universe:
- * - `0` = Mobile (5-tab bottom nav, matches `vauchi_app_tab_info`)
- * - `1` = Desktop (14-tab sidebar, matches `vauchi_app_sidebar_items`)
- *
- * Returns:
- * - A C string with the parent tab's screen_id (caller must free
- *   with `vauchi_string_free`)
- * - Null when the active screen is a transient overlay (Lock,
- *   FormDialog) — frontend should leave selection unchanged.
- *
- * # Safety
- * `handle` must be a valid app handle or null.
- */
-char *vauchi_app_current_tab_id(struct VauchiApp *handle, int32_t layout);
+char *vauchi_app_dispatch(struct VauchiApp *handle, const char *event_json);
 
 /**
  * Check whether the app has an identity.
@@ -313,31 +235,6 @@ int32_t vauchi_app_has_identity(struct VauchiApp *handle);
 int32_t vauchi_app_create_identity(struct VauchiApp *handle, const char *display_name);
 
 /**
- * Handle a hardware event during an exchange (ADR-031).
- *
- * `event_json` must be a JSON-encoded `Event`.
- * Returns the action result as JSON, or null if the event was ignored
- * (e.g., not on the exchange screen).
- *
- * # Safety
- * `handle` must be a valid app handle or null.
- * `event_json` must be a valid null-terminated C string, or null.
- */
-char *vauchi_app_handle_hardware_event(struct VauchiApp *handle, const char *event_json);
-
-/**
- * Notify the engine that the app moved to the background.
- *
- * If a password is set and the app is not already locked or in
- * onboarding, navigates to the lock screen and returns the lock
- * screen JSON. Otherwise returns null.
- *
- * # Safety
- * `handle` must be a valid app handle or null.
- */
-char *vauchi_app_handle_app_backgrounded(struct VauchiApp *handle);
-
-/**
  * Register a callback for async state-change notifications.
  *
  * Core calls `callback` when background operations (sync, delivery,
@@ -347,7 +244,7 @@ char *vauchi_app_handle_app_backgrounded(struct VauchiApp *handle);
  * # Threading — IMPORTANT
  *
  * The callback may fire **on the same thread** that called
- * `vauchi_app_handle_action` (synchronous event dispatch). The callback
+ * `vauchi_app_dispatch` (synchronous event dispatch). The callback
  * **must not** call back into any `vauchi_app_*` function directly —
  * doing so would deadlock on the internal Mutex. Always defer
  * processing to a separate thread or event loop iteration.
@@ -663,54 +560,6 @@ int32_t vauchi_i18n_init(const char *resource_dir);
  * No special requirements.
  */
 int32_t vauchi_i18n_is_initialized(void);
-
-/**
- * Create a new workflow engine instance.
- *
- * Supported `workflow_type` values:
- * - `"onboarding"` — onboarding flow (no args)
- * - `"emergency_shred"` — emergency data wipe (no args)
- * - `"lock_screen"` — lock screen with 3 max attempts (no args)
- *
- * Returns null on unknown type or null input.
- *
- * # Safety
- * `workflow_type` must be a valid null-terminated C string, or null.
- */
-struct VauchiWorkflow *vauchi_workflow_create(const char *workflow_type);
-
-/**
- * Destroy a workflow engine instance.
- *
- * # Safety
- * `handle` must be a pointer returned by `vauchi_workflow_create`, or null.
- */
-void vauchi_workflow_destroy(struct VauchiWorkflow *handle);
-
-/**
- * Get the current screen as a JSON string.
- *
- * Returns null if the handle is null. Returns an error JSON object if
- * the internal lock is poisoned. The caller must free the returned
- * string with `vauchi_string_free`.
- *
- * # Safety
- * `handle` must be a valid workflow handle or null.
- */
-char *vauchi_workflow_current_screen(struct VauchiWorkflow *handle);
-
-/**
- * Handle a user action (JSON string) and return the result as JSON.
- *
- * Returns null if the handle is null. Returns an error JSON object if
- * the action JSON is null or invalid. The caller must free the returned
- * string with `vauchi_string_free`.
- *
- * # Safety
- * `handle` must be a valid workflow handle or null.
- * `action_json` must be a valid null-terminated C string, or null.
- */
-char *vauchi_workflow_handle_action(struct VauchiWorkflow *handle, const char *action_json);
 
 #ifdef __cplusplus
 }  // extern "C"

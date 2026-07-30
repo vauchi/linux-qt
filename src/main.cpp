@@ -4,7 +4,7 @@
 /// Vauchi — native Linux desktop app (Qt6).
 
 #include "app.h"
-#include "coreui/screenrenderer.h"
+#include "coreui/presentationsurface.h"
 #include "coreui/thememanager.h"
 #include "platform/screencaptureprotection.h"
 #include "vauchi.h"
@@ -19,7 +19,7 @@
 #include <cstdio>
 
 // `--render-fixture <screen.json> <out.png> [width] [height]` renders one
-// ScreenModel JSON fixture through the production ScreenRenderer and saves a
+// SurfaceSpec JSON fixture through the production generic renderer and saves a
 // PNG, for the design screenshot catalog
 // (problem 2026-06-12-device-screenshot-catalog). Runs headless under the Qt
 // `offscreen` platform — set QT_QPA_PLATFORM=offscreen. Returns the process
@@ -43,13 +43,10 @@ static int maybeRenderFixture(const QStringList &args) {
         std::fprintf(stderr, "cannot open %s\n", qUtf8Printable(jsonPath));
         return 2;
     }
-    const QJsonObject screen = QJsonDocument::fromJson(f.readAll()).object();
+    const QJsonObject surface = QJsonDocument::fromJson(f.readAll()).object();
 
     ThemeManager::applyDefaultTheme();
-    // Null app selects ScreenRenderer's inert render-only mode: fixture
-    // screenshots must not start persistence, network, audio, BLE, or NFC.
-    auto *renderer = new ScreenRenderer(nullptr, nullptr);
-    renderer->renderFixture(screen);
+    auto *renderer = new PresentationSurface(surface);
     renderer->resize(width > 0 ? width : 900, height > 0 ? height : 1400);
     // Component replacement uses deleteLater(); flush deferred deletes now,
     // since this harness grabs synchronously without running the event loop.

@@ -3,7 +3,7 @@
 
 #include "app.h"
 #include "i18n.h"
-#include "coreui/screenrenderer.h"
+#include "coreui/presentationcontroller.h"
 #include "coreui/thememanager.h"
 #include "platform/menubar.h"
 #include "platform/systemtray.h"
@@ -11,12 +11,10 @@
 #include <QApplication>
 #include <QHBoxLayout>
 #include <QKeyEvent>
-#include <QListWidget>
 #include <algorithm>
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QJsonObject>
-#include <QShortcut>
 #include <QStandardPaths>
 #include <QTimer>
 #include <QDir>
@@ -102,25 +100,20 @@ VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
     }
 #endif
 
-    // Initial screen comes from `vauchi_app_create*` (Onboarding /
-    // Lock / MyInfo). The render path reads
-    // `vauchi_app_current_screen()`, so no explicit navigate is
-    // needed — and an explicit `vauchi_app_default_screen()` call
-    // would bypass the Lock state for password-protected installs.
+    // Core's initial generic command batch decides whether the first
+    // surface is Onboarding, Lock, or MyInfo. The shell does not select
+    // or override that route.
 
     auto *central = new QWidget(this);
     auto *layout = new QHBoxLayout(central);
-
-    m_sidebar = new QListWidget;
-    m_sidebar->setFixedWidth(200);
-    m_sidebar->setObjectName(QStringLiteral("sidebar"));
-    m_sidebar->setAccessibleName(tr_vauchi("app.navigation", "Navigation"));
-    layout->addWidget(m_sidebar);
-
-    m_renderer = new ScreenRenderer(m_app, this);
-    layout->addWidget(m_renderer, 1);
+    m_presentation = new PresentationController(m_app, this);
+    layout->addWidget(m_presentation, 1);
 
     setCentralWidget(central);
+    connect(m_presentation, &PresentationController::nativeBackRequested,
+            qApp, &QApplication::quit);
+    connect(m_presentation, &PresentationController::wakeupScheduled, this,
+            &VauchiWindow::scheduleWakeup);
 
     // Menu bar
     auto *menuBar = new VauchiMenuBar(this);
@@ -148,7 +141,7 @@ VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
                 QMetaObject::invokeMethod(
                     window,
                     [window]() {
-                        window->m_renderer->refresh();
+                        window->m_presentation->refresh();
                         window->drainAndShowNotifications();
                     },
                     Qt::QueuedConnection);
@@ -163,13 +156,11 @@ VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
     // leave the UI stale until the next user action.
     connect(qApp, &QApplication::applicationStateChanged, this,
             [this](Qt::ApplicationState state) {
-                if (state == Qt::ApplicationActive && m_renderer) {
-                    m_renderer->refresh();
+                if (state == Qt::ApplicationActive && m_presentation) {
+                    m_presentation->refresh();
                     drainAndShowNotifications();
                 }
             });
-
-    buildSidebar();
 
     // Core-driven wakeup tick (ADR-044 Am2a). Replaces any frontend-owned
     // poll loop with on_wakeup(); core decides when work is due and emits
@@ -179,110 +170,19 @@ VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
     connect(m_wakeupTimer, &QTimer::timeout, this, &VauchiWindow::onWakeup);
     onWakeup(); // bootstrap the schedule
 
-    // Set initial sidebar visibility/selection from the first screen.
-    if (m_app) {
-        char *json = vauchi_app_current_screen(m_app);
-        if (json) {
-            QJsonObject screen = QJsonDocument::fromJson(json).object();
-            vauchi_string_free(json);
-            updateSidebarForScreen(screen);
-        }
-    }
-
-    // Refresh sidebar when screen changes (e.g., after onboarding completes)
-    connect(m_renderer, &ScreenRenderer::screenChanged, this, [this]() {
-        refreshSidebar();
-        if (!m_app) return;
-        char *json = vauchi_app_current_screen(m_app);
-        if (json) {
-            QJsonObject screen = QJsonDocument::fromJson(json).object();
-            vauchi_string_free(json);
-            updateSidebarForScreen(screen);
-        }
-    });
-
-    // Keyboard shortcuts: Alt+1..5 navigate sidebar screens
-    for (int i = 0; i < 5; ++i) {
-        auto *sc = new QShortcut(
-            QKeySequence(Qt::ALT | static_cast<Qt::Key>(Qt::Key_1 + i)),
-            this);
-        connect(sc, &QShortcut::activated, this, [this, i]() {
-            if (m_sidebar->count() > i) {
-                m_sidebar->setCurrentRow(i);
-            }
-        });
-    }
-
-    connect(m_sidebar, &QListWidget::currentRowChanged, this, [this](int row) {
-        if (row < 0 || !m_app) return;
-
-        const QByteArray locale = systemLocaleCode().toUtf8();
-        char *json = vauchi_app_sidebar_items(m_app, locale.constData());
-        if (!json) return;
-
-        QJsonArray tabs = QJsonDocument::fromJson(json).array();
-        vauchi_string_free(json);
-
-        if (row < tabs.size()) {
-            // ADR-043 Amendment 4 / Tier-1: forward the opaque action_id core
-            // minted on the tab. Core routes UserAction::NavigateToTab to a
-            // NavigateTo result — the frontend never constructs a navigation
-            // target or parses the token.
-            QString actionId = tabs[row].toObject()["action_id"].toString();
-            QJsonObject action;
-            QJsonObject inner;
-            inner["action_id"] = actionId;
-            action["NavigateToTab"] = inner;
-            QByteArray actionJson =
-                QJsonDocument(action).toJson(QJsonDocument::Compact);
-            char *resultJson = vauchi_app_handle_action(m_app, actionJson.constData());
-            if (resultJson) {
-                vauchi_string_free(resultJson);
-            }
-            m_renderer->refresh();
-        }
-    });
+    m_presentation->initialize();
 }
 
 void VauchiWindow::changeEvent(QEvent *event) {
     QMainWindow::changeEvent(event);
     if (event->type() == QEvent::WindowDeactivate && m_app) {
-        char *screenJson = vauchi_app_handle_app_backgrounded(m_app);
-        if (screenJson) {
-            vauchi_string_free(screenJson);
-            m_renderer->refresh();
-        }
+        m_presentation->appBackgrounded();
     }
 }
 
 VauchiWindow::~VauchiWindow() {
     if (m_app) {
         vauchi_app_destroy(m_app);
-    }
-}
-
-void VauchiWindow::buildSidebar() {
-    refreshSidebar();
-}
-
-void VauchiWindow::refreshSidebar() {
-    m_sidebar->clear();
-    if (!m_app) return;
-
-    // Core owns both the screen set and the localized labels — no
-    // local SCREEN_I18N table needed. Each TabInfo.label is already
-    // resolved against the requested locale, with an English
-    // fallback baked in when the key is missing (see
-    // `AppEngine::sidebar_items` in vauchi-app).
-    const QByteArray locale = systemLocaleCode().toUtf8();
-    char *json = vauchi_app_sidebar_items(m_app, locale.constData());
-    if (!json) return;
-
-    QJsonArray tabs = QJsonDocument::fromJson(json).array();
-    vauchi_string_free(json);
-
-    for (const auto &tab : tabs) {
-        m_sidebar->addItem(tab.toObject()["label"].toString());
     }
 }
 
@@ -314,12 +214,12 @@ void VauchiWindow::drainAndShowNotificationsArray(const QJsonArray &notification
 }
 
 void VauchiWindow::keyPressEvent(QKeyEvent *event) {
-    // ADR-044 Am2a: Escape is the desktop system-back gesture. Forward it
-    // unconditionally as UserAction::NavigateBack; core owns the pop-or-stop
-    // decision and returns PerformNativeBack when there is nothing to pop.
+    // Escape is the desktop system-back gesture. Forward it as a generic
+    // BackRequested event; Core owns the pop-or-stop decision and returns
+    // PerformNativeBack when there is nothing to pop.
     if (event->key() == Qt::Key_Escape && !(event->modifiers() & Qt::AltModifier)) {
-        if (m_renderer) {
-            m_renderer->dispatchNavigateBack();
+        if (m_presentation) {
+            m_presentation->requestBack();
         }
         event->accept();
         return;
@@ -327,41 +227,12 @@ void VauchiWindow::keyPressEvent(QKeyEvent *event) {
     QMainWindow::keyPressEvent(event);
 }
 
-void VauchiWindow::updateSidebarForScreen(const QJsonObject &screen) {
-    if (!m_sidebar) return;
-
-    // nav_tab_id == null means the current screen is pre-auth or a transient
-    // overlay; the shell hides the sidebar. A non-null value selects the
-    // matching desktop sidebar row (the desktop sidebar lists the five tab
-    // roots directly).
-    QJsonValue tabIdValue = screen.value("nav_tab_id");
-    if (tabIdValue.isNull() || tabIdValue.isUndefined()) {
-        m_sidebar->hide();
-        return;
+void VauchiWindow::resizeEvent(QResizeEvent *event) {
+    QMainWindow::resizeEvent(event);
+    if (m_presentation) {
+        m_presentation->reportEnvironment(
+            m_presentation->width(), m_presentation->height());
     }
-
-    m_sidebar->show();
-    QString tabId = tabIdValue.toString();
-    if (tabId.isEmpty()) {
-        m_sidebar->setCurrentRow(-1);
-        return;
-    }
-
-    // Find the row whose TabInfo.id matches nav_tab_id.
-    const QByteArray locale = systemLocaleCode().toUtf8();
-    char *json = vauchi_app_sidebar_items(m_app, locale.constData());
-    if (!json) return;
-
-    QJsonArray tabs = QJsonDocument::fromJson(json).array();
-    vauchi_string_free(json);
-
-    for (int i = 0; i < tabs.size(); ++i) {
-        if (tabs[i].toObject()["id"].toString() == tabId) {
-            m_sidebar->setCurrentRow(i);
-            return;
-        }
-    }
-    m_sidebar->setCurrentRow(-1);
 }
 
 void VauchiWindow::scheduleWakeup(uint32_t seconds) {
@@ -400,10 +271,8 @@ void VauchiWindow::onWakeup() {
         hardwareCommands.append(cmd);
     }
 
-    if (!hardwareCommands.isEmpty() && m_renderer) {
-        // Reuse the renderer's hardware backend to dispatch non-wakeup
-        // commands exactly like ActionResult::Commands.
-        m_renderer->dispatchCommands(hardwareCommands);
+    if (!hardwareCommands.isEmpty() && m_presentation) {
+        m_presentation->dispatchCommands(hardwareCommands);
     }
 
     scheduleWakeup(nextWakeupSeconds);
@@ -493,6 +362,5 @@ void VauchiWindow::importContactsFromFile() {
     }
 
     // Refresh screen to show imported contacts
-    m_renderer->refresh();
+    m_presentation->refresh();
 }
-

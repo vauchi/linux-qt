@@ -24,8 +24,7 @@
 #include "nfcbackend.h"
 #endif
 
-HardwareBackend::HardwareBackend(struct VauchiApp *app, QObject *parent)
-    : QObject(parent), m_app(app) {
+HardwareBackend::HardwareBackend(QObject *parent) : QObject(parent) {
 #ifdef VAUCHI_HAS_BLUETOOTH
     if (hasBluetooth()) {
         m_ble = new BleBackend(this);
@@ -385,15 +384,7 @@ bool HardwareBackend::hasNfc() const {
 }
 
 void HardwareBackend::sendHardwareEvent(const QJsonObject &event) {
-    QByteArray json = QJsonDocument(event).toJson(QJsonDocument::Compact);
-    char *result = vauchi_app_handle_hardware_event(m_app, json.constData());
-    if (result) {
-        QJsonDocument doc = QJsonDocument::fromJson(result);
-        if (doc.isObject()) {
-            emit actionResultReady(doc.object());
-        }
-        vauchi_string_free(result);
-    }
+    emit eventReady(event);
 }
 
 void HardwareBackend::sendUnavailable(const QString &transport) {

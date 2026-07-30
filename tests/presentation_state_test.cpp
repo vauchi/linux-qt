@@ -1,0 +1,100 @@
+// SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+#include "coreui/presentationstate.h"
+
+#include <QJsonArray>
+#include <QJsonObject>
+#include <cassert>
+
+static QJsonObject surface(const QString &id, int revision) {
+    return {
+        {"surface_id", id},
+        {"revision", revision},
+        {"title", id},
+        {"layout", "scroll"},
+        {"nodes", QJsonArray{}},
+    };
+}
+
+static QJsonObject replaceSurface(const QString &id, int revision) {
+    return {
+        {"ReplaceSurface", QJsonObject{{"surface", surface(id, revision)}}},
+    };
+}
+
+static QJsonObject setBar(const QString &id, int revision,
+                          const QString &primary) {
+    return {
+        {"SetContextBar",
+         QJsonObject{
+             {"surface_id", id},
+             {"revision", revision},
+             {"bar",
+              QJsonObject{
+                  {"primary",
+                   QJsonObject{{"interaction_id", primary},
+                               {"label", primary},
+                               {"accessibility_label", primary},
+                               {"enabled", true}}},
+              }},
+         }},
+    };
+}
+
+static QJsonObject profile(const QString &layout, const QString &active) {
+    return {
+        {"SetPresentationProfile",
+         QJsonObject{
+             {"profile",
+              QJsonObject{
+                  {"window_class",
+                   layout == QStringLiteral("split") ? "expanded" : "compact"},
+                  {"pane_layout", layout},
+                  {"primary_surface", "contacts"},
+                  {"detail_surface", "contact_detail"},
+                  {"active_surface", active},
+              }},
+         }},
+    };
+}
+
+int main() {
+    PresentationState initial;
+    assert(initial.apply(replaceSurface("onboarding", 1)));
+    assert(initial.apply(setBar("onboarding", 1, "continue")));
+    assert(initial.activeSurfaceId() == QStringLiteral("onboarding"));
+    assert(initial.contextBar().value("primary").toObject()
+               .value("interaction_id").toString()
+           == QStringLiteral("continue"));
+
+    PresentationState state;
+    assert(state.apply(replaceSurface("contacts", 7)));
+    assert(state.apply(replaceSurface("contact_detail", 7)));
+    assert(state.apply(setBar("contacts", 7, "add_contact")));
+    assert(state.apply(setBar("contact_detail", 7, "edit")));
+    assert(state.apply(profile("split", "contact_detail")));
+
+    assert(state.visibleSurfaceIds()
+           == QStringList({"contacts", "contact_detail"}));
+    assert(state.contextBar().value("primary").toObject()
+               .value("interaction_id").toString()
+           == QStringLiteral("edit"));
+
+    assert(state.apply(profile("single", "contact_detail")));
+    assert(state.visibleSurfaceIds() == QStringList({"contact_detail"}));
+    assert(state.surface("contacts").has_value());
+
+    assert(state.apply(profile("split", "contacts")));
+    assert(state.visibleSurfaceIds()
+           == QStringList({"contacts", "contact_detail"}));
+    assert(state.contextBar().value("primary").toObject()
+               .value("interaction_id").toString()
+           == QStringLiteral("add_contact"));
+
+    assert(!state.apply(setBar("contacts", 6, "stale")));
+    assert(state.contextBar().value("primary").toObject()
+               .value("interaction_id").toString()
+           == QStringLiteral("add_contact"));
+    return 0;
+}
