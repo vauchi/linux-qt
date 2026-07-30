@@ -18,9 +18,9 @@ variables:
   SAST_EXCLUDED_PATHS: "build/, vauchi-core/"
   SECRET_DETECTION_EXCLUDED_PATHS: "build/, vauchi-core/"
   SAST_ANALYZER_IMAGE_TAG: "5"
-  # Temporary dependency-train ref for the durable C ABI fallback key.
-  # Replace with the release tag after the Core follow-up merges.
-  VAUCHI_CORE_REF: fix/cabi-fallback-storage-key
+  # Core tag whose C ABI carries the durable fallback storage key
+  # (0bdefae4; post-v0.59.0, so the dev tag is the earliest immutable ref).
+  VAUCHI_CORE_REF: v0.59.0-dev.2
 
 stages:
   - lint
@@ -214,7 +214,7 @@ check:design-drift:
     DESIGN_DRIFT_PROTOCOL: "presentation"
     DESIGN_DRIFT_MATCH_MODE: "grep"
     DESIGN_DRIFT_GREP_FILE: "src/coreui"
-    CORE_REF: "fix/cabi-fallback-storage-key"
+    CORE_REF: "v0.59.0-dev.2"
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes:
@@ -236,7 +236,7 @@ check:parser-parity:
     PARSER_FILE: "src/coreui"
     PARSER_PROTOCOL: "presentation"
     PARSER_SCRIPT_REF: "4e2c91d387aed482b80bd24e1b8d94477152aeef"
-    CORE_REF: "fix/cabi-fallback-storage-key"
+    CORE_REF: "v0.59.0-dev.2"
 
 # Removed symbols: detect stale references to removed features
 check:removed-symbols:
