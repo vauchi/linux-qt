@@ -276,7 +276,7 @@ check:design-drift:
     DESIGN_DRIFT_PROTOCOL: "presentation"
     DESIGN_DRIFT_MATCH_MODE: "grep"
     DESIGN_DRIFT_GREP_FILE: "src/coreui"
-    CORE_REF: "feature/contextual-command-surface"
+    CORE_REF: "fix/cabi-fallback-storage-key"
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes:
@@ -297,8 +297,8 @@ check:parser-parity:
     FRONTEND_NAME: "linux-qt"
     PARSER_FILE: "src/coreui"
     PARSER_PROTOCOL: "presentation"
-    PARSER_SCRIPT_REF: "feature/contextual-command-surface"
-    CORE_REF: "feature/contextual-command-surface"
+    PARSER_SCRIPT_REF: "4e2c91d387aed482b80bd24e1b8d94477152aeef"
+    CORE_REF: "fix/cabi-fallback-storage-key"
 
 # Removed symbols: detect stale references to removed features
 check:removed-symbols:
