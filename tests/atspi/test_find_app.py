@@ -12,9 +12,8 @@ to — navigated, and screenshotted — the WRONG window (dark session
 instance instead of its own light instance). The fix adds a ``pid``
 filter.
 
-Lives in its own module (not test_snapshots.py) on purpose: CI's
-``test:a11y`` job runs ``-k "not test_snapshots"`` and is BLOCKING,
-so this guard runs there. ``test:snapshots`` is a separate job.
+Lives in its own module on purpose: CI's ``test:a11y`` job is
+BLOCKING, so this guard runs there on every MR pipeline.
 """
 
 import os
