@@ -43,7 +43,7 @@ PresentationSurface::PresentationSurface(const QJsonObject &surface,
     auto *content = new QWidget;
     auto *contentLayout = new QVBoxLayout(content);
     for (const auto &value : surface.value(QStringLiteral("nodes")).toArray()) {
-        contentLayout->addWidget(renderNode(value.toObject()));
+        contentLayout->addWidget(renderNode(value));
     }
     contentLayout->addStretch();
     if (surface.value(QStringLiteral("layout")).toString()
@@ -58,7 +58,16 @@ PresentationSurface::PresentationSurface(const QJsonObject &surface,
     }
 }
 
-QWidget *PresentationSurface::renderNode(const QJsonObject &node) {
+QWidget *PresentationSurface::renderNode(const QJsonValue &nodeValue) {
+    if (nodeValue.isString()) {
+        if (nodeValue.toString() == QStringLiteral("Divider")) {
+            auto *divider = new QFrame;
+            divider->setFrameShape(QFrame::HLine);
+            return divider;
+        }
+        return new QLabel;
+    }
+    const QJsonObject node = nodeValue.toObject();
     if (node.contains(QStringLiteral("Text"))) {
         const QJsonObject payload = node.value(QStringLiteral("Text")).toObject();
         auto *label =
@@ -238,9 +247,7 @@ QWidget *PresentationSurface::renderNode(const QJsonObject &node) {
             progress, payload.value(QStringLiteral("accessibility")).toObject());
         return progress;
     }
-    auto *divider = new QFrame;
-    divider->setFrameShape(QFrame::HLine);
-    return divider;
+    return new QLabel;
 }
 
 QWidget *PresentationSurface::renderGroup(const QJsonObject &payload) {
@@ -253,7 +260,7 @@ QWidget *PresentationSurface::renderGroup(const QJsonObject &payload) {
             : static_cast<QBoxLayout *>(new QVBoxLayout(group));
     for (const auto &child :
          payload.value(QStringLiteral("children")).toArray()) {
-        layout->addWidget(renderNode(child.toObject()));
+        layout->addWidget(renderNode(child));
     }
     applyAccessibility(
         group, payload.value(QStringLiteral("accessibility")).toObject());
@@ -307,7 +314,7 @@ QWidget *PresentationSurface::renderList(const QJsonObject &payload) {
         layout->addWidget(button);
         for (const auto &control :
              row.value(QStringLiteral("controls")).toArray()) {
-            layout->addWidget(renderNode(control.toObject()));
+            layout->addWidget(renderNode(control));
         }
     }
     return group;

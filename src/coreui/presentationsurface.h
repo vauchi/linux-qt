@@ -23,7 +23,7 @@ signals:
                     const QJsonValue &value);
 
 private:
-    QWidget *renderNode(const QJsonObject &node);
+    QWidget *renderNode(const QJsonValue &node);
     QWidget *renderList(const QJsonObject &payload);
     QWidget *renderGroup(const QJsonObject &payload);
     QWidget *renderStatus(const QJsonObject &payload);
