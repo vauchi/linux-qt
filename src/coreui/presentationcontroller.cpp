@@ -188,9 +188,11 @@ void PresentationController::renderPresentation() {
             if (const auto surface = m_state.surface(surfaceId)) {
                 auto *widget = new PresentationSurface(*surface);
                 connect(widget, &PresentationSurface::interactionReady, this,
-                        &PresentationController::dispatchInteraction);
+                        &PresentationController::dispatchInteraction,
+                        Qt::QueuedConnection);
                 connect(widget, &PresentationSurface::valueReady, this,
-                        &PresentationController::dispatchValue);
+                        &PresentationController::dispatchValue,
+                        Qt::QueuedConnection);
                 splitter->addWidget(widget);
             }
         }
@@ -199,9 +201,11 @@ void PresentationController::renderPresentation() {
         if (const auto surface = m_state.surface(visible.constFirst())) {
             auto *widget = new PresentationSurface(*surface);
             connect(widget, &PresentationSurface::interactionReady, this,
-                    &PresentationController::dispatchInteraction);
+                    &PresentationController::dispatchInteraction,
+                    Qt::QueuedConnection);
             connect(widget, &PresentationSurface::valueReady, this,
-                    &PresentationController::dispatchValue);
+                    &PresentationController::dispatchValue,
+                    Qt::QueuedConnection);
             body = widget;
         }
     }
@@ -264,7 +268,8 @@ void PresentationController::renderContextBar(QBoxLayout *layout) {
         connect(button, &QPushButton::clicked, this,
                 [this, surfaceId, interaction]() {
                     dispatchInteraction(surfaceId, interaction);
-                });
+                },
+                Qt::QueuedConnection);
         row->addWidget(button);
     }
     layout->addWidget(strip);

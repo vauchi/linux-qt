@@ -5,7 +5,7 @@ include:
   - template: Security/SAST.gitlab-ci.yml
   - template: Security/Secret-Detection.gitlab-ci.yml
   - project: 'vauchi/scripts'
-    ref: feature/contextual-command-surface
+    ref: 4e2c91d387aed482b80bd24e1b8d94477152aeef
     file:
       - '/ci-templates/design-drift.yml'
       - '/ci-templates/parser-parity.yml'
@@ -15,14 +15,13 @@ include:
       - '/ci-templates/vrt-upload.yml'
 
 variables:
-  VAUCHI_SCRIPTS_REF: "5f6614ba3de5f462978d5222b682c27d2dfe8d3a"
+  VAUCHI_SCRIPTS_REF: "4e2c91d387aed482b80bd24e1b8d94477152aeef"
   SAST_EXCLUDED_PATHS: "build/, vauchi-core/"
   SECRET_DETECTION_EXCLUDED_PATHS: "build/, vauchi-core/"
   SAST_ANALYZER_IMAGE_TAG: "5"
-  # Pinned core release for recorded build provenance (RG-8 rollout,
-  # problem 2026-07-15-ohttp-dynamic-direct-fallback-regression).
-  # Bump to a newer tag only through a reviewed MR.
-  VAUCHI_CORE_REF: v0.55.4
+  # Temporary dependency-train ref for the durable C ABI fallback key.
+  # Replace with the release tag after the Core follow-up merges.
+  VAUCHI_CORE_REF: fix/cabi-fallback-storage-key
 
 stages:
   - lint

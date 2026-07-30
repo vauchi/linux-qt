@@ -104,6 +104,7 @@ void assertNativeBarAndFocusRestoration() {
     PresentationController controller(nullptr);
     controller.resize(700, 600);
     controller.show();
+    QApplication::setActiveWindow(&controller);
     controller.dispatchCommands(baseCommands());
     QApplication::processEvents();
 

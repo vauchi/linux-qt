@@ -81,6 +81,7 @@ int main(int argc, char *argv[]) {
 
     VauchiWindow window;
     window.show();
+    window.activateWindow();
 
     return qtApp.exec();
 }

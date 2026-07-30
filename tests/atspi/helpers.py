@@ -95,45 +95,56 @@ def find_one(
     return matches[0] if matches else None
 
 
-def click_button(root: Atspi.Accessible, name: str) -> bool:
+def click_button(
+    root: Atspi.Accessible,
+    name: str,
+    timeout: float = 5.0,
+) -> bool:
     """Find a button by name and invoke its click action."""
-    # Qt6 AT-SPI exposes QPushButton as "button", GTK uses "push button"
-    btn = find_one(root, role="push button", name=name)
-    if btn is None:
-        btn = find_one(root, role="button", name=name)
-    if btn is None:
-        return False
-    try:
-        action = btn.get_action_iface()
-        if action:
-            action.do_action(0)
-            return True
-    except Exception:
-        pass
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        buttons = find_all(root, role="push button", name=name)
+        buttons.extend(find_all(root, role="button", name=name))
+        for button in reversed(buttons):
+            try:
+                action = button.get_action_iface()
+                if action and action.do_action(0):
+                    return True
+            except Exception:
+                continue
+        time.sleep(0.05)
     return False
 
 
-def set_text(root: Atspi.Accessible, name: str, text: str) -> bool:
+def set_text(
+    root: Atspi.Accessible,
+    name: str,
+    text: str,
+    timeout: float = 5.0,
+) -> bool:
     """Find a text entry by accessible name and set its value."""
-    entry = find_one(root, role="text", name=name)
-    if entry is None:
-        # Try without role filter
-        entry = find_one(root, name=name)
-    if entry is None:
-        return False
-    try:
-        editable = entry.get_editable_text_iface()
-        if editable:
-            # Clear existing text first
-            current = entry.get_text_iface()
-            if current:
-                length = current.get_character_count()
-                if length > 0:
-                    editable.delete_text(0, length)
-            editable.insert_text(0, text, len(text))
-            return True
-    except Exception:
-        pass
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        entries = find_all(root, role="text", name=name)
+        if not entries:
+            entries = find_all(root, name=name)
+        for entry in reversed(entries):
+            try:
+                component = entry.get_component_iface()
+                if component:
+                    component.grab_focus()
+                editable = entry.get_editable_text_iface()
+                if editable:
+                    current = entry.get_text_iface()
+                    if current:
+                        length = current.get_character_count()
+                        if length > 0:
+                            editable.delete_text(0, length)
+                    editable.insert_text(0, text, len(text))
+                    return True
+            except Exception:
+                continue
+        time.sleep(0.05)
     return False
 
 

@@ -4,6 +4,7 @@
 """Pytest fixtures for AT-SPI GUI testing of qvauchi."""
 
 import os
+import shutil
 import subprocess
 import tempfile
 
@@ -29,21 +30,20 @@ def qt_binary():
 
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def _qt_data_dir():
-    """Session-scoped data directory for the shared app instance."""
+    """Module-scoped data directory for the shared app instance."""
     d = tempfile.mkdtemp(prefix="vauchi-qt-test-session-")
     yield d
-    import shutil
     shutil.rmtree(d, ignore_errors=True)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def qt_app(qt_binary, _qt_data_dir):
-    """Launch a single qvauchi instance shared across all tests.
+    """Launch one qvauchi instance per test module.
 
-    Session-scoped to avoid repeated process startup/teardown which
-    saturates the AT-SPI registry and causes timeouts on CI.
+    Module scope limits AT-SPI startup churn while preventing one exploratory
+    flow from leaking window or focus state into an unrelated test module.
     """
     env = os.environ.copy()
     env["QT_LINUX_ACCESSIBILITY_ALWAYS_ON"] = "1"
@@ -123,5 +123,45 @@ def qt_app_fresh(qt_binary):
         proc.kill()
         proc.wait(timeout=5)
 
-    import shutil
+    shutil.rmtree(data_dir, ignore_errors=True)
+
+
+@pytest.fixture
+def qt_app_restartable(qt_binary):
+    """Launch and restart qvauchi against one isolated data directory."""
+    data_dir = tempfile.mkdtemp(prefix="vauchi-qt-test-restart-")
+    processes = []
+
+    def launch():
+        env = os.environ.copy()
+        env["QT_LINUX_ACCESSIBILITY_ALWAYS_ON"] = "1"
+        env["QT_ACCESSIBILITY"] = "1"
+        env["XDG_DATA_HOME"] = data_dir
+        proc = subprocess.Popen(
+            [qt_binary],
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        processes.append(proc)
+        app_root = find_app("vauchi", timeout=15.0, pid=proc.pid)
+        if app_root is None:
+            proc.kill()
+            _, stderr = proc.communicate(timeout=5)
+            pytest.fail(
+                "qvauchi did not appear during restart test.\n"
+                f"stderr: {stderr.decode()[:500]}"
+            )
+        return proc, app_root
+
+    yield launch
+
+    for proc in processes:
+        if proc.poll() is None:
+            proc.terminate()
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait(timeout=5)
     shutil.rmtree(data_dir, ignore_errors=True)

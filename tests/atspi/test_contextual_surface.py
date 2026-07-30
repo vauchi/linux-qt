@@ -10,7 +10,7 @@ import gi
 gi.require_version("Atspi", "2.0")
 from gi.repository import Atspi  # noqa: E402
 
-from helpers import dump_tree, find_all, wait_for_element
+from helpers import click_button, dump_tree, find_all, wait_for_element
 
 
 def _buttons(root):
@@ -22,20 +22,20 @@ def _buttons(root):
     return list(unique.values())
 
 
+def _focus_app(root):
+    for button in _buttons(root):
+        component = button.get_component_iface()
+        if component is not None and component.grab_focus():
+            time.sleep(0.2)
+            return
+    raise AssertionError(f"Could not focus the Qt app.\n{dump_tree(root, 7)}")
+
+
 def _press_key(keycode):
     Atspi.generate_keyboard_event(
         keycode, "", Atspi.KeySynthType.PRESSRELEASE
     )
     time.sleep(0.2)
-
-
-def _press_ctrl_key(keycode):
-    Atspi.generate_keyboard_event(37, "", Atspi.KeySynthType.PRESS)
-    Atspi.generate_keyboard_event(
-        keycode, "", Atspi.KeySynthType.PRESSRELEASE
-    )
-    Atspi.generate_keyboard_event(37, "", Atspi.KeySynthType.RELEASE)
-    time.sleep(0.3)
 
 
 class TestContextualSurface:
@@ -66,6 +66,7 @@ class TestContextualSurface:
         )
 
     def test_tab_reaches_a_native_command(self, qt_app):
+        _focus_app(qt_app)
         for _ in range(12):
             _press_key(23)
             focused = [
@@ -80,11 +81,12 @@ class TestContextualSurface:
             f"Tab did not focus a native command.\n{dump_tree(qt_app, 7)}"
         )
 
-    def test_navigation_shortcut_opens_native_overlay(self, qt_app):
-        _press_ctrl_key(45)
+    def test_navigation_action_opens_native_overlay(self, qt_app):
+        _focus_app(qt_app)
+        assert click_button(qt_app, "More")
         dialog = wait_for_element(qt_app, role="dialog", timeout=3.0)
         assert dialog is not None, (
-            "Ctrl+K did not open the Core-provided navigation overlay.\n"
+            "Navigation action did not open the Core-provided overlay.\n"
             f"{dump_tree(qt_app, 8)}"
         )
         assert (dialog.get_name() or "").strip()
