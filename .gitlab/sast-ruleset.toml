@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+# Custom Semgrep SAST configuration
+# Security rules only — quality rules (CC-03, CC-06) excluded from dashboard.
+# Quality rules for local use: semgrep --config scripts/semgrep-rules/vauchi-quality.yml .
+
+[semgrep]
+  description = "Semgrep default rules minus test-code false positives"
+
+  # bandit B101 (assert_used): every Python file in this repo is an
+  # AT-SPI/pytest test (tests/atspi/), where assert is the intended
+  # assertion construct. There is no production Python to protect.
+  # If production Python is ever added, scope the disable to tests/
+  # instead of deleting it.
+  [[semgrep.ruleset]]
+    disable = true
+    [semgrep.ruleset.identifier]
+      type = "semgrep_id"
+      value = "bandit.B101"
