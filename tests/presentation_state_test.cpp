@@ -96,5 +96,24 @@ int main() {
     assert(state.contextBar().value("primary").toObject()
                .value("interaction_id").toString()
            == QStringLiteral("add_contact"));
+
+    // Core's revision advances only on user actions, so racing full
+    // rebuilds (wakeup re-load, invalidation dispatch) legitimately
+    // re-emit the same surface at the same revision. Only a strictly older
+    // revision is stale.
+    //
+    // This shell is already correct. The check exists because two others
+    // were not: Android and macOS both rejected an equal revision
+    // (vauchi/android!610, vauchi/macos!346), and on Android it failed
+    // every cold launch. Nothing pinned it here, so tightening `<` to
+    // `<=` would reintroduce it silently.
+    PresentationState revisions;
+    assert(revisions.apply(replaceSurface("contacts", 2)));
+    assert(revisions.apply(replaceSurface("contacts", 2)));
+    assert(revisions.surface("contacts").has_value());
+    assert(revisions.surface("contacts")->value("revision").toInteger() == 2);
+
+    assert(!revisions.apply(replaceSurface("contacts", 1)));
+    assert(revisions.surface("contacts")->value("revision").toInteger() == 2);
     return 0;
 }
