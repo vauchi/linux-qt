@@ -143,7 +143,8 @@ add_executable(presentation_state_test
     tests/presentation_state_test.cpp
     src/coreui/presentationstate.cpp)
 target_include_directories(presentation_state_test PRIVATE src)
-target_link_libraries(presentation_state_test PRIVATE Qt6::Core)
+target_include_directories(presentation_state_test PRIVATE ${VAUCHI_CABI_INCLUDE})
+target_link_libraries(presentation_state_test PRIVATE Qt6::Core ${VAUCHI_CABI})
 add_test(NAME presentation_state_test COMMAND presentation_state_test)
 
 # Generic presentation surface: native controls emit only opaque protocol

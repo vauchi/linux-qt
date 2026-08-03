@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "coreui/presentationstate.h"
+#include "vauchi.h"
 
 #include <QJsonArray>
+#include <QJsonDocument>
 #include <QJsonObject>
 #include <cassert>
 
@@ -60,6 +62,32 @@ static QJsonObject profile(const QString &layout, const QString &active) {
 }
 
 int main() {
+    // @scenario: generic_presentation_protocol.feature :: Every shell renders the same prepared presentation
+    char *fixtureJson = vauchi_presentation_contract_fixture();
+    assert(fixtureJson != nullptr);
+    const QJsonObject fixture =
+        QJsonDocument::fromJson(fixtureJson).object();
+    vauchi_string_free(fixtureJson);
+    assert(fixture.value("schema_version").toInt() == 1);
+
+    PresentationState contractState;
+    const auto applyBatch = [&contractState](const QJsonArray &commands) {
+        for (const QJsonValue &command : commands) {
+            assert(contractState.apply(command.toObject()));
+        }
+    };
+    applyBatch(fixture.value("initial_commands").toArray());
+    for (const QJsonValue &step : fixture.value("steps").toArray()) {
+        applyBatch(step.toObject().value("commands").toArray());
+    }
+
+    const QJsonObject expected = fixture.value("expected_state").toObject();
+    const QString active = expected.value("active_surface_id").toString();
+    assert(contractState.activeSurfaceId() == active);
+    assert(contractState.surface(active) == expected.value("surface").toObject());
+    assert(contractState.contextBar()
+           == expected.value("context_bar").toObject());
+
     PresentationState initial;
     assert(initial.apply(replaceSurface("onboarding", 1)));
     assert(initial.apply(setBar("onboarding", 1, "continue")));
