@@ -108,7 +108,7 @@ coverage:unit:
     - cd ${CI_PROJECT_DIR}
     - |
       # Produce Cobertura XML from gcov data (exclude tests/ and system headers)
-      gcovr --root . --filter 'src/' \
+      uvx --from gcovr==8.3 gcovr --root . --filter 'src/' \
         --xml cobertura.xml \
         --print-summary \
         build-cov/
