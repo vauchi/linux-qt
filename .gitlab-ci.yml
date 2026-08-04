@@ -18,9 +18,8 @@ variables:
   SAST_EXCLUDED_PATHS: "build/, vauchi-core/"
   SECRET_DETECTION_EXCLUDED_PATHS: "build/, vauchi-core/"
   SAST_ANALYZER_IMAGE_TAG: "5"
-  # Core tag whose C ABI carries the durable fallback storage key
-  # (0bdefae4; post-v0.59.0, so the dev tag is the earliest immutable ref).
-  VAUCHI_CORE_REF: v0.59.0-dev.2
+  # Core release whose C ABI carries the shared presentation contract fixture.
+  VAUCHI_CORE_REF: v0.59.2
 
 stages:
   - lint
