@@ -1,6 +1,5 @@
 build/
-build-coverage/
-build-test/
+build-*/
 target/
 .cache/
 *.o
