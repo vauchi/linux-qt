@@ -192,6 +192,27 @@ target_include_directories(theme_test PRIVATE include ${VAUCHI_TOKENS_INCLUDE})
 target_link_libraries(theme_test PRIVATE Qt6::Widgets Qt6::Core)
 add_test(NAME theme_test COMMAND theme_test)
 
+# Every C++ test here states its expectations with assert(). NDEBUG compiles
+# assert() to nothing, so a Release-configured build turns the whole suite into
+# no-ops that exit 0 while checking nothing — indistinguishable from passing.
+# CI configures without CMAKE_BUILD_TYPE, so it is unaffected, but any local
+# `-DCMAKE_BUILD_TYPE=Release` build reports a silent false green (observed
+# 2026-08-07: presentation_controller_test passed in Release while a real
+# failure was present, and only surfaced in a Debug build).
+#
+# Undefine NDEBUG on the test targets so their assertions survive every build
+# type. Applied per-target rather than globally: qvauchi itself should keep
+# whatever the chosen build type implies.
+foreach(vauchi_test_target
+        smoke_test
+        app_engine_test
+        presentation_state_test
+        presentation_surface_test
+        presentation_controller_test
+        theme_test)
+    target_compile_options(${vauchi_test_target} PRIVATE -UNDEBUG)
+endforeach()
+
 # render-fixture catalog harness smoke: a golden fixture must render to a valid
 # PNG via `qvauchi --render-fixture` (offscreen). See render_fixture_smoke.cmake.
 add_test(NAME render_fixture_smoke
