@@ -4,11 +4,11 @@
 #include "presentationcontroller.h"
 
 #include "presentationsurface.h"
+#include "qrpasteprompt.h"
 #include "../platform/hardwarebackend.h"
 
 #include <QApplication>
 #include <QBoxLayout>
-#include <QInputDialog>
 #include <QJsonDocument>
 #include <QKeySequence>
 #include <QPushButton>
@@ -18,25 +18,22 @@ PresentationController::PresentationController(struct VauchiApp *app,
                                                QWidget *parent)
     : QWidget(parent), m_app(app),
       m_hardware(new HardwareBackend(this)),
+      m_qrPaste(new QrPastePrompt(this)),
       m_reducedMotion(qEnvironmentVariableIsSet("QT_REDUCE_MOTION")) {
     connect(m_hardware, &HardwareBackend::eventReady, this,
             [this](const QJsonObject &event) { dispatchEvent(event); });
     connect(m_hardware, &HardwareBackend::qrScanned, this,
             [this](const QString &data) {
-                QString payload = data;
-                if (payload.isEmpty()) {
-                    bool accepted = false;
-                    payload = QInputDialog::getMultiLineText(
-                        this, tr("Scan QR"), tr("Paste QR data:"), {},
-                        &accepted);
-                    if (!accepted) {
-                        return;
-                    }
+                if (data.isEmpty()) {
+                    m_qrPaste->prompt();
+                    return;
                 }
                 dispatchEvent(QJsonObject{
                     {QStringLiteral("QrScanned"),
-                     QJsonObject{{QStringLiteral("data"), payload}}}});
+                     QJsonObject{{QStringLiteral("data"), data}}}});
             });
+    connect(m_qrPaste, &QrPastePrompt::eventReady, this,
+            [this](const QJsonObject &event) { dispatchEvent(event); });
 }
 
 void PresentationController::initialize() {

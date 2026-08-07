@@ -51,6 +51,7 @@ set(QVAUCHI_SOURCES
     src/coreui/presentationsurface.cpp
     src/coreui/presentationsurface_nodes.cpp
     src/coreui/presentationsurface_qr.cpp
+    src/coreui/qrpasteprompt.cpp
     src/coreui/thememanager.cpp
     src/platform/systemtray.cpp
     src/platform/menubar.cpp
@@ -171,6 +172,7 @@ add_executable(presentation_controller_test
     src/coreui/presentationsurface.cpp
     src/coreui/presentationsurface_nodes.cpp
     src/coreui/presentationsurface_qr.cpp
+    src/coreui/qrpasteprompt.cpp
     src/platform/hardwarebackend.cpp
     src/platform/directsendworker.cpp)
 target_include_directories(presentation_controller_test PRIVATE
@@ -180,6 +182,9 @@ target_link_directories(presentation_controller_test PRIVATE
 target_link_libraries(presentation_controller_test PRIVATE
     Qt6::Widgets Qt6::Core ${QRENCODE_LIBRARIES} ${VAUCHI_CABI})
 add_test(NAME presentation_controller_test COMMAND presentation_controller_test)
+# The QrRequestScan paste-fallback test fails a blocking (exec-style) prompt
+# by hanging; bound the red so CI reports a failure instead of stalling.
+set_tests_properties(presentation_controller_test PROPERTIES TIMEOUT 60)
 
 # ThemeManager test: palette generation, stylesheet output, file loading
 add_executable(theme_test tests/theme_test.cpp src/coreui/thememanager.cpp)

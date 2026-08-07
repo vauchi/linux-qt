@@ -11,6 +11,7 @@
 
 class HardwareBackend;
 class QBoxLayout;
+class QrPastePrompt;
 
 /// Applies Core reducer batches atomically and renders native Qt equivalents.
 class PresentationController : public QWidget {
@@ -52,5 +53,6 @@ private:
     struct ::VauchiApp *m_app;
     PresentationState m_state;
     HardwareBackend *m_hardware;
+    QrPastePrompt *m_qrPaste;
     bool m_reducedMotion = false;
 };
