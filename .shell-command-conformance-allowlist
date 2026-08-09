@@ -1,0 +1,9 @@
+# SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Command-pair gaps in this shell that are correct rather than defects.
+# Format: <command>  # why. The reason is mandatory.
+#
+# Checked by scripts/scripts/check-shell-command-conformance.py.
+
+DismissOverlay  # presentationcontroller_effects.cpp raises a modal QDialog and the button handler calls dialog->accept() before dispatchInteraction, so the overlay is already closed when Core's dismissal would arrive. Same shape as the windows shell. Verified 2026-08-09 by reading the handler.
