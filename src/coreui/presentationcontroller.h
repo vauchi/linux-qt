@@ -37,6 +37,13 @@ private:
     void dispatchRawEvent(const QJsonValue &event);
     void dispatchInteraction(const QString &surfaceId,
                              const QString &interactionId);
+    void dispatchInputSubmitted(const QString &surfaceId,
+                                const QString &bindingId);
+    void dispatchInputFocusEnded(const QString &surfaceId,
+                                 const QString &bindingId);
+    void dispatchBindingGesture(const QString &variant,
+                                const QString &surfaceId,
+                                const QString &bindingId);
     void dispatchValue(const QString &surfaceId, const QString &bindingId,
                        const QJsonValue &value);
     void applyEnvelope(const QByteArray &json);

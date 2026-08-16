@@ -5,6 +5,7 @@
 
 #include <QCheckBox>
 #include <QComboBox>
+#include <QEvent>
 #include <QFrame>
 #include <QGroupBox>
 #include <QJsonArray>
@@ -115,6 +116,12 @@ QWidget *PresentationSurface::renderNode(const QJsonValue &nodeValue) {
                         m_surfaceId, binding,
                         QJsonObject{{QStringLiteral("text"), text}});
                 });
+        connect(input, &QLineEdit::returnPressed, this,
+                [this, binding]() { emit submitReady(m_surfaceId, binding); });
+        // QLineEdit has no focus-out signal, and `editingFinished` fires
+        // for Return as well — which would report both gestures for one
+        // press. Watching the event directly keeps them distinct.
+        input->installEventFilter(this);
         layout->addWidget(input);
         const QString error =
             payload.value(QStringLiteral("validation_error")).toString();
@@ -318,4 +325,16 @@ QWidget *PresentationSurface::renderList(const QJsonObject &payload) {
         }
     }
     return group;
+}
+
+bool PresentationSurface::eventFilter(QObject *watched, QEvent *event) {
+    // The binding id is the widget's object name, set where the field is
+    // built. Anything else watched here has none and is ignored.
+    if (event->type() == QEvent::FocusOut) {
+        const QString binding = watched->objectName();
+        if (!binding.isEmpty()) {
+            emit focusEndReady(m_surfaceId, binding);
+        }
+    }
+    return QWidget::eventFilter(watched, event);
 }

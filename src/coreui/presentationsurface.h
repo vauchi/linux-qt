@@ -21,6 +21,14 @@ signals:
                           const QString &interactionId);
     void valueReady(const QString &surfaceId, const QString &bindingId,
                     const QJsonValue &value);
+    /// Return pressed in a field — Qt's own submit gesture.
+    void submitReady(const QString &surfaceId, const QString &bindingId);
+    /// A field lost focus. Qt reports this whatever took the focus, so no
+    /// click-outside handling is needed.
+    void focusEndReady(const QString &surfaceId, const QString &bindingId);
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override;
 
 private:
     QWidget *renderNode(const QJsonValue &node);

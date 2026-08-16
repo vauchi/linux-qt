@@ -124,6 +124,31 @@ void PresentationController::dispatchValue(
                      {QStringLiteral("value"), value}}}});
 }
 
+void PresentationController::dispatchInputSubmitted(const QString &surfaceId,
+                                                    const QString &bindingId) {
+    dispatchBindingGesture(QStringLiteral("InputSubmitted"), surfaceId,
+                           bindingId);
+}
+
+void PresentationController::dispatchInputFocusEnded(const QString &surfaceId,
+                                                     const QString &bindingId) {
+    dispatchBindingGesture(QStringLiteral("InputFocusEnded"), surfaceId,
+                           bindingId);
+}
+
+/// Both name a binding without carrying a value — they report *that*
+/// something happened, not what the field now holds.
+void PresentationController::dispatchBindingGesture(const QString &variant,
+                                                    const QString &surfaceId,
+                                                    const QString &bindingId) {
+    if (surfaceId.isEmpty() || bindingId.isEmpty()) {
+        return;
+    }
+    dispatchEvent(QJsonObject{
+        {variant, QJsonObject{{QStringLiteral("surface_id"), surfaceId},
+                              {QStringLiteral("binding_id"), bindingId}}}});
+}
+
 void PresentationController::applyEnvelope(const QByteArray &json) {
     const QJsonObject envelope = QJsonDocument::fromJson(json).object();
     if (envelope.contains(QStringLiteral("commands"))) {
@@ -190,6 +215,12 @@ void PresentationController::renderPresentation() {
                 connect(widget, &PresentationSurface::valueReady, this,
                         &PresentationController::dispatchValue,
                         Qt::QueuedConnection);
+                connect(widget, &PresentationSurface::submitReady, this,
+                        &PresentationController::dispatchInputSubmitted,
+                        Qt::QueuedConnection);
+                connect(widget, &PresentationSurface::focusEndReady, this,
+                        &PresentationController::dispatchInputFocusEnded,
+                        Qt::QueuedConnection);
                 splitter->addWidget(widget);
             }
         }
@@ -202,6 +233,12 @@ void PresentationController::renderPresentation() {
                     Qt::QueuedConnection);
             connect(widget, &PresentationSurface::valueReady, this,
                     &PresentationController::dispatchValue,
+                    Qt::QueuedConnection);
+            connect(widget, &PresentationSurface::submitReady, this,
+                    &PresentationController::dispatchInputSubmitted,
+                    Qt::QueuedConnection);
+            connect(widget, &PresentationSurface::focusEndReady, this,
+                    &PresentationController::dispatchInputFocusEnded,
                     Qt::QueuedConnection);
             body = widget;
         }
