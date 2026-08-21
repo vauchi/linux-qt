@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <QComboBox>
 #include <QFrame>
 
 /// A `PresentationNode::Divider` rendered as its own type so the accessibility
@@ -18,6 +19,21 @@ class PresentationDivider : public QFrame {
 
 public:
     explicit PresentationDivider(QWidget *parent = nullptr);
+};
+
+/// A `PresentationNode::Choice` rendered as its own type so the accessibility
+/// factory can restore Core's label as the accessible name.
+///
+/// `QAccessibleComboBox::text(Name)` returns the current item instead of the
+/// widget's `accessibleName` on Unix, so Core's label never reaches the bus
+/// while the *description* does. The class lives in a private header and is
+/// not exported, so it cannot be subclassed — the factory has to supply a
+/// replacement interface built on public API.
+class PresentationChoice : public QComboBox {
+    Q_OBJECT
+
+public:
+    explicit PresentationChoice(QWidget *parent = nullptr);
 };
 
 /// Register the accessible interfaces for vauchi's own presentation widgets.

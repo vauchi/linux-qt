@@ -19,6 +19,7 @@
 #include <QScrollArea>
 #include <QSlider>
 #include <QToolButton>
+#include <QWidgetAction>
 #include <QVBoxLayout>
 
 PresentationSurface::PresentationSurface(const QJsonObject &surface,
@@ -159,7 +160,7 @@ QWidget *PresentationSurface::renderNode(const QJsonValue &nodeValue) {
         auto *container = new QGroupBox(
             payload.value(QStringLiteral("label")).toString());
         auto *layout = new QVBoxLayout(container);
-        auto *choice = new QComboBox;
+        auto *choice = new PresentationChoice;
         const QString selected =
             payload.value(QStringLiteral("selected")).toString();
         for (const auto &optionValue :
@@ -307,12 +308,33 @@ QWidget *PresentationSurface::renderList(const QJsonObject &payload) {
             auto *menu = new QMenu(button);
             for (const auto &actionValue : secondary) {
                 const QJsonObject action = actionValue.toObject();
-                auto *menuAction = menu->addAction(
-                    action.value(QStringLiteral("label")).toString());
-                menuAction->setEnabled(
+                // QAction exposes no accessible-name API, so its Core label
+                // would be dropped; a widget action carries one.
+                auto *item = new QToolButton(menu);
+                item->setText(action.value(QStringLiteral("label")).toString());
+                item->setToolButtonStyle(Qt::ToolButtonTextOnly);
+                item->setAutoRaise(true);
+                item->setSizePolicy(QSizePolicy::Expanding,
+                                    QSizePolicy::Preferred);
+                item->setEnabled(
                     action.value(QStringLiteral("enabled")).toBool(true));
-                connect(menuAction, &QAction::triggered, this,
-                        [this, action]() { activate(action); });
+                item->setAccessibleName(
+                    action.value(QStringLiteral("accessibility_label"))
+                        .toString());
+                auto *menuAction = new QWidgetAction(menu);
+                // A widget action paints its default widget, so the action's
+                // own text is free to be the accessible name Qt reads for the
+                // menu item.
+                menuAction->setText(
+                    action.value(QStringLiteral("accessibility_label"))
+                        .toString());
+                menuAction->setDefaultWidget(item);
+                menu->addAction(menuAction);
+                connect(item, &QToolButton::clicked, this,
+                        [this, action, menu]() {
+                            menu->hide();
+                            activate(action);
+                        });
             }
             button->setMenu(menu);
             button->setPopupMode(QToolButton::MenuButtonPopup);
