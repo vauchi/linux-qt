@@ -48,6 +48,7 @@ set(QVAUCHI_SOURCES
     src/coreui/presentationcontroller.cpp
     src/coreui/presentationcontroller_effects.cpp
     src/coreui/presentationeffectpayload.cpp
+    src/coreui/presentationaccessibility.cpp
     src/coreui/presentationsurface.cpp
     src/coreui/presentationsurface_nodes.cpp
     src/coreui/presentationsurface_qr.cpp
@@ -152,6 +153,7 @@ add_test(NAME presentation_state_test COMMAND presentation_state_test)
 # identifiers and generic values.
 add_executable(presentation_surface_test
     tests/presentation_surface_test.cpp
+    src/coreui/presentationaccessibility.cpp
     src/coreui/presentationsurface.cpp
     src/coreui/presentationsurface_nodes.cpp
     src/coreui/presentationsurface_qr.cpp)
@@ -169,6 +171,7 @@ add_executable(presentation_controller_test
     src/coreui/presentationcontroller_effects.cpp
     src/coreui/presentationeffectpayload.cpp
     src/coreui/presentationstate.cpp
+    src/coreui/presentationaccessibility.cpp
     src/coreui/presentationsurface.cpp
     src/coreui/presentationsurface_nodes.cpp
     src/coreui/presentationsurface_qr.cpp
@@ -218,6 +221,7 @@ endforeach()
 # Not an add_test target — tests/atspi/run-tests.sh drives it under Xvfb.
 add_executable(atspi_fixture_probe
     tests/atspi_fixture_probe.cpp
+    src/coreui/presentationaccessibility.cpp
     src/coreui/presentationsurface.cpp
     src/coreui/presentationsurface_nodes.cpp
     src/coreui/presentationsurface_qr.cpp)

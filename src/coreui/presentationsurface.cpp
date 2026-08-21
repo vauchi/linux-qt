@@ -3,6 +3,8 @@
 
 #include "presentationsurface.h"
 
+#include "coreui/presentationaccessibility.h"
+
 #include <QCheckBox>
 #include <QComboBox>
 #include <QEvent>
@@ -23,6 +25,7 @@ PresentationSurface::PresentationSurface(const QJsonObject &surface,
                                          QWidget *parent)
     : QWidget(parent),
       m_surfaceId(surface.value(QStringLiteral("surface_id")).toString()) {
+    installPresentationAccessibilityFactory();
     setAccessibleName(
         surface.value(QStringLiteral("accessibility_label")).toString());
     auto *outer = new QVBoxLayout(this);
@@ -62,9 +65,7 @@ PresentationSurface::PresentationSurface(const QJsonObject &surface,
 QWidget *PresentationSurface::renderNode(const QJsonValue &nodeValue) {
     if (nodeValue.isString()) {
         if (nodeValue.toString() == QStringLiteral("Divider")) {
-            auto *divider = new QFrame;
-            divider->setFrameShape(QFrame::HLine);
-            return divider;
+            return new PresentationDivider;
         }
         return new QLabel;
     }
@@ -324,6 +325,8 @@ QWidget *PresentationSurface::renderList(const QJsonObject &payload) {
             layout->addWidget(renderNode(control));
         }
     }
+    applyAccessibility(
+        group, payload.value(QStringLiteral("accessibility")).toObject());
     return group;
 }
 
