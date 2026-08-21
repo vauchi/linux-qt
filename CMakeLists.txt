@@ -213,6 +213,21 @@ foreach(vauchi_test_target
     target_compile_options(${vauchi_test_target} PRIVATE -UNDEBUG)
 endforeach()
 
+# AT-SPI probe harness: presents a SurfaceSpec fixture through the production
+# PresentationSurface and stays alive so tests/atspi/ can read the live bus.
+# Not an add_test target — tests/atspi/run-tests.sh drives it under Xvfb.
+add_executable(atspi_fixture_probe
+    tests/atspi_fixture_probe.cpp
+    src/coreui/presentationsurface.cpp
+    src/coreui/presentationsurface_nodes.cpp
+    src/coreui/presentationsurface_qr.cpp)
+target_include_directories(atspi_fixture_probe PRIVATE
+    src ${QRENCODE_INCLUDE_DIRS})
+target_link_directories(atspi_fixture_probe PRIVATE
+    ${QRENCODE_LIBRARY_DIRS})
+target_link_libraries(atspi_fixture_probe PRIVATE
+    Qt6::Widgets Qt6::Core ${QRENCODE_LIBRARIES})
+
 # render-fixture catalog harness smoke: a golden fixture must render to a valid
 # PNG via `qvauchi --render-fixture` (offscreen). See render_fixture_smoke.cmake.
 add_test(NAME render_fixture_smoke
