@@ -3,7 +3,7 @@
 
 #include "presentationsurface.h"
 
-#include "coreui/presentationaccessibility.h"
+#include "presentationaccessibility.h"
 
 #include <QCheckBox>
 #include <QComboBox>
@@ -14,6 +14,8 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QMenu>
+#include <QIcon>
+#include <QPixmap>
 #include <QProgressBar>
 #include <QPushButton>
 #include <QScrollArea>
@@ -341,7 +343,44 @@ QWidget *PresentationSurface::renderList(const QJsonObject &payload) {
         }
         applyAccessibility(
             button, row.value(QStringLiteral("accessibility")).toObject());
-        layout->addWidget(button);
+
+        auto *rowWidget = new QWidget;
+        auto *rowLayout = new QHBoxLayout(rowWidget);
+        rowLayout->setContentsMargins(0, 0, 0, 0);
+        const QJsonArray avatar =
+            row.value(QStringLiteral("image_data")).toArray();
+        const QString initials =
+            row.value(QStringLiteral("fallback_text")).toString();
+        if (!avatar.isEmpty()) {
+            QByteArray bytes;
+            bytes.reserve(avatar.size());
+            for (const auto &byte : avatar) {
+                bytes.append(static_cast<char>(byte.toInt()));
+            }
+            QPixmap pixmap;
+            if (pixmap.loadFromData(bytes)) {
+                auto *image = new QLabel;
+                image->setPixmap(pixmap.scaled(32, 32, Qt::KeepAspectRatio,
+                                               Qt::SmoothTransformation));
+                rowLayout->addWidget(image);
+            }
+        } else if (!initials.isEmpty()) {
+            rowLayout->addWidget(new QLabel(initials));
+        }
+        rowLayout->addWidget(button, 1);
+        const QString detail = row.value(QStringLiteral("detail")).toString();
+        if (!detail.isEmpty()) {
+            auto *detailLabel = new QLabel(detail);
+            detailLabel->setProperty("tone", "muted");
+            rowLayout->addWidget(detailLabel);
+        }
+        // A row without an activation has no button to carry its name, and
+        // the avatar has to sit inside whatever does.
+        if (activation.isEmpty()) {
+            applyAccessibility(
+                rowWidget, row.value(QStringLiteral("accessibility")).toObject());
+        }
+        layout->addWidget(rowWidget);
         for (const auto &control :
              row.value(QStringLiteral("controls")).toArray()) {
             layout->addWidget(renderNode(control));
