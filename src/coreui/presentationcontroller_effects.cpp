@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "presentationcontroller.h"
+#include "navigationicons.h"
 #include "presentationeffectpayload.h"
 
 #include "../platform/hardwarebackend.h"
@@ -142,6 +143,11 @@ void PresentationController::presentOverlay(
             const QJsonObject item = itemValue.toObject();
             auto *button =
                 new QPushButton(item.value(QStringLiteral("label")).toString());
+            // Icon *and* label, never icon alone: the icon is a recognition
+            // aid for a reader who skims, and dropping the word would trade
+            // one barrier for another.
+            button->setIcon(vauchi::navigationIcon(
+                item.value(QStringLiteral("icon_token")).toString()));
             button->setAccessibleName(
                 item.value(QStringLiteral("accessibility_label")).toString());
             button->setEnabled(
@@ -185,6 +191,13 @@ void PresentationController::presentOverlay(
         const QJsonObject item = itemValue.toObject();
         auto *action =
             menu->addAction(item.value(QStringLiteral("label")).toString());
+        // Core names an icon on navigation items only, so an action menu
+        // stays plain rather than growing a column of neutral markers.
+        const QString iconToken =
+            item.value(QStringLiteral("icon_token")).toString();
+        if (!iconToken.isEmpty()) {
+            action->setIcon(vauchi::navigationIcon(iconToken));
+        }
         action->setEnabled(
             item.value(QStringLiteral("enabled")).toBool(true));
         const QString interaction =

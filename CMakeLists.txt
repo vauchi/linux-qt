@@ -54,6 +54,7 @@ set(QVAUCHI_SOURCES
     src/coreui/presentationsurface_qr.cpp
     src/coreui/qrpasteprompt.cpp
     src/coreui/thememanager.cpp
+    src/coreui/navigationicons.cpp
     src/platform/systemtray.cpp
     src/platform/menubar.cpp
     src/platform/hardwarebackend.cpp
@@ -170,6 +171,7 @@ add_executable(presentation_controller_test
     src/coreui/presentationcontroller.cpp
     src/coreui/presentationcontroller_effects.cpp
     src/coreui/presentationeffectpayload.cpp
+    src/coreui/navigationicons.cpp
     src/coreui/presentationstate.cpp
     src/coreui/presentationaccessibility.cpp
     src/coreui/presentationsurface.cpp
