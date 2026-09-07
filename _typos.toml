@@ -5,3 +5,8 @@
 # PN532 is the NXP NFC chip used by ACR122U USB readers — flagged
 # by typos as a typo of ON.
 PN532 = "PN532"
+
+# Core's navigation icon tokens are named after the SF Symbols core set,
+# where the map-pin symbol is spelled "mappin.and.ellipse".
+[default.extend-words]
+mappin = "mappin"

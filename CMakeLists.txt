@@ -189,6 +189,14 @@ add_test(NAME presentation_controller_test COMMAND presentation_controller_test)
 # by hanging; bound the red so CI reports a failure instead of stalling.
 set_tests_properties(presentation_controller_test PROPERTIES TIMEOUT 60)
 
+# Navigation icon test: Core icon token -> theme icon name resolution
+add_executable(navigation_icons_test
+    tests/navigation_icons_test.cpp
+    src/coreui/navigationicons.cpp)
+target_include_directories(navigation_icons_test PRIVATE src)
+target_link_libraries(navigation_icons_test PRIVATE Qt6::Widgets Qt6::Core)
+add_test(NAME navigation_icons_test COMMAND navigation_icons_test)
+
 # ThemeManager test: palette generation, stylesheet output, file loading
 add_executable(theme_test tests/theme_test.cpp src/coreui/thememanager.cpp)
 target_include_directories(theme_test PRIVATE include ${VAUCHI_TOKENS_INCLUDE})
