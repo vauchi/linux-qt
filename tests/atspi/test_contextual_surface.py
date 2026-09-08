@@ -3,6 +3,7 @@
 
 """Live accessibility contract for the Core-driven Qt command surface."""
 
+import re
 import time
 
 import gi
@@ -94,4 +95,29 @@ class TestContextualSurface:
         assert overlay_buttons
         assert all((button.get_name() or "").strip()
                    for button in overlay_buttons)
+
+        # Each destination shows a themed icon beside its word. The icon
+        # repeats what the word already says, so a screen reader should stop
+        # once, on the button. If it arrives on the bus as its own named
+        # object the reader stops twice, and the second stop announces a
+        # freedesktop icon name — "system users symbolic". The iOS shell had
+        # exactly this defect with SF Symbols (ios!649); Qt attaches the icon
+        # as a QAction property rather than a child widget and so should be
+        # immune, which is precisely the claim worth pinning.
+        #
+        # This assertion is expected green from the start and so never gets a
+        # red run to prove the pattern can fire (CC-27); pin both directions
+        # against a real theme icon name and a real destination label.
+        icon_name_shape = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)+$")
+        assert icon_name_shape.match("system-users-symbolic")
+        assert not icon_name_shape.match("My Card")
+        offenders = [
+            node.get_name()
+            for node in find_all(dialog)
+            if node.get_name() and icon_name_shape.match(node.get_name())
+        ]
+        assert not offenders, (
+            f"These reach AT-SPI as icon names rather than words: {offenders}\n"
+            f"{dump_tree(dialog, 6)}"
+        )
         _press_key(9)
