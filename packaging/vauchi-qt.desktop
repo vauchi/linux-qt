@@ -4,7 +4,7 @@
 [Desktop Entry]
 Name=Vauchi
 Comment=Privacy-focused updatable contact cards
-Exec=vauchi-qt
+Exec=qvauchi
 Icon=vauchi
 Terminal=false
 Type=Application
