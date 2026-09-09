@@ -70,8 +70,16 @@ build:qt:
   stage: build
   needs: [build:cabi]
   script:
+    # Tokens.h is generated from the themes repo; nothing guarantees a
+    # ../themes sibling in the runner's build slot, so fetch and generate
+    # it here instead of relying on one left behind by another job.
+    - git clone --depth 1 --branch main
+        https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/vauchi/themes.git
+        ${CI_PROJECT_DIR}/themes-src
+    - python3 ${CI_PROJECT_DIR}/themes-src/scripts/generate.py
     - mkdir -p build && cd build
     - cmake .. -DVAUCHI_CABI_DIR=${CI_PROJECT_DIR}/cabi-lib
+        -DVAUCHI_TOKENS_INCLUDE=${CI_PROJECT_DIR}/themes-src/generated
     - cmake --build . --parallel
   artifacts:
     paths:
