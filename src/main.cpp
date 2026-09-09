@@ -48,8 +48,9 @@ static int maybeRenderFixture(const QStringList &args) {
     ThemeManager::applyDefaultTheme();
     auto *renderer = new PresentationSurface(surface);
     renderer->resize(width > 0 ? width : 900, height > 0 ? height : 1400);
-    // Component replacement uses deleteLater(); flush deferred deletes now,
-    // since this harness grabs synchronously without running the event loop.
+    // PresentationSurface teardown uses deleteLater(); flush deferred
+    // deletes now, since this harness grabs synchronously without running
+    // the event loop.
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
     QCoreApplication::processEvents();
     const QPixmap pixmap = renderer->grab();
