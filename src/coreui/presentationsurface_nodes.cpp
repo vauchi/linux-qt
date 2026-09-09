@@ -59,6 +59,26 @@ PresentationSurface::renderConfirmation(const QJsonObject &payload) {
     return container;
 }
 
+namespace {
+
+/// Side of a standalone avatar. Core names no size for `Image`, so the
+/// shell picks one; large enough to read two initials in.
+constexpr int kAvatarSide = 96;
+
+/// Core's `shape` was read by nobody here, so an avatar and a diagram were
+/// drawn identically. A circle is half the side; a natural image keeps its
+/// corners, because rounding them away loses what distinguishes it.
+QString avatarStyleSheet(bool circular) {
+    return QStringLiteral(
+               "QLabel { border-radius: %1px;"
+               " background-color: palette(midlight);"
+               " color: palette(text);"
+               " font-size: 28px; font-weight: bold; }")
+        .arg(circular ? kAvatarSide / 2 : 8);
+}
+
+} // namespace
+
 QWidget *PresentationSurface::renderImage(const QJsonObject &payload) {
     const QJsonArray bytes = payload.value(QStringLiteral("data")).toArray();
     QPixmap pixmap;
@@ -70,15 +90,19 @@ QWidget *PresentationSurface::renderImage(const QJsonObject &payload) {
         }
         pixmap.loadFromData(data);
     }
+    const QString fallback =
+        payload.value(QStringLiteral("fallback_text")).toString();
+    const bool circular =
+        payload.value(QStringLiteral("shape")).toString()
+        == QStringLiteral("circle");
     const QJsonObject activation =
         payload.value(QStringLiteral("activation")).toObject();
     if (!activation.isEmpty()) {
         auto *button = new QPushButton;
-        button->setText(
-            payload.value(QStringLiteral("fallback_text")).toString());
+        button->setText(fallback);
         if (!pixmap.isNull()) {
             button->setIcon(QIcon(pixmap));
-            button->setIconSize(QSize(96, 96));
+            button->setIconSize(QSize(kAvatarSide, kAvatarSide));
         }
         connect(button, &QPushButton::clicked, this,
                 [this, activation]() { activate(activation); });
@@ -87,13 +111,21 @@ QWidget *PresentationSurface::renderImage(const QJsonObject &payload) {
         return button;
     }
     auto *label = new QLabel;
-    if (pixmap.isNull()) {
-        label->setText(
-            payload.value(QStringLiteral("fallback_text")).toString());
-    } else {
+    if (!pixmap.isNull()) {
         label->setPixmap(
             pixmap.scaled(160, 160, Qt::KeepAspectRatio,
                           Qt::SmoothTransformation));
+    } else if (!fallback.isEmpty()) {
+        // A `QLabel` with only text paints no body, so the initials sat on
+        // the window background and read as a stray letter. The stylesheet
+        // carries the whole avatar: a fixed square, a fill and the radius
+        // `shape` asks for. Square is load-bearing for the round case — a
+        // radius applied to a box that is not square gives a stadium.
+        label->setText(fallback);
+        label->setAlignment(Qt::AlignCenter);
+        label->setMinimumSize(kAvatarSide, kAvatarSide);
+        label->setMaximumSize(kAvatarSide, kAvatarSide);
+        label->setStyleSheet(avatarStyleSheet(circular));
     }
     applyAccessibility(
         label, payload.value(QStringLiteral("accessibility")).toObject());
