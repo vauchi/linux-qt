@@ -166,6 +166,20 @@ target_link_libraries(presentation_surface_test PRIVATE
     Qt6::Widgets Qt6::Core ${QRENCODE_LIBRARIES})
 add_test(NAME presentation_surface_test COMMAND presentation_surface_test)
 
+add_executable(presentation_image_test
+    tests/presentation_image_test.cpp
+    src/coreui/presentationaccessibility.cpp
+    src/coreui/presentationsurface.cpp
+    src/coreui/presentationsurface_nodes.cpp
+    src/coreui/presentationsurface_qr.cpp)
+target_include_directories(presentation_image_test PRIVATE
+    src ${QRENCODE_INCLUDE_DIRS})
+target_link_directories(presentation_image_test PRIVATE
+    ${QRENCODE_LIBRARY_DIRS})
+target_link_libraries(presentation_image_test PRIVATE
+    Qt6::Widgets Qt6::Core ${QRENCODE_LIBRARIES})
+add_test(NAME presentation_image_test COMMAND presentation_image_test)
+
 add_executable(presentation_controller_test
     tests/presentation_controller_test.cpp
     src/coreui/presentationcontroller.cpp
