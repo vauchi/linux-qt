@@ -213,6 +213,18 @@ target_include_directories(navigation_icons_test PRIVATE src)
 target_link_libraries(navigation_icons_test PRIVATE Qt6::Widgets Qt6::Core)
 add_test(NAME navigation_icons_test COMMAND navigation_icons_test)
 
+# Notification severity test: Core priority hint -> tray message severity
+add_executable(notification_severity_test tests/notification_severity_test.cpp)
+target_include_directories(notification_severity_test PRIVATE src)
+target_link_libraries(notification_severity_test PRIVATE Qt6::Widgets Qt6::Core)
+add_test(NAME notification_severity_test COMMAND notification_severity_test)
+
+# Menu bar test: the import entry's label is Core menu copy with a neutral fallback
+add_executable(menubar_test tests/menubar_test.cpp src/platform/menubar.cpp)
+target_include_directories(menubar_test PRIVATE src ${VAUCHI_CABI_INCLUDE})
+target_link_libraries(menubar_test PRIVATE Qt6::Widgets Qt6::Core ${VAUCHI_CABI} ${CMAKE_DL_LIBS})
+add_test(NAME menubar_test COMMAND menubar_test)
+
 # ThemeManager test: palette generation, stylesheet output, file loading
 add_executable(theme_test tests/theme_test.cpp src/coreui/thememanager.cpp)
 target_include_directories(theme_test PRIVATE include ${VAUCHI_TOKENS_INCLUDE})
@@ -236,7 +248,9 @@ foreach(vauchi_test_target
         presentation_state_test
         presentation_surface_test
         presentation_controller_test
-        theme_test)
+        theme_test
+        notification_severity_test
+        menubar_test)
     target_compile_options(${vauchi_test_target} PRIVATE -UNDEBUG)
 endforeach()
 
