@@ -6,6 +6,7 @@
 #include "coreui/presentationcontroller.h"
 #include "coreui/thememanager.h"
 #include "platform/menubar.h"
+#include "platform/notificationseverity.h"
 #include "platform/systemtray.h"
 
 #include <QApplication>
@@ -201,14 +202,11 @@ void VauchiWindow::drainAndShowNotificationsArray(const QJsonArray &notification
     if (!m_tray) return;
 
     for (const auto &n : notifications) {
-        // TODO(HUMBLE): D — frontend maps notification category "EmergencyAlert" to OS tray icon severity; core should supply generic urgency hint (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations)
         QJsonObject obj = n.toObject();
         QString title = obj["title"].toString();
         QString body = obj["body"].toString();
         QSystemTrayIcon::MessageIcon icon =
-            obj["category"].toString() == "EmergencyAlert"
-                ? QSystemTrayIcon::Critical
-                : QSystemTrayIcon::Information;
+            vauchi::trayIconForPriority(obj["priority"].toString());
         m_tray->showMessage(title, body, icon, 10000);
     }
 }
