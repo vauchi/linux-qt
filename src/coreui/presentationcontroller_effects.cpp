@@ -12,12 +12,14 @@
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QFrame>
 #include <QJsonDocument>
 #include <QMenu>
 #include <QMessageBox>
 #include <QPropertyAnimation>
 #include <QPushButton>
 #include <QSaveFile>
+#include <QScrollArea>
 #include <QToolTip>
 #include <QUrl>
 #include <QVBoxLayout>
@@ -138,7 +140,21 @@ void PresentationController::presentOverlay(
         dialog->setAttribute(Qt::WA_DeleteOnClose);
         dialog->setWindowTitle(
             overlay.value(QStringLiteral("title")).toString());
-        auto *layout = new QVBoxLayout(dialog);
+        // The destination list is Core's to size. Buttons added straight to
+        // the dialog's layout have no way to scroll: the dialog grows to
+        // their natural height, and past a short display the overflow is
+        // simply unreachable. `setWidgetResizable` lets the inner widget
+        // take the scroller's width so the rows still fill it.
+        auto *outer = new QVBoxLayout(dialog);
+        outer->setContentsMargins(0, 0, 0, 0);
+        auto *scroller = new QScrollArea(dialog);
+        scroller->setWidgetResizable(true);
+        scroller->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        scroller->setFrameShape(QFrame::NoFrame);
+        auto *content = new QWidget(scroller);
+        auto *layout = new QVBoxLayout(content);
+        scroller->setWidget(content);
+        outer->addWidget(scroller);
         for (const auto &itemValue : items) {
             const QJsonObject item = itemValue.toObject();
             auto *button =
