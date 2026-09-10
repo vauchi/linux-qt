@@ -299,5 +299,79 @@ int main(int argc, char **argv) {
                && "an unknown tone must not be forwarded to the stylesheet");
     }
 
+    // The five PresentationTokens ride in every SurfaceSpec's `tokens`
+    // field; `minimum_target_size` must become a real minimum height on
+    // every interactive control, and `corner_radius` a stylesheet radius.
+    {
+        const QJsonObject tokens{{"spacing_small", 4}, {"spacing_medium", 8},
+                                 {"spacing_large", 16}, {"corner_radius", 10},
+                                 {"minimum_target_size", 56}};
+        const QJsonObject targetSurface{
+            {"surface_id", "targets"},
+            {"revision", 1},
+            {"title", "Targets"},
+            {"layout", "fixed"},
+            {"tokens", tokens},
+            {"nodes",
+             QJsonArray{
+                 QJsonObject{
+                     {"Toggle",
+                      QJsonObject{{"binding_id", "notify"},
+                                  {"label", "Notify"},
+                                  {"value", false},
+                                  {"enabled", true},
+                                  {"accessibility", accessibility("Notify")}}}},
+                 QJsonObject{
+                     {"List",
+                      QJsonObject{
+                          {"id", "rows"},
+                          {"label", "Rows"},
+                          {"rows",
+                           QJsonArray{QJsonObject{
+                               {"title", "Row"},
+                               {"subtitle", QJsonValue::Null},
+                               {"detail", QJsonValue::Null},
+                               {"icon_token", QJsonValue::Null},
+                               {"image_data", QJsonValue::Null},
+                               {"fallback_text", QJsonValue::Null},
+                               {"selected", false},
+                               {"enabled", true},
+                               {"activation", action("select-row", "Row")},
+                               {"secondary_actions", QJsonArray{}},
+                               {"controls", QJsonArray{}},
+                               {"accessibility", accessibility("Row")},
+                           }}},
+                          {"searchable", false},
+                          {"paging", QJsonValue::Null},
+                          {"accessibility", accessibility("Rows")},
+                      }}},
+                 QJsonObject{
+                     {"Confirmation",
+                      QJsonObject{{"id", "target-confirm"},
+                                  {"warning", "Sure?"},
+                                  {"confirm", action("confirm-target", "Yes")},
+                                  {"cancel", action("cancel-target", "No")},
+                                  {"accessibility", accessibility("Sure?")}}}},
+             }},
+        };
+        PresentationSurface targetRenderer(targetSurface);
+
+        auto *toggle = targetRenderer.findChild<QCheckBox *>("notify");
+        assert(toggle != nullptr);
+        assert(toggle->minimumHeight() == 56);
+
+        auto *row = targetRenderer.findChild<QToolButton *>("select-row");
+        assert(row != nullptr);
+        assert(row->minimumHeight() == 56);
+        assert(row->styleSheet().contains(QStringLiteral("border-radius: 10px")));
+
+        auto *confirmButton =
+            targetRenderer.findChild<QPushButton *>("confirm-target");
+        assert(confirmButton != nullptr);
+        assert(confirmButton->minimumHeight() == 56);
+        assert(confirmButton->styleSheet()
+                   .contains(QStringLiteral("border-radius: 10px")));
+    }
+
     return 0;
 }

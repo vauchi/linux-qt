@@ -176,6 +176,41 @@ void assertOverlayStructures(bool reducedMotion) {
     QApplication::processEvents();
 }
 
+void assertNavigationItemsRespectMinimumTargetSize() {
+    PresentationController controller(nullptr);
+    controller.resize(700, 600);
+    controller.show();
+
+    // baseCommands() ships an empty `tokens` object; swap in real values so
+    // the navigation overlay — built from the surface's tokens via
+    // PresentationController::m_state, not from the overlay payload itself
+    // — has something to read.
+    QJsonArray commands = baseCommands();
+    QJsonObject replace = commands.at(0).toObject();
+    QJsonObject effect = replace.value(QStringLiteral("ReplaceSurface")).toObject();
+    QJsonObject surface = effect.value(QStringLiteral("surface")).toObject();
+    surface.insert(QStringLiteral("tokens"),
+                   QJsonObject{{QStringLiteral("minimum_target_size"), 56},
+                               {QStringLiteral("corner_radius"), 10}});
+    effect.insert(QStringLiteral("surface"), surface);
+    replace.insert(QStringLiteral("ReplaceSurface"), effect);
+    commands[0] = replace;
+
+    controller.dispatchCommands(commands);
+    controller.dispatchCommands(
+        QJsonArray{overlay(QStringLiteral("navigation"))});
+    QApplication::processEvents();
+
+    auto *navigation = controller.findChild<QDialog *>();
+    assert(navigation != nullptr);
+    auto *item = navigation->findChild<QPushButton *>();
+    assert(item != nullptr);
+    assert(item->minimumHeight() == 56);
+    assert(item->styleSheet().contains(QStringLiteral("border-radius: 10px")));
+    navigation->close();
+    QApplication::processEvents();
+}
+
 void assertExportPayloadUsesCanonicalSchema() {
     const QJsonObject command{
         {"ExportFile",
@@ -315,6 +350,7 @@ int main(int argc, char **argv) {
     assertNativeBarAndFocusRestoration();
     assertOverlayStructures(false);
     assertOverlayStructures(true);
+    assertNavigationItemsRespectMinimumTargetSize();
     assertQrScanRequestOpensNonBlockingPastePrompt();
     assertQrPastePromptAcceptEmitsQrScanned();
     assertQrPastePromptCancelNotifiesCore();
