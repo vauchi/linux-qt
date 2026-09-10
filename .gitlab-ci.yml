@@ -21,7 +21,7 @@ variables:
   # Core release whose C ABI carries the shared presentation contract fixture.
   # Single source of truth — every job below references this variable
   # instead of hardcoding its own core ref.
-  VAUCHI_CORE_REF: v0.65.0
+  VAUCHI_CORE_REF: v0.66.0
 
 stages:
   - lint
