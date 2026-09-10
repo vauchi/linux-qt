@@ -56,6 +56,7 @@ set(QVAUCHI_SOURCES
     src/coreui/qrpasteprompt.cpp
     src/coreui/thememanager.cpp
     src/coreui/navigationicons.cpp
+    src/coreui/navigationsidebar.cpp
     src/platform/systemtray.cpp
     src/platform/menubar.cpp
     src/platform/hardwarebackend.cpp
@@ -189,6 +190,7 @@ add_executable(presentation_controller_test
     src/coreui/presentationcontroller_effects.cpp
     src/coreui/presentationeffectpayload.cpp
     src/coreui/navigationicons.cpp
+    src/coreui/navigationsidebar.cpp
     src/coreui/presentationstate.cpp
     src/coreui/presentationaccessibility.cpp
     src/coreui/presentationsurface.cpp
@@ -208,6 +210,18 @@ add_test(NAME presentation_controller_test COMMAND presentation_controller_test)
 # The QrRequestScan paste-fallback test fails a blocking (exec-style) prompt
 # by hanging; bound the red so CI reports a failure instead of stalling.
 set_tests_properties(presentation_controller_test PROPERTIES TIMEOUT 60)
+
+# Persistent per-surface navigation: PresentationState's SetNavigation
+# reducer plus the sidebar model/widget it feeds.
+add_executable(presentation_navigation_test
+    tests/presentation_navigation_test.cpp
+    src/coreui/presentationstate.cpp
+    src/coreui/navigationicons.cpp
+    src/coreui/navigationsidebar.cpp)
+target_include_directories(presentation_navigation_test PRIVATE src)
+target_link_libraries(presentation_navigation_test PRIVATE
+    Qt6::Widgets Qt6::Core)
+add_test(NAME presentation_navigation_test COMMAND presentation_navigation_test)
 
 # Navigation icon test: Core icon token -> theme icon name resolution
 add_executable(navigation_icons_test
@@ -258,6 +272,7 @@ foreach(vauchi_test_target
         presentation_surface_test
         presentation_image_test
         presentation_controller_test
+        presentation_navigation_test
         navigation_icons_test
         theme_test
         notification_severity_test
