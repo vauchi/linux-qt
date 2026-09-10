@@ -3,6 +3,7 @@
 
 #include "presentationcontroller.h"
 
+#include "navigationsidebar.h"
 #include "presentationsurface.h"
 #include "qrpasteprompt.h"
 #include "../platform/hardwarebackend.h"
@@ -247,7 +248,28 @@ void PresentationController::renderPresentation() {
     if (!body) {
         body = new QWidget;
     }
-    outer->addWidget(body, 1);
+    // Persistent left column, not the overlay's modal dialog: Core now
+    // publishes navigation on every surface via SetNavigation rather than
+    // only inside a PresentOverlay (D4), so an empty list simply means no
+    // sidebar rather than "wait for a dismiss".
+    const QJsonObject navigation = m_state.navigation();
+    QWidget *row = body;
+    if (!navigation.value(QStringLiteral("items")).toArray().isEmpty()) {
+        auto *sidebar = new NavigationSidebar(navigation);
+        const QString surfaceId = m_state.activeSurfaceId();
+        connect(sidebar, &NavigationSidebar::interactionReady, this,
+                [this, surfaceId](const QString &interactionId) {
+                    dispatchInteraction(surfaceId, interactionId);
+                },
+                Qt::QueuedConnection);
+        auto *splitter = new QSplitter(Qt::Horizontal);
+        splitter->addWidget(sidebar);
+        splitter->addWidget(body);
+        splitter->setStretchFactor(0, 0);
+        splitter->setStretchFactor(1, 1);
+        row = splitter;
+    }
+    outer->addWidget(row, 1);
     renderContextBar(outer);
     if (!focusObjectName.isEmpty()) {
         if (QWidget *restored =
