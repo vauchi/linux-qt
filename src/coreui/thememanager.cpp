@@ -192,6 +192,11 @@ QString ThemeManager::stylesheetFromColors(const QJsonObject &colors) {
         // doubles as the focus-ring colour.
         "QPushButton:focus, QToolButton:focus, QCheckBox:focus { "
         "  outline: %10px solid %6; outline-offset: %11px; }"
+        // Checked, not selected: NavigationSidebar rows are autoExclusive
+        // QToolButtons, so Qt's own :checked pseudo-state already tracks
+        // which destination is current.
+        "QToolButton#navigation-sidebar-row:checked { "
+        "  background-color: %6; color: %1; }"
     )
         .arg(bgPrimary, textPrimary, bgSecondary, border, bgTertiary, accent,
              uiFont().family(), errorColor)
