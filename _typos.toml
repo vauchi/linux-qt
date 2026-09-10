@@ -10,3 +10,5 @@ PN532 = "PN532"
 # where the map-pin symbol is spelled "mappin.and.ellipse".
 [default.extend-words]
 mappin = "mappin"
+# OpenType variable-font axis tag (width) in the Bricolage Grotesque family
+wdth = "wdth"
