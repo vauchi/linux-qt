@@ -248,5 +248,56 @@ int main(int argc, char **argv) {
     assert(binding == QStringLiteral("scan-code"));
     assert(value.toObject().value("text").toString()
            == QStringLiteral("vauchi://scanned"));
+
+    // Confirmation actions carry `tone` verbatim for the wire values the
+    // stylesheet knows how to render, and drop anything else — an unknown
+    // tone must stay standard rather than leak an unstyled attribute.
+    {
+        QJsonObject confirm = action("confirm-destroy", "Delete");
+        confirm.insert(QStringLiteral("tone"), QStringLiteral("destructive"));
+        QJsonObject cancel = action("cancel-destroy", "Keep");
+        cancel.insert(QStringLiteral("tone"), QStringLiteral("serious"));
+        QJsonObject unknown = action("unknown-tone", "Maybe");
+        unknown.insert(QStringLiteral("tone"), QStringLiteral("playful"));
+
+        const QJsonObject toneSurface{
+            {"surface_id", "tones"},
+            {"revision", 1},
+            {"title", "Tones"},
+            {"layout", "fixed"},
+            {"tokens", QJsonObject{}},
+            {"nodes",
+             QJsonArray{
+                 QJsonObject{{"Confirmation",
+                              QJsonObject{{"id", "destroy"},
+                                          {"warning", "Delete this?"},
+                                          {"confirm", confirm},
+                                          {"cancel", cancel},
+                                          {"accessibility",
+                                           accessibility("Delete this?")}}}},
+                 QJsonObject{{"Confirmation",
+                              QJsonObject{{"id", "maybe"},
+                                          {"warning", "Maybe?"},
+                                          {"confirm", unknown},
+                                          {"cancel", action("cancel-maybe", "No")},
+                                          {"accessibility",
+                                           accessibility("Maybe?")}}}},
+             }},
+        };
+        PresentationSurface toneRenderer(toneSurface);
+        assert(toneRenderer.findChild<QPushButton *>("confirm-destroy")
+                   ->property("tone")
+                   .toString()
+               == QStringLiteral("destructive"));
+        assert(toneRenderer.findChild<QPushButton *>("cancel-destroy")
+                   ->property("tone")
+                   .toString()
+               == QStringLiteral("serious"));
+        assert(!toneRenderer.findChild<QPushButton *>("unknown-tone")
+                    ->property("tone")
+                    .isValid()
+               && "an unknown tone must not be forwarded to the stylesheet");
+    }
+
     return 0;
 }

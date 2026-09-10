@@ -139,6 +139,47 @@ static void test_stylesheet_from_colors() {
     printf("  PASS: stylesheet_from_colors\n");
 }
 
+// --- Test: the "serious" tone renders outlined in the warning colour,
+// never filled and never the destructive red ---
+static void test_stylesheet_serious_tone_is_outlined_warning() {
+    QJsonObject colors = ThemeManager::defaultColors();
+    QString stylesheet = ThemeManager::stylesheetFromColors(colors);
+
+    const int ruleStart = stylesheet.indexOf(QStringLiteral("tone=\"serious\""));
+    assert(ruleStart >= 0 && "no QPushButton[tone=\"serious\"] rule emitted");
+    const int ruleEnd = stylesheet.indexOf('}', ruleStart);
+    assert(ruleEnd > ruleStart);
+    const QString rule = stylesheet.mid(ruleStart, ruleEnd - ruleStart);
+
+    const QString warning = colors["warning"].toString();
+    const QString error = colors["error"].toString();
+    assert(rule.contains(warning) && "border/text must use the warning colour");
+    assert(!rule.contains(error) && "serious must never borrow the destructive red");
+    assert(rule.contains(QStringLiteral("background-color: transparent"))
+           && "serious is outlined, not filled");
+    printf("  PASS: stylesheet_serious_tone_is_outlined_warning\n");
+}
+
+// --- Test: focus rings draw Tokens::Focus::RING_WIDTH (3px) offset
+// Tokens::Focus::RING_OFFSET (2px) from the widget ---
+static void test_stylesheet_focus_ring() {
+    QJsonObject colors = ThemeManager::defaultColors();
+    QString stylesheet = ThemeManager::stylesheetFromColors(colors);
+
+    const int ruleStart = stylesheet.indexOf(QStringLiteral(":focus"));
+    assert(ruleStart >= 0 && "no :focus rule emitted");
+    const int ruleEnd = stylesheet.indexOf('}', ruleStart);
+    assert(ruleEnd > ruleStart);
+    const QString rule = stylesheet.mid(ruleStart, ruleEnd - ruleStart);
+
+    assert(rule.contains(QStringLiteral("outline")));
+    assert(rule.contains(QStringLiteral("3px"))
+           && "focus ring width must come from Tokens::Focus::RING_WIDTH");
+    assert(rule.contains(QStringLiteral("2px"))
+           && "focus ring offset must come from Tokens::Focus::RING_OFFSET");
+    printf("  PASS: stylesheet_focus_ring\n");
+}
+
 // --- Test: load from file with valid JSON ---
 static void test_load_from_file_valid() {
     auto dir = fs::temp_directory_path() / "vauchi-theme-test";
@@ -299,6 +340,8 @@ int main(int argc, char *argv[]) {
     test_palette_from_colors();
     test_different_themes_different_palettes();
     test_stylesheet_from_colors();
+    test_stylesheet_serious_tone_is_outlined_warning();
+    test_stylesheet_focus_ring();
     test_load_from_file_valid();
     test_load_from_file_missing();
     test_empty_colors();
