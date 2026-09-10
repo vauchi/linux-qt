@@ -247,7 +247,9 @@ foreach(vauchi_test_target
         app_engine_test
         presentation_state_test
         presentation_surface_test
+        presentation_image_test
         presentation_controller_test
+        navigation_icons_test
         theme_test
         notification_severity_test
         menubar_test)
