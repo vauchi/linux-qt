@@ -23,6 +23,7 @@ bool PresentationState::apply(const QJsonObject &command) {
         m_surfaces.insert(id, surface);
         m_contextBars.remove(id);
         m_overlays.remove(id);
+        m_navigations.remove(id);
         m_lastSurface = id;
         return true;
     }
@@ -36,6 +37,19 @@ bool PresentationState::apply(const QJsonObject &command) {
             return false;
         }
         m_contextBars.insert(id, payload.value(QStringLiteral("bar")).toObject());
+        return true;
+    }
+    if (command.contains(QStringLiteral("SetNavigation"))) {
+        const QJsonObject payload =
+            command.value(QStringLiteral("SetNavigation")).toObject();
+        const QString id = payload.value(QStringLiteral("surface_id")).toString();
+        const qint64 revision =
+            payload.value(QStringLiteral("revision")).toInteger(-1);
+        if (!isCurrentRevision(id, revision)) {
+            return false;
+        }
+        m_navigations.insert(
+            id, payload.value(QStringLiteral("navigation")).toObject());
         return true;
     }
     if (command.contains(QStringLiteral("SetPresentationProfile"))) {
@@ -103,6 +117,10 @@ std::optional<QJsonObject> PresentationState::overlay() const {
         return std::nullopt;
     }
     return *found;
+}
+
+QJsonObject PresentationState::navigation() const {
+    return m_navigations.value(activeSurfaceId());
 }
 
 QJsonObject PresentationState::profile() const {

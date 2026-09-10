@@ -165,6 +165,7 @@ void PresentationController::applyBatch(const QJsonArray &commands) {
             const bool presentation =
                 object.contains(QStringLiteral("ReplaceSurface"))
                 || object.contains(QStringLiteral("SetContextBar"))
+                || object.contains(QStringLiteral("SetNavigation"))
                 || object.contains(QStringLiteral("SetPresentationProfile"));
             const bool overlay =
                 object.contains(QStringLiteral("PresentOverlay"));

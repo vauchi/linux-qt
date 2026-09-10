@@ -17,6 +17,10 @@ public:
     QStringList visibleSurfaceIds() const;
     QJsonObject contextBar() const;
     std::optional<QJsonObject> overlay() const;
+    /// The active surface's persistent destination list (`{"items": [...]}`),
+    /// or an empty object when Core has not published one — the sidebar
+    /// treats both as "no rows".
+    QJsonObject navigation() const;
     QJsonObject profile() const;
     QString activeSurfaceId() const;
 
@@ -26,6 +30,7 @@ private:
     QHash<QString, QJsonObject> m_surfaces;
     QHash<QString, QJsonObject> m_contextBars;
     QHash<QString, QJsonObject> m_overlays;
+    QHash<QString, QJsonObject> m_navigations;
     QJsonObject m_profile;
     QString m_lastSurface;
 };
