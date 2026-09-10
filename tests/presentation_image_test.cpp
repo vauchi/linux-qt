@@ -7,9 +7,9 @@
 // contact with no picture got a bare letter on the window background —
 // the same defect `ios!651` fixed on Apple.
 //
-// Assertions are on the label's geometry and its stylesheet because that
-// is how Qt expresses a rounded, filled box; there is no class system to
-// interrogate the way GTK has one.
+// Assertions read alpha values off the rendered QPixmap: vauchi::avatarPixmap()
+// paints the fallback and masks image data directly, so the shape is a
+// property of the pixmap's pixels, not a stylesheet.
 
 #include "coreui/presentationsurface.h"
 #include "coreui/presentationsurface_avatar.h"
@@ -55,12 +55,14 @@ QJsonObject imageNode(const QJsonValue &fallback, const QString &shape,
     };
 }
 
-QJsonObject surfaceWith(const QJsonObject &node) {
+QJsonObject surfaceWith(const QJsonObject &node,
+                        const QJsonObject &tokens = QJsonObject{}) {
     return {
         {"surface_id", "profile"},
         {"revision", 1},
         {"title", "Profile"},
         {"layout", "single"},
+        {"tokens", tokens},
         {"nodes", QJsonArray{node}},
     };
 }
@@ -125,34 +127,36 @@ int main(int argc, char **argv) {
     {
         PresentationSurface renderer(surfaceWith(
             imageNode(QStringLiteral("BS"), QStringLiteral("circle"),
-                      QStringLiteral("Avatar for Bob"))));
+                      QStringLiteral("Avatar for Bob")),
+            QJsonObject{{"minimum_target_size", 64}}));
         auto *avatar = avatarNamed(renderer, QStringLiteral("Avatar for Bob"));
         assert(avatar != nullptr && "no widget carries the avatar's name");
 
-        // A circle clipped from a box that is not square is a stadium.
-        assert(avatar->minimumWidth() == avatar->minimumHeight()
-               && "a circular avatar must be square");
-        assert(avatar->minimumWidth() >= 96
-               && "the avatar is too small to read initials in");
-        assert(avatar->styleSheet().contains(QStringLiteral("border-radius"))
-               && "the initials have no rounded ground to sit on");
-        assert(avatar->styleSheet().contains(QStringLiteral("background"))
+        const QPixmap pixmap = avatar->pixmap(Qt::ReturnByValue);
+        assert(!pixmap.isNull()
                && "the initials have no fill, so they read as a stray letter");
+        assert(pixmap.size() == QSize(64, 64)
+               && "the avatar must be sized from tokens.minimum_target_size");
+        assert(alphaAt(pixmap, 0, 0) == 0
+               && "a circular avatar must not fill the pixmap corner");
+        assert(alphaAt(pixmap, 32, 32) == 255
+               && "the initials have no ground to sit on");
     }
 
     {
         PresentationSurface renderer(surfaceWith(
             imageNode(QStringLiteral("BS"), QStringLiteral("natural"),
-                      QStringLiteral("Diagram"))));
+                      QStringLiteral("Diagram")),
+            QJsonObject{{"minimum_target_size", 64}, {"corner_radius", 0}}));
         auto *avatar = avatarNamed(renderer, QStringLiteral("Diagram"));
         assert(avatar != nullptr);
 
+        const QPixmap pixmap = avatar->pixmap(Qt::ReturnByValue);
+        assert(!pixmap.isNull() && "a natural fallback still needs a ground");
         // Core asks a natural image to keep its corners. Rendering it with
-        // the circle's radius would round away what it distinguishes.
-        assert(!avatar->styleSheet().contains(QStringLiteral("border-radius: 48px"))
+        // the circle's mask would round away what it distinguishes.
+        assert(alphaAt(pixmap, 0, 0) == 255
                && "a natural-shaped image was rounded like an avatar");
-        assert(avatar->styleSheet().contains(QStringLiteral("background"))
-               && "a natural fallback still needs a ground");
     }
 
     {
