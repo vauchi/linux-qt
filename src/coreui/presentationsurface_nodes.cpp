@@ -3,9 +3,12 @@
 
 #include "presentationsurface.h"
 
+#include "presentationsurface_avatar.h"
+
 #include <QByteArray>
 #include <QJsonArray>
 #include <QLabel>
+#include <QPalette>
 #include <QPixmap>
 #include <QPushButton>
 #include <QVBoxLayout>
@@ -61,26 +64,6 @@ PresentationSurface::renderConfirmation(const QJsonObject &payload) {
     return container;
 }
 
-namespace {
-
-/// Side of a standalone avatar. Core names no size for `Image`, so the
-/// shell picks one; large enough to read two initials in.
-constexpr int kAvatarSide = 96;
-
-/// Core's `shape` was read by nobody here, so an avatar and a diagram were
-/// drawn identically. A circle is half the side; a natural image keeps its
-/// corners, because rounding them away loses what distinguishes it.
-QString avatarStyleSheet(bool circular) {
-    return QStringLiteral(
-               "QLabel { border-radius: %1px;"
-               " background-color: palette(midlight);"
-               " color: palette(text);"
-               " font-size: 28px; font-weight: bold; }")
-        .arg(circular ? kAvatarSide / 2 : 8);
-}
-
-} // namespace
-
 QWidget *PresentationSurface::renderImage(const QJsonObject &payload) {
     const QJsonArray bytes = payload.value(QStringLiteral("data")).toArray();
     QPixmap pixmap;
@@ -104,7 +87,8 @@ QWidget *PresentationSurface::renderImage(const QJsonObject &payload) {
         button->setText(fallback);
         if (!pixmap.isNull()) {
             button->setIcon(QIcon(pixmap));
-            button->setIconSize(QSize(kAvatarSide, kAvatarSide));
+            button->setIconSize(
+                QSize(m_minimumTargetSize, m_minimumTargetSize));
         }
         connect(button, &QPushButton::clicked, this,
                 [this, activation]() { activate(activation); });
@@ -113,21 +97,18 @@ QWidget *PresentationSurface::renderImage(const QJsonObject &payload) {
         return button;
     }
     auto *label = new QLabel;
-    if (!pixmap.isNull()) {
-        label->setPixmap(
-            pixmap.scaled(160, 160, Qt::KeepAspectRatio,
-                          Qt::SmoothTransformation));
-    } else if (!fallback.isEmpty()) {
-        // A `QLabel` with only text paints no body, so the initials sat on
-        // the window background and read as a stray letter. The stylesheet
-        // carries the whole avatar: a fixed square, a fill and the radius
-        // `shape` asks for. Square is load-bearing for the round case — a
-        // radius applied to a box that is not square gives a stadium.
-        label->setText(fallback);
-        label->setAlignment(Qt::AlignCenter);
-        label->setMinimumSize(kAvatarSide, kAvatarSide);
-        label->setMaximumSize(kAvatarSide, kAvatarSide);
-        label->setStyleSheet(avatarStyleSheet(circular));
+    if (!pixmap.isNull() || !fallback.isEmpty()) {
+        // vauchi::avatarPixmap() masks real image data to `shape` and paints
+        // the fallback initials over a filled ground — a bare QLabel::setText
+        // painted no body, so the initials sat on the window background.
+        // Square is load-bearing for the round case: a circle clipped from a
+        // box that is not square is a stadium.
+        label->setPixmap(vauchi::avatarPixmap(
+            pixmap, fallback, circular, m_minimumTargetSize, m_cornerRadius,
+            palette().color(QPalette::Midlight),
+            palette().color(QPalette::Text)));
+        label->setMinimumSize(m_minimumTargetSize, m_minimumTargetSize);
+        label->setMaximumSize(m_minimumTargetSize, m_minimumTargetSize);
     }
     applyAccessibility(
         label, payload.value(QStringLiteral("accessibility")).toObject());

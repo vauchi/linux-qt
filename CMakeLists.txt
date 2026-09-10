@@ -50,6 +50,7 @@ set(QVAUCHI_SOURCES
     src/coreui/presentationeffectpayload.cpp
     src/coreui/presentationaccessibility.cpp
     src/coreui/presentationsurface.cpp
+    src/coreui/presentationsurface_avatar.cpp
     src/coreui/presentationsurface_nodes.cpp
     src/coreui/presentationsurface_qr.cpp
     src/coreui/qrpasteprompt.cpp
@@ -156,6 +157,7 @@ add_executable(presentation_surface_test
     tests/presentation_surface_test.cpp
     src/coreui/presentationaccessibility.cpp
     src/coreui/presentationsurface.cpp
+    src/coreui/presentationsurface_avatar.cpp
     src/coreui/presentationsurface_nodes.cpp
     src/coreui/presentationsurface_qr.cpp)
 target_include_directories(presentation_surface_test PRIVATE
@@ -190,6 +192,7 @@ add_executable(presentation_controller_test
     src/coreui/presentationstate.cpp
     src/coreui/presentationaccessibility.cpp
     src/coreui/presentationsurface.cpp
+    src/coreui/presentationsurface_avatar.cpp
     src/coreui/presentationsurface_nodes.cpp
     src/coreui/presentationsurface_qr.cpp
     src/coreui/qrpasteprompt.cpp
@@ -264,6 +267,7 @@ add_executable(atspi_fixture_probe
     tests/atspi_fixture_probe.cpp
     src/coreui/presentationaccessibility.cpp
     src/coreui/presentationsurface.cpp
+    src/coreui/presentationsurface_avatar.cpp
     src/coreui/presentationsurface_nodes.cpp
     src/coreui/presentationsurface_qr.cpp)
 target_include_directories(atspi_fixture_probe PRIVATE
