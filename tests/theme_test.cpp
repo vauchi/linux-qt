@@ -161,6 +161,25 @@ static void test_stylesheet_serious_tone_is_outlined_warning() {
     printf("  PASS: stylesheet_serious_tone_is_outlined_warning\n");
 }
 
+// --- Test: the selected navigation sidebar row is highlighted with the
+// accent colour so keyboard/mouse users can tell it apart from the rest ---
+static void test_stylesheet_navigation_row_selected() {
+    QJsonObject colors = ThemeManager::defaultColors();
+    QString stylesheet = ThemeManager::stylesheetFromColors(colors);
+
+    const int ruleStart = stylesheet.indexOf(
+        QStringLiteral("QToolButton#navigation-sidebar-row:checked"));
+    assert(ruleStart >= 0 && "no selected-row rule emitted");
+    const int ruleEnd = stylesheet.indexOf('}', ruleStart);
+    assert(ruleEnd > ruleStart);
+    const QString rule = stylesheet.mid(ruleStart, ruleEnd - ruleStart);
+
+    const QString accent = colors["accent"].toString();
+    assert(rule.contains(accent)
+           && "selected row must use the accent colour");
+    printf("  PASS: stylesheet_navigation_row_selected\n");
+}
+
 // --- Test: focus rings draw Tokens::Focus::RING_WIDTH (3px) offset
 // Tokens::Focus::RING_OFFSET (2px) from the widget ---
 static void test_stylesheet_focus_ring() {
@@ -384,6 +403,7 @@ int main(int argc, char *argv[]) {
     test_different_themes_different_palettes();
     test_stylesheet_from_colors();
     test_stylesheet_serious_tone_is_outlined_warning();
+    test_stylesheet_navigation_row_selected();
     test_stylesheet_focus_ring();
     test_load_from_file_valid();
     test_load_from_file_missing();
