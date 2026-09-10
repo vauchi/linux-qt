@@ -170,6 +170,7 @@ add_executable(presentation_image_test
     tests/presentation_image_test.cpp
     src/coreui/presentationaccessibility.cpp
     src/coreui/presentationsurface.cpp
+    src/coreui/presentationsurface_avatar.cpp
     src/coreui/presentationsurface_nodes.cpp
     src/coreui/presentationsurface_qr.cpp)
 target_include_directories(presentation_image_test PRIVATE
