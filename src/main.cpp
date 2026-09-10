@@ -64,6 +64,10 @@ static int maybeRenderFixture(const QStringList &args) {
 
 int main(int argc, char *argv[]) {
     QApplication qtApp(argc, argv);
+    // Brand fonts must be registered before any widget is constructed —
+    // uiFont() and the generated stylesheet reference these families the
+    // moment the first label paints.
+    ThemeManager::registerBrandFonts();
     // Pin a deterministic UI font before any widget is constructed —
     // qvauchi sets no font-family, so otherwise every label inherits
     // Qt's host default (a monospace coding font on some dev boxes).

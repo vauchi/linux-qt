@@ -83,11 +83,17 @@ QWidget *PresentationSurface::renderNode(const QJsonValue &nodeValue) {
         auto *label =
             new QLabel(payload.value(QStringLiteral("content")).toString());
         label->setWordWrap(true);
-        if (payload.value(QStringLiteral("style")).toString()
-            == QStringLiteral("heading")) {
+        const QString textStyle = payload.value(QStringLiteral("style")).toString();
+        if (textStyle == QStringLiteral("heading")) {
+            // The brand heading family (Bricolage Grotesque, weight 700)
+            // comes from ThemeManager's generated stylesheet, keyed off
+            // this property — see stylesheetFromColors().
+            label->setProperty("textStyle", textStyle);
             QFont font = label->font();
             font.setBold(true);
             label->setFont(font);
+        } else if (textStyle == QStringLiteral("monospace")) {
+            label->setProperty("textStyle", textStyle);
         }
         applyAccessibility(
             label, payload.value(QStringLiteral("accessibility")).toObject());

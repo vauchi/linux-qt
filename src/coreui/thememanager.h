@@ -33,12 +33,27 @@ enum class ThemeRole {
 /// Catppuccin Mocha default as vauchi-core for first-launch.
 class ThemeManager {
 public:
-    /// The pinned UI font. qvauchi sets no `font-family` in its
-    /// component stylesheets, so without this every label would inherit
-    /// Qt's default application font — which on a developer host can
-    /// resolve to a monospace coding font (e.g. FiraCode Nerd Font),
-    /// reflowing all text and breaking the snapshot pixel gate. Pinning
-    /// an explicit proportional family (with a sans-serif fallback hint)
+    /// Registers the bundled brand fonts (Hanken Grotesk, Bricolage
+    /// Grotesque, JetBrains Mono — regular and italic where shipped) from
+    /// `:/fonts/...` via QFontDatabase::addApplicationFont(). Must run
+    /// before the first widget is constructed, so glyphs are available the
+    /// moment `uiFont()` or the generated stylesheet reference them.
+    /// Idempotent and safe to call more than once (each call after the
+    /// first returns the cached result of the one real registration).
+    /// Returns true only if every family `uiFont()`/`stylesheetFromColors()`
+    /// depend on (Hanken Grotesk, Bricolage Grotesque, JetBrains Mono)
+    /// registered successfully.
+    static bool registerBrandFonts();
+
+    /// The pinned UI font — brand family "Hanken Grotesk" once
+    /// registerBrandFonts() has run, falling back to the previous system
+    /// family ("DejaVu Sans", a hard transitive dependency of every Linux
+    /// desktop) if registration failed. qvauchi sets no `font-family` in
+    /// its component stylesheets, so without this every label would
+    /// inherit Qt's default application font — which on a developer host
+    /// can resolve to a monospace coding font (e.g. FiraCode Nerd Font),
+    /// reflowing all text and breaking the snapshot pixel gate. Pinning an
+    /// explicit proportional family (with a sans-serif fallback hint)
     /// makes rendering deterministic across machines. Applied once at
     /// startup via QApplication::setFont().
     static QFont uiFont();
@@ -70,7 +85,11 @@ public:
     /// Generate a QPalette from a theme colors JSON object.
     static QPalette paletteFromColors(const QJsonObject &colors);
 
-    /// Generate a stylesheet string from theme colors for fine-grained styling.
+    /// Generate a stylesheet string from theme colors for fine-grained
+    /// styling. Also pins the heading family (Bricolage Grotesque, weight
+    /// 700 per Tokens::FontWeight::BOLD) and monospace family (JetBrains
+    /// Mono) for widgets carrying `textStyle="heading"`/`"monospace"` —
+    /// see PresentationSurface::renderNode()'s Text case for the property.
     static QString stylesheetFromColors(const QJsonObject &colors);
 
     /// Returns the default theme colors as a JSON object (Catppuccin Mocha).

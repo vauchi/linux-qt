@@ -5,6 +5,7 @@
 #include "Tokens.h"
 #include <QApplication>
 #include <QFile>
+#include <QFontDatabase>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QStyleFactory>
@@ -19,13 +20,39 @@ QJsonObject &mutableCurrentColors() {
 }
 }
 
+bool ThemeManager::registerBrandFonts() {
+    // Registration only needs to happen once per process — repeat calls
+    // (uiFont() calls this on every invocation) must stay cheap and must
+    // not re-add duplicate application font entries to QFontDatabase.
+    static const bool allRegistered = [] {
+        const QStringList fontResources{
+            QStringLiteral(":/fonts/HankenGrotesk[wght].ttf"),
+            QStringLiteral(":/fonts/HankenGrotesk-Italic[wght].ttf"),
+            QStringLiteral(":/fonts/BricolageGrotesque[opsz,wdth,wght].ttf"),
+            QStringLiteral(":/fonts/JetBrainsMono[wght].ttf"),
+            QStringLiteral(":/fonts/JetBrainsMono-Italic[wght].ttf"),
+        };
+        bool ok = true;
+        for (const QString &resource : fontResources) {
+            if (QFontDatabase::addApplicationFont(resource) == -1) {
+                ok = false;
+            }
+        }
+        return ok;
+    }();
+    return allRegistered;
+}
+
 QFont ThemeManager::uiFont() {
     // "DejaVu Sans" is a hard transitive dependency of every Linux
     // desktop and the CI snapshot container, so pinning it by name needs
-    // no bundled asset. The SansSerif style hint steers Qt's substitution
-    // toward a proportional family if the host somehow lacks it — never
-    // back to the monospace default that caused the font-drift.
-    QFont font(QString("DejaVu Sans"));
+    // no bundled asset. It is the fallback if the brand font failed to
+    // register — never back to the monospace default that caused the
+    // font-drift.
+    const QString family = registerBrandFonts()
+        ? QString::fromUtf8(Tokens::FontFamily::BODY)
+        : QStringLiteral("DejaVu Sans");
+    QFont font(family);
     font.setStyleHint(QFont::SansSerif);
     return font;
 }
@@ -142,6 +169,9 @@ QString ThemeManager::stylesheetFromColors(const QJsonObject &colors) {
     // (2026-06-05-linux-qt-snapshot-find-app-collision).
     return QStringLiteral(
         "QWidget { font-family: \"%7\"; }"
+        "QLabel[textStyle=\"heading\"], QLabel#screen_title { "
+        "  font-family: \"%12\"; font-weight: %13; }"
+        "QLabel[textStyle=\"monospace\"] { font-family: \"%14\"; }"
         "QMainWindow { background-color: %1; color: %2; }"
         "QWidget#contextual-command-bar { background-color: %3; "
         "  border-top: 1px solid %4; }"
@@ -167,7 +197,10 @@ QString ThemeManager::stylesheetFromColors(const QJsonObject &colors) {
              uiFont().family(), errorColor)
         .arg(warningColor)
         .arg(Tokens::Focus::RING_WIDTH)
-        .arg(Tokens::Focus::RING_OFFSET);
+        .arg(Tokens::Focus::RING_OFFSET)
+        .arg(QString::fromUtf8(Tokens::FontFamily::DISPLAY))
+        .arg(Tokens::FontWeight::BOLD)
+        .arg(QString::fromUtf8(Tokens::FontFamily::MONO));
 }
 
 QJsonObject ThemeManager::currentColors() {
