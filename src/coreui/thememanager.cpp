@@ -131,6 +131,7 @@ QString ThemeManager::stylesheetFromColors(const QJsonObject &colors) {
     QString textSecondary = colors["text-secondary"].toString();
     QString accent = colors["accent"].toString();
     QString errorColor = colors["error"].toString();
+    QString warningColor = colors["warning"].toString();
     QString border = colors["border"].toString();
 
     // A QWidget base rule pins the font-family globally. The per-component
@@ -152,9 +153,21 @@ QString ThemeManager::stylesheetFromColors(const QJsonObject &colors) {
         "QPushButton#context-primary { background-color: %6; color: %1; "
         "  min-height: 44px; padding: 10px 24px; font-weight: bold; }"
         "QPushButton[tone=\"destructive\"] { background-color: %8; color: %1; }"
+        // Serious is a warning, not an irrevocable action: outlined in the
+        // warning colour so it never reads as the destructive red.
+        "QPushButton[tone=\"serious\"] { background-color: transparent; "
+        "  color: %9; border: 2px solid %9; }"
+        // tokens.json's `focus` object names only ring_width/ring_offset,
+        // no colour — accent (the existing interactive-highlight colour)
+        // doubles as the focus-ring colour.
+        "QPushButton:focus, QToolButton:focus, QCheckBox:focus { "
+        "  outline: %10px solid %6; outline-offset: %11px; }"
     )
         .arg(bgPrimary, textPrimary, bgSecondary, border, bgTertiary, accent,
-             uiFont().family(), errorColor);
+             uiFont().family(), errorColor)
+        .arg(warningColor)
+        .arg(Tokens::Focus::RING_WIDTH)
+        .arg(Tokens::Focus::RING_OFFSET);
 }
 
 QJsonObject ThemeManager::currentColors() {

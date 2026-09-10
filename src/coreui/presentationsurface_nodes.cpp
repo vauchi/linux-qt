@@ -140,9 +140,9 @@ QWidget *PresentationSurface::actionButton(const QJsonObject &action) {
     button->setEnabled(action.value(QStringLiteral("enabled")).toBool(true));
     button->setAccessibleName(
         action.value(QStringLiteral("accessibility_label")).toString());
-    if (action.value(QStringLiteral("tone")).toString()
-        == QStringLiteral("destructive")) {
-        button->setProperty("tone", "destructive");
+    const QString tone = action.value(QStringLiteral("tone")).toString();
+    if (tone == QStringLiteral("destructive") || tone == QStringLiteral("serious")) {
+        button->setProperty("tone", tone);
     }
     connect(button, &QPushButton::clicked, this,
             [this, action]() { activate(action); });
