@@ -4,4 +4,11 @@
     <qresource prefix="/icons">
         <file>vauchi.svg</file>
     </qresource>
+    <qresource prefix="/fonts">
+        <file alias="HankenGrotesk[wght].ttf">fonts/HankenGrotesk[wght].ttf</file>
+        <file alias="HankenGrotesk-Italic[wght].ttf">fonts/HankenGrotesk-Italic[wght].ttf</file>
+        <file alias="BricolageGrotesque[opsz,wdth,wght].ttf">fonts/BricolageGrotesque[opsz,wdth,wght].ttf</file>
+        <file alias="JetBrainsMono[wght].ttf">fonts/JetBrainsMono[wght].ttf</file>
+        <file alias="JetBrainsMono-Italic[wght].ttf">fonts/JetBrainsMono-Italic[wght].ttf</file>
+    </qresource>
 </RCC>

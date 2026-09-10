@@ -27,6 +27,11 @@ override_dh_auto_install:
 	# Install icon (not in cmake install targets)
 	install -Dm644 resources/vauchi.svg \
 		debian/vauchi-qt/usr/share/icons/hicolor/scalable/apps/vauchi-qt.svg
+	# Bundle brand fonts (also embedded in the Qt resource; a system copy
+	# lets other apps and fontconfig pick them up)
+	install -d debian/vauchi-qt/usr/share/fonts/truetype/vauchi
+	install -m644 resources/fonts/*.ttf \
+		debian/vauchi-qt/usr/share/fonts/truetype/vauchi/
 
 override_dh_shlibdeps:
 	dh_shlibdeps -l/usr/lib

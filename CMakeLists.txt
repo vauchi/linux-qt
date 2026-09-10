@@ -229,8 +229,13 @@ target_include_directories(menubar_test PRIVATE src ${VAUCHI_CABI_INCLUDE})
 target_link_libraries(menubar_test PRIVATE Qt6::Widgets Qt6::Core ${VAUCHI_CABI} ${CMAKE_DL_LIBS})
 add_test(NAME menubar_test COMMAND menubar_test)
 
-# ThemeManager test: palette generation, stylesheet output, file loading
-add_executable(theme_test tests/theme_test.cpp src/coreui/thememanager.cpp)
+# ThemeManager test: palette generation, stylesheet output, file loading,
+# brand font registration. Needs resources.qrc so registerBrandFonts() has
+# real :/fonts/... payloads to register, same as the qvauchi target.
+add_executable(theme_test
+    tests/theme_test.cpp
+    src/coreui/thememanager.cpp
+    resources/resources.qrc)
 target_include_directories(theme_test PRIVATE include ${VAUCHI_TOKENS_INCLUDE})
 target_link_libraries(theme_test PRIVATE Qt6::Widgets Qt6::Core)
 add_test(NAME theme_test COMMAND theme_test)

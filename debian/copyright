@@ -10,6 +10,18 @@ Files: *
 Copyright: 2026 Mattia Egloff <mattia.egloff@pm.me>
 License: GPL-3.0-or-later
 
+Files: resources/fonts/BricolageGrotesque*.ttf
+Copyright: 2022 The Bricolage Grotesque Project Authors (https://github.com/ateliertriay/bricolage)
+License: OFL-1.1
+
+Files: resources/fonts/HankenGrotesk*.ttf
+Copyright: 2021 The Hanken Grotesk Project Authors (https://github.com/marcologous/hanken-grotesk)
+License: OFL-1.1
+
+Files: resources/fonts/JetBrainsMono*.ttf
+Copyright: 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono)
+License: OFL-1.1
+
 License: GPL-3.0-or-later
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -26,3 +38,12 @@ License: GPL-3.0-or-later
  .
  On Debian systems, the complete text of the GNU General Public License
  version 3 can be found in "/usr/share/common-licenses/GPL-3".
+
+License: OFL-1.1
+ This Font Software is licensed under the SIL Open Font License,
+ Version 1.1. This license is copied below, and is also available with
+ a FAQ at: https://openfontlicense.org
+ .
+ The full license text is packaged separately at
+ /usr/share/doc/vauchi-qt/LICENSES/OFL-1.1.txt (copied from LICENSES/OFL-1.1.txt
+ in the source tree).

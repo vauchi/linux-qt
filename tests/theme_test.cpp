@@ -6,6 +6,7 @@
 #include "../src/coreui/thememanager.h"
 #include <QApplication>
 #include <QFont>
+#include <QFontDatabase>
 #include <QFontInfo>
 #include <QJsonDocument>
 #include <QJsonArray>
@@ -312,7 +313,7 @@ static void test_style_for_role_updates_after_apply() {
     printf("  PASS: style_for_role_updates_after_apply\n");
 }
 
-// --- Test: uiFont pins a deterministic proportional UI font ---
+// --- Test: uiFont pins the brand body family, deterministic and proportional ---
 static void test_ui_font_is_pinned_proportional() {
     QFont f = ThemeManager::uiFont();
     // Contract: a deterministic UI family is pinned with a sans-serif
@@ -320,7 +321,10 @@ static void test_ui_font_is_pinned_proportional() {
     // font. On dev boxes that default can resolve to a monospace coding
     // font (FiraCode Nerd Font), which reflowed every label and broke the
     // snapshot pixel gate (2026-06-05-linux-qt-snapshot-find-app-collision).
-    assert(f.family() == "DejaVu Sans");
+    // "Hanken Grotesk" requires registerBrandFonts() to have registered the
+    // bundled :/fonts/... resource; uiFont() falls back to "DejaVu Sans"
+    // only if that registration failed.
+    assert(f.family() == "Hanken Grotesk");
     assert(f.styleHint() == QFont::SansSerif);
     // The resolved font must be proportional — a monospace substitution
     // is exactly the regression this pins against.
@@ -329,11 +333,50 @@ static void test_ui_font_is_pinned_proportional() {
     printf("  PASS: ui_font_is_pinned_proportional\n");
 }
 
+// --- Test: registerBrandFonts() makes the three brand families available ---
+static void test_register_brand_fonts_adds_families() {
+    bool ok = ThemeManager::registerBrandFonts();
+    assert(ok);
+
+    const QStringList families = QFontDatabase::families();
+    assert(families.contains(QStringLiteral("Hanken Grotesk")));
+    assert(families.contains(QStringLiteral("Bricolage Grotesque")));
+    assert(families.contains(QStringLiteral("JetBrains Mono")));
+    printf("  PASS: register_brand_fonts_adds_families\n");
+}
+
+// --- Test: generated stylesheet pins the heading and monospace roles ---
+static void test_stylesheet_pins_heading_and_mono_families() {
+    QString stylesheet = ThemeManager::stylesheetFromColors(ThemeManager::defaultColors());
+
+    assert(stylesheet.contains("Hanken Grotesk"));      // body (QWidget rule)
+    assert(stylesheet.contains("Bricolage Grotesque"));  // heading
+    assert(stylesheet.contains("JetBrains Mono"));       // monospace
+
+    // Heading rule must carry the brand weight (Tokens::FontWeight::BOLD),
+    // not just the family, and must target both the screen-title widget and
+    // inline Text nodes marked textStyle="heading" (see
+    // PresentationSurface::renderNode()).
+    const int headingRuleStart = stylesheet.indexOf(QStringLiteral("textStyle=\"heading\""));
+    assert(headingRuleStart >= 0);
+    const int headingRuleEnd = stylesheet.indexOf('}', headingRuleStart);
+    assert(headingRuleEnd > headingRuleStart);
+    const QString headingRule = stylesheet.mid(headingRuleStart, headingRuleEnd - headingRuleStart);
+    assert(headingRule.contains("Bricolage Grotesque"));
+    assert(headingRule.contains("font-weight: 700"));
+    assert(stylesheet.contains("QLabel#screen_title"));
+
+    assert(stylesheet.contains("textStyle=\"monospace\""));
+    printf("  PASS: stylesheet_pins_heading_and_mono_families\n");
+}
+
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
 
     printf("ThemeManager tests:\n");
+    test_register_brand_fonts_adds_families();
     test_ui_font_is_pinned_proportional();
+    test_stylesheet_pins_heading_and_mono_families();
     test_default_colors();
     test_default_light_colors();
     test_apply_default_light_theme();
