@@ -31,6 +31,8 @@ QWidget *PresentationSurface::renderStatus(const QJsonObject &payload) {
         auto *button = new QPushButton(text);
         button->setObjectName(
             activation.value(QStringLiteral("interaction_id")).toString());
+        button->setMinimumHeight(m_minimumTargetSize);
+        button->setStyleSheet(targetSizeStyleSheet());
         connect(button, &QPushButton::clicked, this,
                 [this, activation]() { activate(activation); });
         widget = button;
@@ -140,6 +142,8 @@ QWidget *PresentationSurface::actionButton(const QJsonObject &action) {
     button->setEnabled(action.value(QStringLiteral("enabled")).toBool(true));
     button->setAccessibleName(
         action.value(QStringLiteral("accessibility_label")).toString());
+    button->setMinimumHeight(m_minimumTargetSize);
+    button->setStyleSheet(targetSizeStyleSheet());
     const QString tone = action.value(QStringLiteral("tone")).toString();
     if (tone == QStringLiteral("destructive") || tone == QStringLiteral("serious")) {
         button->setProperty("tone", tone);

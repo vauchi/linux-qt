@@ -40,8 +40,14 @@ private:
     QWidget *renderQr(const QJsonObject &payload);
     QWidget *actionButton(const QJsonObject &action);
     void activate(const QJsonObject &action);
+    QString targetSizeStyleSheet() const;
     static void applyAccessibility(QWidget *widget,
                                    const QJsonObject &accessibility);
 
     QString m_surfaceId;
+    // PresentationTokens defaults (prepared_surface.rs): touch_target.minimum
+    // and border_radius.md_lg. Real surfaces always carry `tokens`; these
+    // only cover a fixture that omits the field.
+    int m_minimumTargetSize = 48;
+    int m_cornerRadius = 12;
 };

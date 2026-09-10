@@ -28,6 +28,11 @@ PresentationSurface::PresentationSurface(const QJsonObject &surface,
                                          QWidget *parent)
     : QWidget(parent),
       m_surfaceId(surface.value(QStringLiteral("surface_id")).toString()) {
+    const QJsonObject tokens = surface.value(QStringLiteral("tokens")).toObject();
+    m_minimumTargetSize = tokens.value(QStringLiteral("minimum_target_size"))
+                              .toInt(m_minimumTargetSize);
+    m_cornerRadius =
+        tokens.value(QStringLiteral("corner_radius")).toInt(m_cornerRadius);
     installPresentationAccessibilityFactory();
     setAccessibleName(
         surface.value(QStringLiteral("accessibility_label")).toString());
@@ -143,6 +148,7 @@ QWidget *PresentationSurface::renderNode(const QJsonValue &nodeValue) {
             payload.value(QStringLiteral("label")).toString());
         toggle->setChecked(payload.value(QStringLiteral("value")).toBool());
         toggle->setEnabled(payload.value(QStringLiteral("enabled")).toBool(true));
+        toggle->setMinimumHeight(m_minimumTargetSize);
         applyAccessibility(
             toggle, payload.value(QStringLiteral("accessibility")).toObject());
         const QString binding =
@@ -296,6 +302,8 @@ QWidget *PresentationSurface::renderList(const QJsonObject &payload) {
         button->setToolButtonStyle(Qt::ToolButtonTextOnly);
         button->setEnabled(row.value(QStringLiteral("enabled")).toBool(true));
         button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        button->setMinimumHeight(m_minimumTargetSize);
+        button->setStyleSheet(targetSizeStyleSheet());
         const QJsonObject activation =
             row.value(QStringLiteral("activation")).toObject();
         if (!activation.isEmpty()) {
@@ -389,6 +397,10 @@ QWidget *PresentationSurface::renderList(const QJsonObject &payload) {
     applyAccessibility(
         group, payload.value(QStringLiteral("accessibility")).toObject());
     return group;
+}
+
+QString PresentationSurface::targetSizeStyleSheet() const {
+    return QStringLiteral("border-radius: %1px;").arg(m_cornerRadius);
 }
 
 bool PresentationSurface::eventFilter(QObject *watched, QEvent *event) {

@@ -135,6 +135,18 @@ void PresentationController::presentOverlay(
     const QString kind = overlay.value(QStringLiteral("kind")).toString();
     const QJsonArray items = overlay.value(QStringLiteral("items")).toArray();
     auto activated = std::make_shared<bool>(false);
+    // The overlay payload carries no tokens of its own; PresentationTokens
+    // ride on the SurfaceSpec that opened it.
+    int minimumTargetSize = 48;
+    int cornerRadius = 12;
+    if (const auto surface = m_state.surface(surfaceId)) {
+        const QJsonObject tokens =
+            surface->value(QStringLiteral("tokens")).toObject();
+        minimumTargetSize = tokens.value(QStringLiteral("minimum_target_size"))
+                                .toInt(minimumTargetSize);
+        cornerRadius =
+            tokens.value(QStringLiteral("corner_radius")).toInt(cornerRadius);
+    }
     if (kind == QStringLiteral("navigation")) {
         auto *dialog = new QDialog(this);
         dialog->setAttribute(Qt::WA_DeleteOnClose);
@@ -168,6 +180,9 @@ void PresentationController::presentOverlay(
                 item.value(QStringLiteral("accessibility_label")).toString());
             button->setEnabled(
                 item.value(QStringLiteral("enabled")).toBool(true));
+            button->setMinimumHeight(minimumTargetSize);
+            button->setStyleSheet(
+                QStringLiteral("border-radius: %1px;").arg(cornerRadius));
             const QString interaction =
                 item.value(QStringLiteral("interaction_id")).toString();
             connect(button, &QPushButton::clicked, dialog,
