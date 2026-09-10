@@ -104,6 +104,26 @@ static void test_unknown_and_absent_tokens_fall_back() {
     printf("  PASS: unknown_and_absent_tokens_fall_back\n");
 }
 
+// --- Test: no candidate name is a thin "-symbolic" outline. Prefer
+// filled Breeze names over outline ones where both exist for a concept —
+// a "-symbolic" glyph loses definition at list-row size and is the first
+// thing to disappear for a low-vision reader (see the table's own comment
+// in navigationicons.cpp, which this test now enforces instead of leaving
+// as an unchecked promise).
+static void test_no_candidate_uses_symbolic_variants() {
+    for (const char *const token : kCoreNavigationTokens) {
+        for (const QString &name : vauchi::navigationIconNames(token)) {
+            assert(!name.contains(QStringLiteral("-symbolic"))
+                   && "a Breeze name reverted to a thin -symbolic outline");
+        }
+    }
+    for (const QString &name :
+         vauchi::navigationIconNames(QStringLiteral("no.such.token"))) {
+        assert(!name.contains(QStringLiteral("-symbolic")));
+    }
+    printf("  PASS: no_candidate_uses_symbolic_variants\n");
+}
+
 // --- Test: every candidate list ends up resolvable to a drawable icon ---
 // A themeless session (a minimal container, or a desktop with no icon theme
 // installed) is the case where QIcon::fromTheme returns nothing for every
@@ -124,6 +144,7 @@ int main(int argc, char **argv) {
     test_backup_names_a_drive_not_a_cloud();
     test_distinct_tokens_get_distinct_icons();
     test_unknown_and_absent_tokens_fall_back();
+    test_no_candidate_uses_symbolic_variants();
     test_every_token_resolves_to_a_drawable_icon();
     printf("ALL TESTS PASSED\n");
     return 0;
