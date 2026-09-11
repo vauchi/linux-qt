@@ -6,6 +6,11 @@
 # screen-catalog job (test:screen-catalog). Invoked via add_test with
 # -DBIN / -DCATALOG / -DOUTPUT_DIR / -DCABI_DIR.
 
+# A `cmake -P` script does not inherit the project's policy version, so
+# without this the runner's CMake treats `IN_LIST` (CMP0057) as a plain
+# string and the distinctness check below errors out.
+cmake_minimum_required(VERSION 3.20)
+
 if(NOT EXISTS "${CATALOG}")
   message(FATAL_ERROR "catalog fixture missing: ${CATALOG}")
 endif()
