@@ -16,7 +16,7 @@ import gi
 gi.require_version("Atspi", "2.0")
 from gi.repository import Atspi  # noqa: E402
 
-from helpers import click_button, find_all, wait_for_element
+from helpers import click_button, find_all, find_app, wait_for_element
 
 # Core labels the context bar's navigation launcher "More" in the test
 # locale (see test_contextual_surface.py).
@@ -24,6 +24,17 @@ NAVIGATION_LAUNCHER = "More"
 EXPECTED_DESTINATIONS = ["Contacts", "My Card", "Exchange", "Devices", "Settings"]
 ESCAPE_KEYCODE = 9
 ACTIONABLE_ROLES = {"push button", "button", "check box", "toggle button", "radio button"}
+
+
+def rebind(pid: int):
+    """Re-resolve the app root for ``pid``.
+
+    Qt re-registers its AT-SPI tree across surface swaps, so a root handle
+    taken before an interaction reports an empty tree afterwards
+    (test_reliability.py re-finds the app after every click for the same
+    reason). Every helper here re-resolves before reading the tree.
+    """
+    return find_app("vauchi", timeout=5.0, pid=pid)
 
 
 def press_escape():
@@ -43,9 +54,10 @@ def _open_overlay(app):
     return wait_for_element(app, role="dialog", timeout=3.0)
 
 
-def overlay_destinations(app) -> list[str]:
+def overlay_destinations(pid: int) -> list[str]:
     """Destination labels listed by Core's navigation overlay."""
-    dialog = _open_overlay(app)
+    app = rebind(pid)
+    dialog = _open_overlay(app) if app else None
     if dialog is None:
         return []
     names = []
@@ -54,14 +66,15 @@ def overlay_destinations(app) -> list[str]:
         if name and name not in names:
             names.append(name)
     press_escape()
-    wait_for_dialog_closed(app)
+    wait_for_dialog_closed(pid)
     return names
 
 
-def wait_for_dialog_closed(app, timeout=3.0):
+def wait_for_dialog_closed(pid: int, timeout=3.0):
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
-        if not find_all(app, role="dialog"):
+        app = rebind(pid)
+        if app and not find_all(app, role="dialog"):
             return True
         time.sleep(0.1)
     return False
@@ -98,7 +111,10 @@ def sidebar_row(app, name):
     return None
 
 
-def navigate_to(app, name) -> bool:
+def navigate_to(pid: int, name) -> bool:
+    app = rebind(pid)
+    if app is None:
+        return False
     row = sidebar_row(app, name)
     if row is not None:
         try:
@@ -112,12 +128,20 @@ def navigate_to(app, name) -> bool:
     if not click_button(dialog, name, timeout=3.0):
         press_escape()
         return False
-    wait_for_dialog_closed(app)
+    wait_for_dialog_closed(pid)
     return True
 
 
-def destinations_visible(app) -> bool:
-    """True once Core exposes the navigation launcher or a sidebar row."""
-    if any((b.get_name() or "").strip() == NAVIGATION_LAUNCHER for b in buttons(app)):
+def destinations_visible(pid: int) -> bool:
+    """True once Core exposes a sidebar row or lists destinations in the overlay.
+
+    The launcher button alone is not evidence: Core shows it on the
+    onboarding surfaces too, where its overlay lists no destination.
+    """
+    app = rebind(pid)
+    if app is None:
+        return False
+    if any(sidebar_row(app, name) is not None for name in EXPECTED_DESTINATIONS):
         return True
-    return any(sidebar_row(app, name) is not None for name in EXPECTED_DESTINATIONS)
+    listed = set(overlay_destinations(pid))
+    return len(listed & set(EXPECTED_DESTINATIONS)) >= 3

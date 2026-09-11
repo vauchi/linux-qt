@@ -22,7 +22,7 @@ import os
 import pytest
 
 from helpers import dump_tree, wait_for_element
-from navigation import navigate_to, overlay_destinations
+from navigation import navigate_to, overlay_destinations, rebind
 from screenshot import (
     ACTUAL_DIR,
     capture_stable,
@@ -51,9 +51,10 @@ class TestScreenSnapshots:
             + os.environ.get("PATH", "<unset>")
         )
 
-        screen_names = overlay_destinations(qt_app)
+        pid = qt_app.get_process_id()
+        screen_names = overlay_destinations(pid)
         assert screen_names, (
-            "Navigation overlay listed no destinations.\n" + dump_tree(qt_app, 8)
+            "Navigation overlay listed no destinations.\n" + dump_tree(rebind(pid), 8)
         )
         if any(name.startswith("Missing:") for name in screen_names):
             pytest.skip(
@@ -66,12 +67,14 @@ class TestScreenSnapshots:
         regressions: list[str] = []
         captured_hashes: dict[str, str] = {}
         for screen in screen_names:
-            if not navigate_to(qt_app, screen):
+            if not navigate_to(pid, screen):
                 nav_failed.append(screen)
                 continue
             # The surface title is a label named after the destination;
             # absence is not fatal (Core may title the screen differently).
-            wait_for_element(qt_app, role="label", name=screen, timeout=2.0)
+            app = rebind(pid)
+            if app is not None:
+                wait_for_element(app, role="label", name=screen, timeout=2.0)
 
             filename = f"{slug(screen)}.png"
             actual_path = capture_stable(filename, ACTUAL_DIR)
@@ -93,7 +96,7 @@ class TestScreenSnapshots:
                 f"  Navigation failed: {nav_failed or 'none'}\n"
                 f"  Screenshot capture failed: {shot_failed or 'none'}\n"
                 f"  Screenshot tool: {tool}\n"
-                + dump_tree(qt_app, 8)
+                + dump_tree(rebind(pid) or qt_app, 8)
             )
 
         distinct = set(captured_hashes.values())

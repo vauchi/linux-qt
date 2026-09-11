@@ -17,8 +17,8 @@ import time
 
 import pytest
 
-from helpers import click_button, dump_tree, find_all, find_app, set_text
-from navigation import buttons, destinations_visible
+from helpers import click_button, dump_tree, find_all, set_text
+from navigation import buttons, destinations_visible, rebind
 from screenshot import (
     ACTUAL_DIR,
     capture_stable,
@@ -66,23 +66,18 @@ def _primary_action(app) -> str | None:
     return None
 
 
-def _refresh(app):
-    # Qt re-registers its AT-SPI tree across surface swaps, so re-bind the
-    # root by pid the way test_reliability.py does after every click.
-    return find_app("vauchi", timeout=5.0, pid=app.get_process_id()) or app
-
-
 def test_snapshot_onboarding_flow(qt_app_fresh):
     assert screenshot_tool(), "No screenshot tool available (grim or ImageMagick import)"
 
+    pid = qt_app_fresh.get_process_id()
     app = qt_app_fresh
     captured: list[str] = []
     hashes: list[str] = []
     regressions: list[str] = []
     for step in range(1, MAX_STEPS + 1):
-        app = _refresh(app)
-        if destinations_visible(app):
+        if destinations_visible(pid):
             break
+        app = rebind(pid) or app
         title = _screen_title(app)
         filename = f"onboarding-{step}-{slug(title)}.png"
 
@@ -106,11 +101,11 @@ def test_snapshot_onboarding_flow(qt_app_fresh):
 
     assert captured, (
         "No onboarding screenshots captured: destinations were visible on "
-        "first paint or no primary action was found.\n" + dump_tree(app, 8)
+        "first paint or no primary action was found.\n" + dump_tree(rebind(pid) or app, 8)
     )
-    assert destinations_visible(app), (
+    assert destinations_visible(pid), (
         f"Onboarding did not reach the navigation destinations after "
-        f"{len(captured)} step(s) {captured}.\n" + dump_tree(app, 8)
+        f"{len(captured)} step(s) {captured}.\n" + dump_tree(rebind(pid) or app, 8)
     )
     assert len(set(hashes)) >= MIN_DISTINCT_CAPTURES, (
         f"Onboarding produced too few distinct screens: {len(set(hashes))} "
