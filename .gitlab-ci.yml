@@ -225,6 +225,50 @@ test:snapshots:
           - ".gitlab-ci.yml"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
+# Screen catalog: every app screen of Core's screen_catalog_v1.json rendered
+# through the production renderer (surface, context bar, navigation sidebar;
+# no navigation driven) to build/screen-catalog/ on every MR and main
+# pipeline, in dark, light, and large-text variants. Until that fixture is
+# on Core main the job renders the presentation contract fixture's batches
+# instead; the trace names which source it used. Stays `allow_failure: true`:
+# it surfaces screenshots (and uploads them to VRT), it does not gate merges.
+test:screen-catalog:
+  stage: test
+  needs: [build:qt, build:cabi]
+  tags: [linux]
+  allow_failure: true
+  variables:
+    QT_QPA_PLATFORM: offscreen
+    LD_LIBRARY_PATH: "${CI_PROJECT_DIR}/cabi-lib"
+    VRT_PLATFORM: linux-qt
+    VRT_SCREENSHOT_DIR: build/screen-catalog
+  script:
+    - |
+      core_files="${CI_API_V4_URL}/projects/vauchi%2Fcore/repository/files"
+      if curl -fsSL -u "gitlab-ci-token:${CI_JOB_TOKEN}" \
+           "${core_files}/vauchi-app%2Ffixtures%2Fscreen_catalog_v1.json/raw?ref=main" \
+           -o screen-catalog.json; then
+        echo "[screen-catalog] source: core main vauchi-app/fixtures/screen_catalog_v1.json"
+      else
+        curl -fsSL -u "gitlab-ci-token:${CI_JOB_TOKEN}" \
+          "${core_files}/vauchi-app%2Ffixtures%2Fpresentation_contract_v1.json/raw?ref=main" \
+          -o screen-catalog.json
+        echo "[screen-catalog] source: FALLBACK core main vauchi-app/fixtures/presentation_contract_v1.json (screen_catalog_v1.json is not on core main yet)"
+      fi
+    - mkdir -p build/screen-catalog
+    - build/qvauchi --render-catalog screen-catalog.json build/screen-catalog 900 1400
+    - echo "[screen-catalog] $(ls -1 build/screen-catalog | wc -l) PNG files in build/screen-catalog/"
+  after_script:
+    - !reference [.vrt-upload-script, script]
+  artifacts:
+    when: always
+    paths:
+      - build/screen-catalog/
+    expire_in: 30 days
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
 # ============================================================
 # Security Stage
 # ============================================================
