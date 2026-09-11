@@ -18,7 +18,7 @@ import time
 import pytest
 
 from helpers import click_button, dump_tree, find_all, set_text
-from navigation import buttons, destinations_visible, rebind
+from navigation import buttons, describe_desktop, destinations_visible, rebind
 from screenshot import (
     ACTUAL_DIR,
     capture_stable,
@@ -96,6 +96,7 @@ def test_snapshot_onboarding_flow(qt_app_fresh):
 
         action = _primary_action(app)
         if action is None or not click_button(app, action, timeout=3.0):
+            print(f"Step {step} ({title}): no primary action. Desktop:\n{describe_desktop()}")
             break
         time.sleep(0.3)  # AT-SPI reports the new surface slightly after the click
 

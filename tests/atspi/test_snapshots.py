@@ -22,7 +22,13 @@ import os
 import pytest
 
 from helpers import dump_tree, wait_for_element
-from navigation import navigate_to, overlay_destinations, rebind
+from navigation import (
+    describe_desktop,
+    navigate_to,
+    overlay_destinations,
+    rebind,
+    sidebar_destinations,
+)
 from screenshot import (
     ACTUAL_DIR,
     capture_stable,
@@ -52,9 +58,12 @@ class TestScreenSnapshots:
         )
 
         pid = qt_app.get_process_id()
-        screen_names = overlay_destinations(pid)
+        print("Initial tree:\n" + dump_tree(qt_app, 8))
+        screen_names = sidebar_destinations(qt_app) or overlay_destinations(pid)
+        print(f"Destinations: {screen_names}\nDesktop:\n{describe_desktop()}")
         assert screen_names, (
-            "Navigation overlay listed no destinations.\n" + dump_tree(rebind(pid), 8)
+            "Neither sidebar nor overlay listed a destination.\n"
+            + dump_tree(rebind(pid) or qt_app, 8)
         )
         if any(name.startswith("Missing:") for name in screen_names):
             pytest.skip(
@@ -69,6 +78,7 @@ class TestScreenSnapshots:
         for screen in screen_names:
             if not navigate_to(pid, screen):
                 nav_failed.append(screen)
+                print(f"Navigation to {screen!r} failed. Desktop:\n{describe_desktop()}")
                 continue
             # The surface title is a label named after the destination;
             # absence is not fatal (Core may title the screen differently).
