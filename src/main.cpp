@@ -7,6 +7,7 @@
 #include "coreui/presentationsurface.h"
 #include "coreui/thememanager.h"
 #include "platform/screencaptureprotection.h"
+#include "rendercatalog.h"
 #include "vauchi.h"
 #include <QApplication>
 #include <QCoreApplication>
@@ -77,6 +78,8 @@ int main(int argc, char *argv[]) {
     // would otherwise blank the grabbed pixmap.
     const int fixtureRc = maybeRenderFixture(qtApp.arguments());
     if (fixtureRc >= 0) return fixtureRc;
+    const int catalogRc = maybeRenderCatalog(qtApp.arguments());
+    if (catalogRc >= 0) return catalogRc;
 
     enableScreenCaptureProtection();
     qtApp.setApplicationName("vauchi");
