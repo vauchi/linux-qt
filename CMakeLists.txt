@@ -55,6 +55,8 @@ set(QVAUCHI_SOURCES
     src/coreui/presentationsurface_qr.cpp
     src/coreui/qrpasteprompt.cpp
     src/coreui/thememanager.cpp
+    src/coreui/screencatalog.cpp
+    src/rendercatalog.cpp
     src/coreui/navigationicons.cpp
     src/coreui/navigationsidebar.cpp
     src/platform/systemtray.cpp
@@ -254,6 +256,16 @@ target_include_directories(theme_test PRIVATE include ${VAUCHI_TOKENS_INCLUDE})
 target_link_libraries(theme_test PRIVATE Qt6::Widgets Qt6::Core)
 add_test(NAME theme_test COMMAND theme_test)
 
+# Screen-catalog document parsing for `qvauchi --render-catalog`: Core's
+# screen_catalog_v1 shape, the presentation-contract fallback, file-name
+# safety of code_ids, and per-variant output names.
+add_executable(screen_catalog_test
+    tests/screen_catalog_test.cpp
+    src/coreui/screencatalog.cpp)
+target_include_directories(screen_catalog_test PRIVATE src)
+target_link_libraries(screen_catalog_test PRIVATE Qt6::Core)
+add_test(NAME screen_catalog_test COMMAND screen_catalog_test)
+
 # Every C++ test here states its expectations with assert(). NDEBUG compiles
 # assert() to nothing, so a Release-configured build turns the whole suite into
 # no-ops that exit 0 while checking nothing — indistinguishable from passing.
@@ -275,6 +287,7 @@ foreach(vauchi_test_target
         presentation_navigation_test
         navigation_icons_test
         theme_test
+        screen_catalog_test
         notification_severity_test
         menubar_test)
     target_compile_options(${vauchi_test_target} PRIVATE -UNDEBUG)
@@ -306,3 +319,14 @@ add_test(NAME render_fixture_smoke
         -DPNG_OUT=${CMAKE_CURRENT_BINARY_DIR}/render_fixture_smoke.png
         -DCABI_DIR=${VAUCHI_CABI_DIR}
         -P ${CMAKE_SOURCE_DIR}/tests/render_fixture_smoke.cmake)
+
+# render-catalog smoke: every entry of a two-screen catalog must render to one
+# valid, distinct PNG per theme/text variant via `qvauchi --render-catalog`
+# (offscreen). See render_catalog_smoke.cmake.
+add_test(NAME render_catalog_smoke
+    COMMAND ${CMAKE_COMMAND}
+        -DBIN=$<TARGET_FILE:qvauchi>
+        -DCATALOG=${CMAKE_SOURCE_DIR}/tests/fixtures/catalog_smoke.json
+        -DOUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/render_catalog_smoke
+        -DCABI_DIR=${VAUCHI_CABI_DIR}
+        -P ${CMAKE_SOURCE_DIR}/tests/render_catalog_smoke.cmake)
