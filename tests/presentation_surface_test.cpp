@@ -3,7 +3,9 @@
 
 #include "coreui/presentationsurface.h"
 
+#include <QAbstractButton>
 #include <QApplication>
+#include <QButtonGroup>
 #include <QCheckBox>
 #include <QComboBox>
 #include <QFrame>
@@ -30,6 +32,28 @@ static QJsonObject action(const QString &id, const QString &label) {
         {"enabled", true},
         {"shortcut", QJsonValue::Null},
     };
+}
+
+static QJsonObject choiceNode(const QString &binding, const QString &label,
+                              const QString &selected,
+                              const QJsonArray &options) {
+    return {{"Choice", QJsonObject{
+                           {"binding_id", binding},
+                           {"label", label},
+                           {"selected", selected},
+                           {"options", options},
+                           {"enabled", true},
+                           {"accessibility", accessibility(label)},
+                       }}};
+}
+
+static QJsonArray optionList(int count) {
+    QJsonArray options;
+    for (int index = 0; index < count; ++index) {
+        options.append(QJsonObject{{"id", QStringLiteral("opt%1").arg(index)},
+                                   {"label", QStringLiteral("Option %1").arg(index)}});
+    }
+    return options;
 }
 
 int main(int argc, char **argv) {
@@ -62,20 +86,13 @@ int main(int argc, char **argv) {
                               {"value", false},
                               {"enabled", true},
                               {"accessibility", accessibility("Sharing")}}}},
-             QJsonObject{
-                 {"Choice",
-                  QJsonObject{
-                      {"binding_id", "color"},
-                      {"label", "Color"},
-                      {"selected", "blue"},
-                      {"options",
-                       QJsonArray{
-                           QJsonObject{{"id", "blue"}, {"label", "Blue"}},
-                           QJsonObject{{"id", "green"}, {"label", "Green"}},
-                       }},
-                      {"enabled", true},
-                      {"accessibility", accessibility("Color")},
-                  }}},
+             choiceNode("color", "Color", "blue",
+                        QJsonArray{
+                            QJsonObject{{"id", "blue"}, {"label", "Blue"}},
+                            QJsonObject{{"id", "green"}, {"label", "Green"}},
+                        }),
+             choiceNode("perspective", "Perspective", "opt1", optionList(3)),
+             choiceNode("theme", "Theme", "opt7", optionList(15)),
              QJsonObject{
                  {"List",
                   QJsonObject{
@@ -204,12 +221,48 @@ int main(int argc, char **argv) {
     assert(binding == QStringLiteral("sharing"));
     assert(value.toObject().value("boolean").toBool());
 
-    auto *choice = renderer.findChild<QComboBox *>("color");
-    assert(choice != nullptr);
-    choice->setCurrentIndex(choice->findData(QStringLiteral("green")));
+    // Two or three options render as one segmented strip of exclusive
+    // buttons; longer lists keep the combo box (Settings Theme has 15).
+    assert(renderer.findChild<QComboBox *>("color") == nullptr);
+    auto *colorStrip = renderer.findChild<QWidget *>("color");
+    assert(colorStrip != nullptr);
+    assert(colorStrip->accessibleName() == QStringLiteral("Color"));
+    auto *colorGroup = colorStrip->findChild<QButtonGroup *>();
+    assert(colorGroup != nullptr);
+    assert(colorGroup->exclusive());
+    assert(colorGroup->buttons().size() == 2);
+    assert(colorGroup->checkedButton() != nullptr);
+    assert(colorGroup->checkedButton()->text() == QStringLiteral("Blue"));
+    QAbstractButton *green = nullptr;
+    for (QAbstractButton *button : colorGroup->buttons()) {
+        assert(button->isCheckable());
+        if (button->text() == QStringLiteral("Green")) {
+            green = button;
+        }
+    }
+    assert(green != nullptr);
+    green->click();
     assert(binding == QStringLiteral("color"));
     assert(value.toObject().value("choice").toString()
            == QStringLiteral("green"));
+    assert(colorGroup->checkedButton() == green);
+
+    assert(renderer.findChild<QComboBox *>("perspective") == nullptr);
+    auto *perspectiveGroup =
+        renderer.findChild<QWidget *>("perspective")->findChild<QButtonGroup *>();
+    assert(perspectiveGroup != nullptr);
+    assert(perspectiveGroup->buttons().size() == 3);
+    assert(perspectiveGroup->checkedButton()->text()
+           == QStringLiteral("Option 1"));
+
+    auto *theme = renderer.findChild<QComboBox *>("theme");
+    assert(theme != nullptr);
+    assert(theme->count() == 15);
+    assert(theme->currentData().toString() == QStringLiteral("opt7"));
+    theme->setCurrentIndex(theme->findData(QStringLiteral("opt3")));
+    assert(binding == QStringLiteral("theme"));
+    assert(value.toObject().value("choice").toString()
+           == QStringLiteral("opt3"));
 
     renderer.findChild<QPushButton *>("open")->click();
     assert(interactionSurface == QStringLiteral("settings"));
