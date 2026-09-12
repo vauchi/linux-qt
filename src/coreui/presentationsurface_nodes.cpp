@@ -3,9 +3,12 @@
 
 #include "presentationsurface.h"
 
+#include "presentationaccessibility.h"
 #include "presentationsurface_avatar.h"
 
 #include <QByteArray>
+#include <QComboBox>
+#include <QGroupBox>
 #include <QJsonArray>
 #include <QLabel>
 #include <QPalette>
@@ -61,6 +64,37 @@ PresentationSurface::renderConfirmation(const QJsonObject &payload) {
         actionButton(payload.value(QStringLiteral("cancel")).toObject()));
     applyAccessibility(
         container, payload.value(QStringLiteral("accessibility")).toObject());
+    return container;
+}
+
+QWidget *PresentationSurface::renderChoice(const QJsonObject &payload) {
+    auto *container = new QGroupBox(
+        payload.value(QStringLiteral("label")).toString());
+    auto *layout = new QVBoxLayout(container);
+    auto *choice = new PresentationChoice;
+    const QString selected =
+        payload.value(QStringLiteral("selected")).toString();
+    for (const auto &optionValue :
+         payload.value(QStringLiteral("options")).toArray()) {
+        const QJsonObject option = optionValue.toObject();
+        choice->addItem(option.value(QStringLiteral("label")).toString(),
+                        option.value(QStringLiteral("id")).toString());
+    }
+    choice->setCurrentIndex(choice->findData(selected));
+    choice->setEnabled(payload.value(QStringLiteral("enabled")).toBool(true));
+    applyAccessibility(
+        choice, payload.value(QStringLiteral("accessibility")).toObject());
+    const QString binding =
+        payload.value(QStringLiteral("binding_id")).toString();
+    choice->setObjectName(binding);
+    connect(choice, &QComboBox::currentIndexChanged, this,
+            [this, choice, binding](int) {
+                emit valueReady(
+                    m_surfaceId, binding,
+                    QJsonObject{{QStringLiteral("choice"),
+                                 choice->currentData().toString()}});
+            });
+    layout->addWidget(choice);
     return container;
 }
 

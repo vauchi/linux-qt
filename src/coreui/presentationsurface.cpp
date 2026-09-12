@@ -6,7 +6,6 @@
 #include "presentationaccessibility.h"
 
 #include <QCheckBox>
-#include <QComboBox>
 #include <QEvent>
 #include <QFrame>
 #include <QGroupBox>
@@ -169,37 +168,7 @@ QWidget *PresentationSurface::renderNode(const QJsonValue &nodeValue) {
         return toggle;
     }
     if (node.contains(QStringLiteral("Choice"))) {
-        const QJsonObject payload =
-            node.value(QStringLiteral("Choice")).toObject();
-        auto *container = new QGroupBox(
-            payload.value(QStringLiteral("label")).toString());
-        auto *layout = new QVBoxLayout(container);
-        auto *choice = new PresentationChoice;
-        const QString selected =
-            payload.value(QStringLiteral("selected")).toString();
-        for (const auto &optionValue :
-             payload.value(QStringLiteral("options")).toArray()) {
-            const QJsonObject option = optionValue.toObject();
-            choice->addItem(option.value(QStringLiteral("label")).toString(),
-                            option.value(QStringLiteral("id")).toString());
-        }
-        choice->setCurrentIndex(choice->findData(selected));
-        choice->setEnabled(payload.value(QStringLiteral("enabled")).toBool(true));
-        applyAccessibility(
-            choice, payload.value(QStringLiteral("accessibility")).toObject());
-        const QString binding =
-            payload.value(QStringLiteral("binding_id")).toString();
-        choice->setObjectName(binding);
-        connect(choice, &QComboBox::currentIndexChanged, this,
-                [this, choice, binding](int) {
-                    emit valueReady(
-                        m_surfaceId, binding,
-                        QJsonObject{
-                            {QStringLiteral("choice"),
-                             choice->currentData().toString()}});
-                });
-        layout->addWidget(choice);
-        return container;
+        return renderChoice(node.value(QStringLiteral("Choice")).toObject());
     }
     if (node.contains(QStringLiteral("Group"))) {
         return renderGroup(node.value(QStringLiteral("Group")).toObject());

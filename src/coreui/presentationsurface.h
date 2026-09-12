@@ -34,6 +34,7 @@ private:
     QWidget *renderNode(const QJsonValue &node);
     QWidget *renderList(const QJsonObject &payload);
     QWidget *renderGroup(const QJsonObject &payload);
+    QWidget *renderChoice(const QJsonObject &payload);
     QWidget *renderStatus(const QJsonObject &payload);
     QWidget *renderConfirmation(const QJsonObject &payload);
     QWidget *renderImage(const QJsonObject &payload);
