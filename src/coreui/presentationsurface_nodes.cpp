@@ -6,14 +6,18 @@
 #include "presentationaccessibility.h"
 #include "presentationsurface_avatar.h"
 
+#include <QAbstractButton>
+#include <QButtonGroup>
 #include <QByteArray>
 #include <QComboBox>
 #include <QGroupBox>
+#include <QHBoxLayout>
 #include <QJsonArray>
 #include <QLabel>
 #include <QPalette>
 #include <QPixmap>
 #include <QPushButton>
+#include <QToolButton>
 #include <QVBoxLayout>
 
 QWidget *PresentationSurface::renderStatus(const QJsonObject &payload) {
@@ -67,35 +71,123 @@ PresentationSurface::renderConfirmation(const QJsonObject &payload) {
     return container;
 }
 
+namespace {
+
+// The design canvas draws a segmented control for the short perspective /
+// tab-like choices (2-3 options) and a drop-down for real lists (Settings
+// Theme has 15 options).
+constexpr int kSegmentedMinOptions = 2;
+constexpr int kSegmentedMaxOptions = 3;
+const char *const kChoiceIdProperty = "choice_id";
+
+} // namespace
+
 QWidget *PresentationSurface::renderChoice(const QJsonObject &payload) {
     auto *container = new QGroupBox(
         payload.value(QStringLiteral("label")).toString());
     auto *layout = new QVBoxLayout(container);
-    auto *choice = new PresentationChoice;
+    const QJsonArray options =
+        payload.value(QStringLiteral("options")).toArray();
+    const QString binding =
+        payload.value(QStringLiteral("binding_id")).toString();
     const QString selected =
         payload.value(QStringLiteral("selected")).toString();
-    for (const auto &optionValue :
-         payload.value(QStringLiteral("options")).toArray()) {
+    const bool segmented = options.size() >= kSegmentedMinOptions
+                           && options.size() <= kSegmentedMaxOptions;
+    QWidget *control = segmented ? segmentedChoice(binding, selected, options)
+                                 : comboChoice(binding, selected, options);
+    control->setEnabled(payload.value(QStringLiteral("enabled")).toBool(true));
+    applyAccessibility(
+        control, payload.value(QStringLiteral("accessibility")).toObject());
+    control->setObjectName(binding);
+    layout->addWidget(control);
+    return container;
+}
+
+QWidget *PresentationSurface::comboChoice(const QString &binding,
+                                          const QString &selected,
+                                          const QJsonArray &options) {
+    auto *choice = new PresentationChoice;
+    for (const auto &optionValue : options) {
         const QJsonObject option = optionValue.toObject();
         choice->addItem(option.value(QStringLiteral("label")).toString(),
                         option.value(QStringLiteral("id")).toString());
     }
     choice->setCurrentIndex(choice->findData(selected));
-    choice->setEnabled(payload.value(QStringLiteral("enabled")).toBool(true));
-    applyAccessibility(
-        choice, payload.value(QStringLiteral("accessibility")).toObject());
-    const QString binding =
-        payload.value(QStringLiteral("binding_id")).toString();
-    choice->setObjectName(binding);
     connect(choice, &QComboBox::currentIndexChanged, this,
             [this, choice, binding](int) {
-                emit valueReady(
-                    m_surfaceId, binding,
-                    QJsonObject{{QStringLiteral("choice"),
-                                 choice->currentData().toString()}});
+                emitChoice(binding, choice->currentData().toString());
             });
-    layout->addWidget(choice);
-    return container;
+    return choice;
+}
+
+/// One strip of flat, adjoining, exclusive segments — the strip carries the
+/// node's accessible name, each segment its option label.
+QWidget *PresentationSurface::segmentedChoice(const QString &binding,
+                                              const QString &selected,
+                                              const QJsonArray &options) {
+    auto *strip = new QWidget;
+    auto *layout = new QHBoxLayout(strip);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
+    auto *group = new QButtonGroup(strip);
+    group->setExclusive(true);
+    for (int index = 0; index < options.size(); ++index) {
+        const QJsonObject option = options.at(index).toObject();
+        const QString id = option.value(QStringLiteral("id")).toString();
+        const QString label = option.value(QStringLiteral("label")).toString();
+        auto *segment = new QToolButton;
+        segment->setText(label);
+        segment->setAccessibleName(label);
+        segment->setToolButtonStyle(Qt::ToolButtonTextOnly);
+        segment->setCheckable(true);
+        segment->setChecked(id == selected);
+        segment->setProperty(kChoiceIdProperty, id);
+        segment->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        segment->setMinimumHeight(m_minimumTargetSize);
+        segment->setStyleSheet(
+            segmentStyleSheet(index == 0, index == options.size() - 1));
+        group->addButton(segment);
+        layout->addWidget(segment);
+    }
+    connect(group, &QButtonGroup::buttonToggled, this,
+            [this, binding](QAbstractButton *segment, bool checked) {
+                if (checked) {
+                    emitChoice(binding,
+                               segment->property(kChoiceIdProperty).toString());
+                }
+            });
+    return strip;
+}
+
+QString PresentationSurface::segmentStyleSheet(bool first, bool last) const {
+    // Only the outer corners are rounded, and inner borders are shared, so
+    // the segments read as one control rather than a row of buttons.
+    QString sheet = QStringLiteral(
+        "QToolButton { border: 1px solid palette(mid); border-radius: 0;"
+        " padding: 0 12px; background: palette(button); }"
+        "QToolButton:checked { background: palette(highlight);"
+        " color: palette(highlighted-text); }");
+    if (!first) {
+        sheet += QStringLiteral("QToolButton { border-left: none; }");
+    }
+    if (first) {
+        sheet += QStringLiteral("QToolButton { border-top-left-radius: %1px;"
+                                " border-bottom-left-radius: %1px; }")
+                     .arg(m_cornerRadius);
+    }
+    if (last) {
+        sheet += QStringLiteral("QToolButton { border-top-right-radius: %1px;"
+                                " border-bottom-right-radius: %1px; }")
+                     .arg(m_cornerRadius);
+    }
+    return sheet;
+}
+
+void PresentationSurface::emitChoice(const QString &binding,
+                                     const QString &choiceId) {
+    emit valueReady(m_surfaceId, binding,
+                    QJsonObject{{QStringLiteral("choice"), choiceId}});
 }
 
 QWidget *PresentationSurface::renderImage(const QJsonObject &payload) {

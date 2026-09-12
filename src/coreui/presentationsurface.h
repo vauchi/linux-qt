@@ -7,6 +7,7 @@
 #include <QWidget>
 
 class QBoxLayout;
+class QJsonArray;
 
 /// Domain-free native renderer for one Core SurfaceSpec.
 class PresentationSurface : public QWidget {
@@ -35,6 +36,12 @@ private:
     QWidget *renderList(const QJsonObject &payload);
     QWidget *renderGroup(const QJsonObject &payload);
     QWidget *renderChoice(const QJsonObject &payload);
+    QWidget *comboChoice(const QString &binding, const QString &selected,
+                         const QJsonArray &options);
+    QWidget *segmentedChoice(const QString &binding, const QString &selected,
+                             const QJsonArray &options);
+    QString segmentStyleSheet(bool first, bool last) const;
+    void emitChoice(const QString &binding, const QString &choiceId);
     QWidget *renderStatus(const QJsonObject &payload);
     QWidget *renderConfirmation(const QJsonObject &payload);
     QWidget *renderImage(const QJsonObject &payload);

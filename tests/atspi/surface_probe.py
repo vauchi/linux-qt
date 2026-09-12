@@ -54,6 +54,11 @@ ACTION_KINDS = ("RowMenu", "Confirm", "Cancel")
 # *that widget's own* name rather than mere presence in the tree. Qt sets
 # accessibleName on all of these; QAccessibleComboBox still reports its
 # current item instead, which only the bus reveals.
+#
+# The fixture's Choice carries a single option on purpose: two or three
+# options render as a segmented strip of toggle buttons instead of a combo
+# box (pinned by presentation_surface_test), and only the combo box needs
+# the replacement accessible interface this probe guards.
 ROLE_ADDRESSABLE = {
     "Input": ("text", "entry"),
     "Toggle": ("check box", "toggle button"),
