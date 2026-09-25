@@ -22,4 +22,14 @@ QPixmap avatarPixmap(const QPixmap &imageData, const QString &fallbackText,
                      bool circular, int diameter, int cornerRadius,
                      const QColor &fillColor, const QColor &textColor);
 
+/// Renders one `Image` node's picture (or fallback text) fit inside a
+/// `size` x `size` canvas: aspect kept, letterboxed rather than cropped,
+/// and centred. The opposite trade-off from `avatarPixmap()`, which crops
+/// to fill — this is for Core's `size` hint (e.g. the onboarding mark),
+/// never for the avatar case that hint leaves untouched.
+///
+/// Returns a null pixmap for `size <= 0`.
+QPixmap fittedImagePixmap(const QPixmap &imageData, const QString &fallbackText,
+                          int size, const QColor &textColor);
+
 } // namespace vauchi

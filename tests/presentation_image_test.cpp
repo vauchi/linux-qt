@@ -55,6 +55,17 @@ QJsonObject imageNode(const QJsonValue &fallback, const QString &shape,
     };
 }
 
+// Core omits `size` on the wire when it is `None` (avatars) — only the
+// onboarding mark carries it. Mirrors that: every other fixture in this
+// file has no `size` key at all, matching `#[serde(skip_serializing_if =
+// "Option::is_none")]` on the Rust side.
+QJsonObject sizedImageNode(const QJsonValue &fallback, const QString &shape,
+                          int size, const QString &name) {
+    QJsonObject node = imageNode(fallback, shape, name).value("Image").toObject();
+    node.insert(QStringLiteral("size"), size);
+    return {{"Image", node}};
+}
+
 QJsonObject surfaceWith(const QJsonObject &node,
                         const QJsonObject &tokens = QJsonObject{}) {
     return {
@@ -168,6 +179,57 @@ int main(int argc, char **argv) {
         auto *avatar = avatarNamed(renderer, QStringLiteral("Empty"));
         assert((avatar == nullptr || avatar->minimumWidth() == 0)
                && "an empty avatar still painted a filled box");
+    }
+
+    // vauchi::fittedImagePixmap() is the `size`-hint counterpart of
+    // avatarPixmap(): Core's onboarding mark (core!5711401e) fits into its
+    // square with its aspect kept, never cropped like an avatar.
+    {
+        // A non-square source is fit, not cropped: the constrained
+        // dimension scales to fill the square and the other letterboxes
+        // with transparency instead of being cut off.
+        QPixmap tall(10, 40);
+        tall.fill(Qt::red);
+        const QPixmap fitted = vauchi::fittedImagePixmap(
+            tall, QString(), 64, QColor(Qt::white));
+        assert(fitted.size() == QSize(64, 64));
+        assert(alphaAt(fitted, 0, 32) == 0
+               && "a fit image must letterbox rather than crop to fill");
+        assert(alphaAt(fitted, 32, 32) == 255
+               && "a fit image must still fill its centre");
+    }
+    {
+        // No image data falls back to centred text on a transparent
+        // canvas — the sized counterpart of avatarPixmap's filled ground.
+        const QPixmap fitted = vauchi::fittedImagePixmap(
+            QPixmap(), QStringLiteral("BS"), 64, QColor(Qt::white));
+        assert(fitted.size() == QSize(64, 64));
+        assert(alphaAt(fitted, 0, 0) == 0
+               && "a sized fallback must not paint a filled ground");
+    }
+    {
+        // A non-positive size is a no-op, matching avatarPixmap.
+        assert(vauchi::fittedImagePixmap(QPixmap(), QStringLiteral("BS"), 0,
+                                         QColor(Qt::white))
+                   .isNull());
+    }
+
+    {
+        // A `size` hint sizes the square from Core, not
+        // tokens.minimum_target_size — and never wider than that square,
+        // so no fixed minimum is set the way the avatar case sets one.
+        PresentationSurface renderer(surfaceWith(
+            sizedImageNode(QStringLiteral("VM"), QStringLiteral("natural"), 88,
+                          QStringLiteral("Mark")),
+            QJsonObject{{"minimum_target_size", 44}}));
+        auto *mark = avatarNamed(renderer, QStringLiteral("Mark"));
+        assert(mark != nullptr);
+        assert(mark->maximumSize() == QSize(88, 88)
+               && "a `size` hint must size the square from Core, not tokens");
+
+        const QPixmap pixmap = mark->pixmap(Qt::ReturnByValue);
+        assert(pixmap.size() == QSize(88, 88)
+               && "the fallback must be sized to the same square as a picture");
     }
 
     return 0;
