@@ -206,6 +206,12 @@ QWidget *PresentationSurface::renderImage(const QJsonObject &payload) {
     const bool circular =
         payload.value(QStringLiteral("shape")).toString()
         == QStringLiteral("circle");
+    // Absent on the wire when Core leaves it `None` (avatars keep sizing
+    // from tokens.minimum_target_size); `isDouble()` distinguishes that
+    // from an explicit `size` hint (e.g. the onboarding mark, core!5711401e).
+    const QJsonValue sizeValue = payload.value(QStringLiteral("size"));
+    const bool sized = sizeValue.isDouble();
+    const int size = sized ? sizeValue.toInt() : 0;
     const QJsonObject activation =
         payload.value(QStringLiteral("activation")).toObject();
     if (!activation.isEmpty()) {
@@ -213,8 +219,8 @@ QWidget *PresentationSurface::renderImage(const QJsonObject &payload) {
         button->setText(fallback);
         if (!pixmap.isNull()) {
             button->setIcon(QIcon(pixmap));
-            button->setIconSize(
-                QSize(m_minimumTargetSize, m_minimumTargetSize));
+            const int iconSide = sized ? size : m_minimumTargetSize;
+            button->setIconSize(QSize(iconSide, iconSide));
         }
         connect(button, &QPushButton::clicked, this,
                 [this, activation]() { activate(activation); });
@@ -224,17 +230,28 @@ QWidget *PresentationSurface::renderImage(const QJsonObject &payload) {
     }
     auto *label = new QLabel;
     if (!pixmap.isNull() || !fallback.isEmpty()) {
-        // vauchi::avatarPixmap() masks real image data to `shape` and paints
-        // the fallback initials over a filled ground — a bare QLabel::setText
-        // painted no body, so the initials sat on the window background.
-        // Square is load-bearing for the round case: a circle clipped from a
-        // box that is not square is a stadium.
-        label->setPixmap(vauchi::avatarPixmap(
-            pixmap, fallback, circular, m_minimumTargetSize, m_cornerRadius,
-            palette().color(QPalette::Midlight),
-            palette().color(QPalette::Text)));
-        label->setMinimumSize(m_minimumTargetSize, m_minimumTargetSize);
-        label->setMaximumSize(m_minimumTargetSize, m_minimumTargetSize);
+        if (sized) {
+            // A `size` hint overrides shape-based sizing outright: fit
+            // into its square rather than cropped to fill it, and never
+            // wider than the space it is given — so, unlike the avatar
+            // case below, no fixed minimum is set.
+            label->setPixmap(vauchi::fittedImagePixmap(
+                pixmap, fallback, size, palette().color(QPalette::Text)));
+            label->setMaximumSize(size, size);
+            label->setAlignment(Qt::AlignCenter);
+        } else {
+            // vauchi::avatarPixmap() masks real image data to `shape` and paints
+            // the fallback initials over a filled ground — a bare QLabel::setText
+            // painted no body, so the initials sat on the window background.
+            // Square is load-bearing for the round case: a circle clipped from a
+            // box that is not square is a stadium.
+            label->setPixmap(vauchi::avatarPixmap(
+                pixmap, fallback, circular, m_minimumTargetSize, m_cornerRadius,
+                palette().color(QPalette::Midlight),
+                palette().color(QPalette::Text)));
+            label->setMinimumSize(m_minimumTargetSize, m_minimumTargetSize);
+            label->setMaximumSize(m_minimumTargetSize, m_minimumTargetSize);
+        }
     }
     applyAccessibility(
         label, payload.value(QStringLiteral("accessibility")).toObject());

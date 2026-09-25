@@ -52,4 +52,35 @@ QPixmap avatarPixmap(const QPixmap &imageData, const QString &fallbackText,
     return canvas;
 }
 
+QPixmap fittedImagePixmap(const QPixmap &imageData, const QString &fallbackText,
+                          int size, const QColor &textColor) {
+    if (size <= 0) {
+        return QPixmap();
+    }
+
+    QPixmap canvas(size, size);
+    canvas.fill(Qt::transparent);
+
+    QPainter painter(&canvas);
+    painter.setRenderHint(QPainter::Antialiasing);
+
+    if (!imageData.isNull()) {
+        const QPixmap scaled = imageData.scaled(
+            size, size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        painter.drawPixmap((size - scaled.width()) / 2,
+                           (size - scaled.height()) / 2, scaled);
+        return canvas;
+    }
+
+    if (!fallbackText.isEmpty()) {
+        QFont font = painter.font();
+        font.setBold(true);
+        font.setPixelSize(std::max(1, size / 3));
+        painter.setFont(font);
+        painter.setPen(textColor);
+        painter.drawText(canvas.rect(), Qt::AlignCenter, fallbackText);
+    }
+    return canvas;
+}
+
 } // namespace vauchi
