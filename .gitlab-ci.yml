@@ -5,7 +5,7 @@ include:
   - template: Security/SAST.gitlab-ci.yml
   - template: Security/Secret-Detection.gitlab-ci.yml
   - project: 'vauchi/scripts'
-    ref: ci-templates-v2026.09.26
+    ref: ci-templates-v2026.09.30
     file:
       - '/ci-templates/design-drift.yml'
       - '/ci-templates/parser-parity.yml'
@@ -18,14 +18,10 @@ include:
       - '/ci-templates/cross-cutting-lint.yml'
 
 variables:
-  VAUCHI_SCRIPTS_REF: "ci-templates-v2026.09.26"
+  VAUCHI_SCRIPTS_REF: "ci-templates-v2026.09.30"
   SAST_EXCLUDED_PATHS: "build/, vauchi-core/"
   SECRET_DETECTION_EXCLUDED_PATHS: "build/, vauchi-core/"
   SAST_ANALYZER_IMAGE_TAG: "5"
-  # Core release whose C ABI carries the shared presentation contract fixture.
-  # Single source of truth — every job below references this variable
-  # instead of hardcoding its own core ref.
-  VAUCHI_CORE_REF: v0.68.0
 
 stages:
   - lint
@@ -55,7 +51,10 @@ default:
 build:cabi:
   stage: deps
   script:
-    - git clone --depth 1 --branch ${VAUCHI_CORE_REF}
+    # core-ref is this app's only copy of its Core pin (ADR-026 amendment);
+    # Core's release pipeline bumps it.
+    - VAUCHI_CORE_REF=$(sed -n '/^[[:space:]]*#/d; /[^[:space:]]/{p;q;}' core-ref)
+    - git clone --depth 1 --branch "${VAUCHI_CORE_REF}"
         https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/vauchi/core.git
         vauchi-core
     - cd vauchi-core
@@ -306,7 +305,8 @@ check:design-drift:
     DESIGN_DRIFT_PROTOCOL: "presentation"
     DESIGN_DRIFT_MATCH_MODE: "grep"
     DESIGN_DRIFT_GREP_FILE: "src/coreui"
-    CORE_REF: "$VAUCHI_CORE_REF"
+    CORE_PIN_FILE: "core-ref"
+    CORE_PIN_KIND: "ref-file"
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes:
@@ -327,8 +327,9 @@ check:parser-parity:
     FRONTEND_NAME: "linux-qt"
     PARSER_FILE: "src/coreui"
     PARSER_PROTOCOL: "presentation"
-    PARSER_SCRIPT_REF: "ci-templates-v2026.09.26"
-    CORE_REF: "$VAUCHI_CORE_REF"
+    PARSER_SCRIPT_REF: "ci-templates-v2026.09.30"
+    CORE_PIN_FILE: "core-ref"
+    CORE_PIN_KIND: "ref-file"
 
 # Removed symbols: detect stale references to removed features
 check:removed-symbols:
