@@ -22,4 +22,13 @@ QStringList navigationIconNames(const QString &token);
 /// themeless session still gets a glyph rather than an empty gap. Never null.
 QIcon navigationIcon(const QString &token);
 
+/// The bundled pictogram, tinted like `navigationIcon`'s, that a list row or
+/// status node draws for `token`. Null for anything but a pictogram this
+/// build can draw: those surfaces had no icon before pictograms existed, so
+/// no fallback marker is added.
+QIcon contentPictogram(const QString &token);
+
+/// Edge length, in device-independent pixels, of a content pictogram.
+constexpr int kPictogramSize = 24;
+
 } // namespace vauchi

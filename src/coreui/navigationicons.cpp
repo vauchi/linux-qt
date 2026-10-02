@@ -208,6 +208,11 @@ QStringList navigationIconNames(const QString &token) {
     return found == namesByToken().cend() ? fallbackNames() : found.value();
 }
 
+QIcon contentPictogram(const QString &token) {
+    const QString path = pictogramResourcePath(token.trimmed());
+    return path.isEmpty() ? QIcon() : pictogramIcon(path);
+}
+
 QIcon navigationIcon(const QString &token) {
     QStringList candidates = navigationIconNames(token);
     candidates.append(fallbackNames());

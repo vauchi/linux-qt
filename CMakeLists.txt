@@ -158,6 +158,7 @@ add_test(NAME presentation_state_test COMMAND presentation_state_test)
 # identifiers and generic values.
 add_executable(presentation_surface_test
     tests/presentation_surface_test.cpp
+    src/coreui/navigationicons.cpp
     src/coreui/presentationaccessibility.cpp
     src/coreui/presentationsurface.cpp
     src/coreui/presentationsurface_avatar.cpp
@@ -173,6 +174,7 @@ add_test(NAME presentation_surface_test COMMAND presentation_surface_test)
 
 add_executable(presentation_image_test
     tests/presentation_image_test.cpp
+    src/coreui/navigationicons.cpp
     src/coreui/presentationaccessibility.cpp
     src/coreui/presentationsurface.cpp
     src/coreui/presentationsurface_avatar.cpp
@@ -299,6 +301,7 @@ endforeach()
 # Not an add_test target — tests/atspi/run-tests.sh drives it under Xvfb.
 add_executable(atspi_fixture_probe
     tests/atspi_fixture_probe.cpp
+    src/coreui/navigationicons.cpp
     src/coreui/presentationaccessibility.cpp
     src/coreui/presentationsurface.cpp
     src/coreui/presentationsurface_avatar.cpp

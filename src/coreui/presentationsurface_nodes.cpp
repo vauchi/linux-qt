@@ -3,6 +3,7 @@
 
 #include "presentationsurface.h"
 
+#include "navigationicons.h"
 #include "presentationaccessibility.h"
 #include "presentationsurface_avatar.h"
 
@@ -32,13 +33,31 @@ QWidget *PresentationSurface::renderStatus(const QJsonObject &payload) {
     if (!badge.isEmpty()) {
         text += QStringLiteral(" · ") + badge;
     }
+    const QIcon pictogram = vauchi::contentPictogram(
+        payload.value(QStringLiteral("icon_token")).toString());
     QWidget *widget = nullptr;
     if (activation.isEmpty()) {
         auto *label = new QLabel(text);
         label->setWordWrap(true);
         widget = label;
+        if (!pictogram.isNull()) {
+            auto *row = new QWidget;
+            auto *layout = new QHBoxLayout(row);
+            layout->setContentsMargins(0, 0, 0, 0);
+            auto *icon = new QLabel;
+            const int size = vauchi::kPictogramSize;
+            icon->setPixmap(pictogram.pixmap(size, size));
+            layout->addWidget(icon);
+            layout->addWidget(label, 1);
+            widget = row;
+        }
     } else {
         auto *button = new QPushButton(text);
+        if (!pictogram.isNull()) {
+            button->setIcon(pictogram);
+            button->setIconSize(
+                QSize(vauchi::kPictogramSize, vauchi::kPictogramSize));
+        }
         button->setObjectName(
             activation.value(QStringLiteral("interaction_id")).toString());
         button->setMinimumHeight(m_minimumTargetSize);

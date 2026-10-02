@@ -3,6 +3,7 @@
 
 #include "presentationsurface.h"
 
+#include "navigationicons.h"
 #include "presentationaccessibility.h"
 
 #include <QCheckBox>
@@ -274,7 +275,16 @@ QWidget *PresentationSurface::renderList(const QJsonObject &payload) {
             text += QStringLiteral("\n") + subtitle;
         }
         button->setText(text);
-        button->setToolButtonStyle(Qt::ToolButtonTextOnly);
+        const QIcon pictogram = vauchi::contentPictogram(
+            row.value(QStringLiteral("icon_token")).toString());
+        if (pictogram.isNull()) {
+            button->setToolButtonStyle(Qt::ToolButtonTextOnly);
+        } else {
+            button->setIcon(pictogram);
+            button->setIconSize(
+                QSize(vauchi::kPictogramSize, vauchi::kPictogramSize));
+            button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+        }
         button->setEnabled(row.value(QStringLiteral("enabled")).toBool(true));
         button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
         button->setMinimumHeight(m_minimumTargetSize);
