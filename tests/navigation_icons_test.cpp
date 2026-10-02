@@ -229,6 +229,42 @@ static void test_malformed_pictogram_tokens_fall_back() {
     printf("  PASS: malformed_pictogram_tokens_fall_back\n");
 }
 
+// --- Test: list rows and status nodes get an icon only for a pictogram ---
+// Those surfaces drew no icon before pictograms existed, so every other
+// token must leave them as they were rather than add a fallback marker.
+static void test_content_pictogram_only_for_bundled_pictograms() {
+    const QPalette original = QApplication::palette();
+    QPalette palette = original;
+    const QColor text(20, 160, 90);
+    palette.setColor(QPalette::WindowText, text);
+    QApplication::setPalette(palette);
+
+    const QIcon hover = vauchi::contentPictogram("pictogram.exchange.hover");
+    assert(!hover.isNull());
+    const QImage image =
+        hover.pixmap(48, 48).toImage().convertToFormat(QImage::Format_ARGB32);
+    int opaque = 0;
+    for (int y = 0; y < image.height(); ++y) {
+        for (int x = 0; x < image.width(); ++x) {
+            const QColor pixel = image.pixelColor(x, y);
+            if (pixel.alpha() >= 128) {
+                ++opaque;
+                assert(qAbs(pixel.green() - text.green()) <= 4);
+            }
+        }
+    }
+    assert(opaque > 50);
+    QApplication::setPalette(original);
+
+    for (const char *const token : kCoreNavigationTokens) {
+        assert(vauchi::contentPictogram(QString::fromLatin1(token)).isNull());
+    }
+    assert(vauchi::contentPictogram("").isNull());
+    assert(vauchi::contentPictogram("no.such.token").isNull());
+    assert(vauchi::contentPictogram("pictogram.exchange.not_bundled").isNull());
+    printf("  PASS: content_pictogram_only_for_bundled_pictograms\n");
+}
+
 int main(int argc, char **argv) {
     QApplication app(argc, argv);
     printf("navigation_icons_test\n");
@@ -242,6 +278,7 @@ int main(int argc, char **argv) {
     test_every_exchange_pictogram_draws_in_the_text_color();
     test_missing_pictogram_falls_back();
     test_malformed_pictogram_tokens_fall_back();
+    test_content_pictogram_only_for_bundled_pictograms();
     printf("ALL TESTS PASSED\n");
     return 0;
 }
