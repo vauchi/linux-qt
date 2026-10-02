@@ -4,7 +4,12 @@
 #include "navigationicons.h"
 
 #include <QApplication>
+#include <QFile>
 #include <QHash>
+#include <QIconEngine>
+#include <QImageReader>
+#include <QPainter>
+#include <QPalette>
 #include <QStyle>
 #include <utility>
 
@@ -91,10 +96,115 @@ const QHash<QString, QStringList> &namesByToken() {
     return table;
 }
 
+/// `pictogram.<group>.<name>` names one of Vauchi's own pictograms, bundled
+/// in resources.qrc. The mapping is a pure rename so a new pictogram needs
+/// only its SVG and a qrc entry, never a table entry here.
+QString pictogramResourcePath(const QString &token) {
+    static const QString prefix = QStringLiteral("pictogram.");
+    if (!token.startsWith(prefix)) {
+        return {};
+    }
+    const QStringList segments =
+        token.mid(prefix.size()).split(QLatin1Char('.'));
+    const auto wellFormed = [](const QString &segment) {
+        if (segment.isEmpty()) {
+            return false;
+        }
+        for (const QChar c : segment) {
+            const char16_t u = c.unicode();
+            const bool allowed = (u >= 'a' && u <= 'z')
+                                 || (u >= '0' && u <= '9') || u == '_';
+            if (!allowed) {
+                return false;
+            }
+        }
+        return true;
+    };
+    if (segments.size() != 2 || !wellFormed(segments[0])
+        || !wellFormed(segments[1])) {
+        return {};
+    }
+    return QStringLiteral(":/pictograms/%1/%2.svg")
+        .arg(segments[0], segments[1]);
+}
+
+/// Draws a bundled pictogram in the palette's text colour at paint time, so
+/// it follows the theme (and selected / disabled states) like the label next
+/// to it. The SVG is rasterised by Qt's SVG image plugin and only its alpha
+/// is kept: whatever colour it was authored in is replaced.
+class PictogramIconEngine : public QIconEngine {
+public:
+    explicit PictogramIconEngine(QString path) : path_(std::move(path)) {}
+
+    void paint(QPainter *painter, const QRect &rect, QIcon::Mode mode,
+               QIcon::State state) override {
+        const qreal ratio = painter->device()->devicePixelRatioF();
+        QPixmap tinted = pixmap(rect.size() * ratio, mode, state);
+        tinted.setDevicePixelRatio(ratio);
+        const QSize drawn = tinted.deviceIndependentSize().toSize();
+        painter->drawPixmap(
+            rect.x() + (rect.width() - drawn.width()) / 2,
+            rect.y() + (rect.height() - drawn.height()) / 2, tinted);
+    }
+
+    QPixmap pixmap(const QSize &size, QIcon::Mode mode,
+                   QIcon::State /*state*/) override {
+        QImageReader reader(path_);
+        reader.setScaledSize(reader.size().scaled(size, Qt::KeepAspectRatio));
+        QImage image =
+            reader.read().convertToFormat(QImage::Format_ARGB32_Premultiplied);
+        if (image.isNull()) {
+            return {};
+        }
+        QPainter painter(&image);
+        painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
+        painter.fillRect(image.rect(), textColor(mode));
+        painter.end();
+        return QPixmap::fromImage(image);
+    }
+
+    QIconEngine *clone() const override {
+        return new PictogramIconEngine(path_);
+    }
+
+    QString key() const override {
+        return QStringLiteral("vauchi-pictogram");
+    }
+
+private:
+    static QColor textColor(QIcon::Mode mode) {
+        const QPalette palette = QApplication::palette();
+        switch (mode) {
+        case QIcon::Disabled:
+            return palette.color(QPalette::Disabled, QPalette::WindowText);
+        case QIcon::Selected:
+            return palette.color(QPalette::Active, QPalette::HighlightedText);
+        default:
+            return palette.color(QPalette::Active, QPalette::WindowText);
+        }
+    }
+
+    QString path_;
+};
+
+/// A pictogram this build bundles and can rasterise; otherwise a null icon so
+/// the caller keeps walking the chain.
+QIcon pictogramIcon(const QString &path) {
+    if (!QFile::exists(path) || !QImageReader(path).canRead()) {
+        return {};
+    }
+    return QIcon(new PictogramIconEngine(path));
+}
+
 } // namespace
 
 QStringList navigationIconNames(const QString &token) {
-    const auto found = namesByToken().constFind(token.trimmed());
+    const QString trimmed = token.trimmed();
+    const QString pictogram = pictogramResourcePath(trimmed);
+    if (!pictogram.isEmpty()) {
+        return QStringList{pictogram} + fallbackNames();
+    }
+    const auto found = namesByToken().constFind(trimmed);
     return found == namesByToken().cend() ? fallbackNames() : found.value();
 }
 
@@ -102,7 +212,9 @@ QIcon navigationIcon(const QString &token) {
     QStringList candidates = navigationIconNames(token);
     candidates.append(fallbackNames());
     for (const QString &name : std::as_const(candidates)) {
-        QIcon icon = QIcon::fromTheme(name);
+        QIcon icon = name.startsWith(QStringLiteral(":/"))
+                         ? pictogramIcon(name)
+                         : QIcon::fromTheme(name);
         if (!icon.isNull()) {
             return icon;
         }

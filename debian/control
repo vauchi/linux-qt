@@ -29,6 +29,7 @@ Depends:
  ${shlibs:Depends},
  ${misc:Depends},
  libqrencode4,
+ qt6-svg-plugins,
 Description: Privacy-focused updatable contact cards (Qt desktop)
  Vauchi is a privacy-focused app for exchanging updatable contact
  cards in person. End-to-end encrypted and decentralized.

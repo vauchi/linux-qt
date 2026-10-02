@@ -23,6 +23,7 @@ BuildRequires:  qt6-qtconnectivity-devel
 BuildRequires:  pcsc-lite-devel
 
 Requires:       qt6-qtbase
+Requires:       qt6-qtsvg
 Requires:       qrencode-libs
 
 %description

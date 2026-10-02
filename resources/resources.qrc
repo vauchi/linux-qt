@@ -4,6 +4,17 @@
     <qresource prefix="/icons">
         <file>vauchi.svg</file>
     </qresource>
+    <qresource prefix="/">
+        <file>pictograms/exchange/bump.svg</file>
+        <file>pictograms/exchange/cable.svg</file>
+        <file>pictograms/exchange/glance.svg</file>
+        <file>pictograms/exchange/hover.svg</file>
+        <file>pictograms/exchange/link.svg</file>
+        <file>pictograms/exchange/magic.svg</file>
+        <file>pictograms/exchange/shake.svg</file>
+        <file>pictograms/exchange/tap_hover_shake.svg</file>
+        <file>pictograms/exchange/tap_tap.svg</file>
+    </qresource>
     <qresource prefix="/fonts">
         <file alias="HankenGrotesk[wght].ttf">fonts/HankenGrotesk[wght].ttf</file>
         <file alias="HankenGrotesk-Italic[wght].ttf">fonts/HankenGrotesk-Italic[wght].ttf</file>
