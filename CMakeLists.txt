@@ -228,7 +228,8 @@ add_test(NAME presentation_navigation_test COMMAND presentation_navigation_test)
 # Navigation icon test: Core icon token -> theme icon name resolution
 add_executable(navigation_icons_test
     tests/navigation_icons_test.cpp
-    src/coreui/navigationicons.cpp)
+    src/coreui/navigationicons.cpp
+    resources/resources.qrc)
 target_include_directories(navigation_icons_test PRIVATE src)
 target_link_libraries(navigation_icons_test PRIVATE Qt6::Widgets Qt6::Core)
 add_test(NAME navigation_icons_test COMMAND navigation_icons_test)
