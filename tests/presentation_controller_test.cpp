@@ -9,6 +9,7 @@
 #include <QDialog>
 #include <QInputDialog>
 #include <QJsonArray>
+#include <QLabel>
 #include <QLineEdit>
 #include <QMenu>
 #include <QPropertyAnimation>
@@ -211,6 +212,77 @@ void assertNavigationItemsRespectMinimumTargetSize() {
     QApplication::processEvents();
 }
 
+// The sidebar lists the same destinations the navigation launcher opens,
+// so beside a sidebar the bar leaves that control out; Core's fifth slot,
+// info, is drawn after the others (vauchi/private#479).
+void assertNoNavigationButtonBesideTheSidebarAndAnInfoButton() {
+    PresentationController controller(nullptr);
+    controller.resize(700, 600);
+    controller.show();
+    QJsonArray commands = baseCommands();
+    QJsonObject setBar = commands.at(1).toObject();
+    QJsonObject effect = setBar.value(QStringLiteral("SetContextBar")).toObject();
+    QJsonObject bar = effect.value(QStringLiteral("bar")).toObject();
+    bar.insert(QStringLiteral("info"), action("info", "Info"));
+    effect.insert(QStringLiteral("bar"), bar);
+    setBar.insert(QStringLiteral("SetContextBar"), effect);
+    commands[1] = setBar;
+    commands.append(QJsonObject{
+        {"SetNavigation",
+         QJsonObject{
+             {"surface_id", "settings"},
+             {"revision", 1},
+             {"navigation",
+              QJsonObject{{"items",
+                           QJsonArray{QJsonObject{
+                               {"interaction_id", "nav.settings"},
+                               {"label", "Settings"},
+                               {"accessibility_label", "Settings"},
+                               {"icon_token", "gearshape"},
+                               {"selected", true},
+                               {"badge_count", 0}}}}}},
+         }}});
+    controller.dispatchCommands(commands);
+    QApplication::processEvents();
+
+    assert(controller.findChild<QPushButton *>("context-navigation") == nullptr);
+    auto *info = controller.findChild<QPushButton *>("context-info");
+    assert(info != nullptr);
+    assert(info->text() == QStringLiteral("Info"));
+    assert(controller.findChild<QPushButton *>("context-primary") != nullptr);
+}
+
+// An information overlay is read, not chosen from: a dialog with Core's
+// text and a close button, nothing else to activate.
+void assertInformationOverlayShowsItsText() {
+    PresentationController controller(nullptr);
+    controller.resize(700, 600);
+    controller.show();
+    controller.dispatchCommands(baseCommands());
+    controller.dispatchCommands(QJsonArray{QJsonObject{
+        {"PresentOverlay",
+         QJsonObject{
+             {"surface_id", "settings"},
+             {"revision", 1},
+             {"overlay",
+              QJsonObject{{"kind", "information"},
+                          {"title", "Settings"},
+                          {"items", QJsonArray{}},
+                          {"body", "Here you change your name."}}},
+         }}}});
+    QApplication::processEvents();
+
+    auto *dialog = controller.findChild<QDialog *>();
+    assert(dialog != nullptr);
+    assert(dialog->windowTitle() == QStringLiteral("Settings"));
+    auto *body = dialog->findChild<QLabel *>("overlay-body");
+    assert(body != nullptr);
+    assert(body->text() == QStringLiteral("Here you change your name."));
+    assert(dialog->findChildren<QPushButton *>().size() == 1);
+    dialog->close();
+    QApplication::processEvents();
+}
+
 void assertExportPayloadUsesCanonicalSchema() {
     const QJsonObject command{
         {"ExportFile",
@@ -348,6 +420,8 @@ int main(int argc, char **argv) {
     QApplication app(argc, argv);
     assertExportPayloadUsesCanonicalSchema();
     assertNativeBarAndFocusRestoration();
+    assertNoNavigationButtonBesideTheSidebarAndAnInfoButton();
+    assertInformationOverlayShowsItsText();
     assertOverlayStructures(false);
     assertOverlayStructures(true);
     assertNavigationItemsRespectMinimumTargetSize();
