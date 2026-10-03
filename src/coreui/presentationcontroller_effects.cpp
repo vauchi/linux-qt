@@ -17,6 +17,7 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QPropertyAnimation>
+#include <QLabel>
 #include <QPushButton>
 #include <QSaveFile>
 #include <QScrollArea>
@@ -146,6 +147,36 @@ void PresentationController::presentOverlay(
                                 .toInt(minimumTargetSize);
         cornerRadius =
             tokens.value(QStringLiteral("corner_radius")).toInt(cornerRadius);
+    }
+    if (kind == QStringLiteral("information")) {
+        // Read, not chosen from: Core's text about the surface and a close
+        // button; closing reports a dismissal like the other overlays.
+        auto *dialog = new QDialog(this);
+        dialog->setAttribute(Qt::WA_DeleteOnClose);
+        dialog->setWindowTitle(
+            overlay.value(QStringLiteral("title")).toString());
+        auto *layout = new QVBoxLayout(dialog);
+        auto *body =
+            new QLabel(overlay.value(QStringLiteral("body")).toString());
+        body->setObjectName(QStringLiteral("overlay-body"));
+        body->setWordWrap(true);
+        body->setTextInteractionFlags(Qt::TextSelectableByMouse);
+        layout->addWidget(body);
+        auto *close = new QPushButton(tr("Close"));
+        close->setMinimumHeight(minimumTargetSize);
+        close->setDefault(true);
+        connect(close, &QPushButton::clicked, dialog, &QDialog::accept);
+        layout->addWidget(close);
+        connect(dialog, &QDialog::finished, this,
+                [this, surfaceId, kind](int) {
+                    dispatchEvent(QJsonObject{
+                        {QStringLiteral("OverlayDismissed"),
+                         QJsonObject{
+                             {QStringLiteral("surface_id"), surfaceId},
+                             {QStringLiteral("kind"), kind}}}});
+                });
+        dialog->show();
+        return;
     }
     if (kind == QStringLiteral("navigation")) {
         auto *dialog = new QDialog(this);

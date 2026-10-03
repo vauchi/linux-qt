@@ -286,9 +286,20 @@ void PresentationController::renderContextBar(QBoxLayout *layout) {
     strip->setObjectName(QStringLiteral("contextual-command-bar"));
     auto *row = new QHBoxLayout(strip);
     const QString surfaceId = m_state.activeSurfaceId();
+    // Beside the sidebar the navigation launcher is left out: both open
+    // the same destinations (vauchi/private#479). `info` is Core's fifth
+    // slot, absent from a Core that has no text for the surface.
+    const bool sidebarShown = !m_state.navigation()
+                                   .value(QStringLiteral("items"))
+                                   .toArray()
+                                   .isEmpty();
     for (const QString &role :
          {QStringLiteral("back"), QStringLiteral("navigation"),
-          QStringLiteral("primary"), QStringLiteral("secondary")}) {
+          QStringLiteral("primary"), QStringLiteral("secondary"),
+          QStringLiteral("info")}) {
+        if (sidebarShown && role == QStringLiteral("navigation")) {
+            continue;
+        }
         const QJsonObject action = bar.value(role).toObject();
         if (action.isEmpty()) {
             continue;
@@ -319,6 +330,8 @@ void PresentationController::renderContextBar(QBoxLayout *layout) {
             button->setShortcut(QKeySequence(QStringLiteral("Ctrl+K")));
         } else if (role == QStringLiteral("secondary")) {
             button->setShortcut(QKeySequence(QStringLiteral("Alt+Down")));
+        } else if (role == QStringLiteral("info")) {
+            button->setShortcut(QKeySequence::HelpContents);
         }
         const QString interaction =
             action.value(QStringLiteral("interaction_id")).toString();
