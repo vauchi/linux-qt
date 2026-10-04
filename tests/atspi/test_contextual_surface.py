@@ -12,6 +12,7 @@ gi.require_version("Atspi", "2.0")
 from gi.repository import Atspi  # noqa: E402
 
 from helpers import click_button, dump_tree, find_all, wait_for_element
+from navigation import EXPECTED_DESTINATIONS, NAVIGATION_LAUNCHER, sidebar_row
 
 
 def _buttons(root):
@@ -82,29 +83,48 @@ class TestContextualSurface:
             f"Tab did not focus a native command.\n{dump_tree(qt_app, 7)}"
         )
 
-    def test_navigation_action_opens_native_overlay(self, qt_app):
-        _focus_app(qt_app)
-        assert click_button(qt_app, "More")
-        dialog = wait_for_element(qt_app, role="dialog", timeout=3.0)
-        assert dialog is not None, (
-            "Navigation action did not open the Core-provided overlay.\n"
-            f"{dump_tree(qt_app, 8)}"
-        )
-        assert (dialog.get_name() or "").strip()
-        overlay_buttons = _buttons(dialog)
-        assert overlay_buttons
-        assert all((button.get_name() or "").strip()
-                   for button in overlay_buttons)
+    def test_destinations_are_offered_once_and_their_icons_stay_silent(self, qt_app):
+        """Core's destinations reach AT-SPI once: as sidebar rows, or in the
+        overlay the "More" launcher opens while the sidebar is hidden
+        (vauchi/private#479). Either way no destination's icon is its own
+        named object.
 
-        # Each destination shows a themed icon beside its word. The icon
-        # repeats what the word already says, so a screen reader should stop
-        # once, on the button. If it arrives on the bus as its own named
-        # object the reader stops twice, and the second stop announces a
-        # freedesktop icon name — "system users symbolic". The iOS shell had
-        # exactly this defect with SF Symbols (ios!649); Qt attaches the icon
-        # as a QAction property rather than a child widget and so should be
-        # immune, which is precisely the claim worth pinning.
-        #
+        Each destination shows a themed icon beside its word. The icon
+        repeats what the word already says, so a screen reader should stop
+        once, on the button. If it arrives on the bus as its own named
+        object the reader stops twice, and the second stop announces a
+        freedesktop icon name — "system users symbolic". The iOS shell had
+        exactly this defect with SF Symbols (ios!649); Qt attaches the icon
+        as a QAction property rather than a child widget and so should be
+        immune, which is precisely the claim worth pinning.
+        """
+        _focus_app(qt_app)
+        launchers = [
+            button for button in _buttons(qt_app)
+            if (button.get_name() or "").strip() == NAVIGATION_LAUNCHER
+        ]
+        sidebar = [sidebar_row(qt_app, name) for name in EXPECTED_DESTINATIONS]
+        sidebar = [row for row in sidebar if row is not None]
+        if sidebar:
+            assert not launchers, (
+                "The sidebar shows the destinations, yet a launcher is on screen.\n"
+                f"{dump_tree(qt_app, 7)}"
+            )
+            destinations = sidebar
+            scope = qt_app
+        else:
+            assert click_button(qt_app, NAVIGATION_LAUNCHER)
+            dialog = wait_for_element(qt_app, role="dialog", timeout=3.0)
+            assert dialog is not None, (
+                "Navigation action did not open the Core-provided overlay.\n"
+                f"{dump_tree(qt_app, 8)}"
+            )
+            assert (dialog.get_name() or "").strip()
+            destinations = _buttons(dialog)
+            scope = dialog
+        assert destinations
+        assert all((button.get_name() or "").strip() for button in destinations)
+
         # This assertion is expected green from the start and so never gets a
         # red run to prove the pattern can fire (CC-27); pin both directions
         # against a real theme icon name and a real destination label.
@@ -113,11 +133,12 @@ class TestContextualSurface:
         assert not icon_name_shape.match("My Card")
         offenders = [
             node.get_name()
-            for node in find_all(dialog)
+            for destination in destinations
+            for node in [destination, *find_all(destination)]
             if node.get_name() and icon_name_shape.match(node.get_name())
         ]
         assert not offenders, (
             f"These reach AT-SPI as icon names rather than words: {offenders}\n"
-            f"{dump_tree(dialog, 6)}"
+            f"{dump_tree(scope, 6)}"
         )
         _press_key(9)
