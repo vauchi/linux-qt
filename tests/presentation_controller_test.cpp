@@ -268,7 +268,8 @@ void assertInformationOverlayShowsItsText() {
               QJsonObject{{"kind", "information"},
                           {"title", "Settings"},
                           {"items", QJsonArray{}},
-                          {"body", "Here you change your name."}}},
+                          {"body", "Here you change your name."},
+                          {"close_label", "Schließen"}}},
          }}}});
     QApplication::processEvents();
 
@@ -278,7 +279,10 @@ void assertInformationOverlayShowsItsText() {
     auto *body = dialog->findChild<QLabel *>("overlay-body");
     assert(body != nullptr);
     assert(body->text() == QStringLiteral("Here you change your name."));
-    assert(dialog->findChildren<QPushButton *>().size() == 1);
+    const auto buttons = dialog->findChildren<QPushButton *>();
+    assert(buttons.size() == 1);
+    // Core names the way out in the person's language (vauchi/private#479).
+    assert(buttons.first()->text() == QStringLiteral("Schließen"));
     dialog->close();
     QApplication::processEvents();
 }
