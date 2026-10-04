@@ -21,6 +21,7 @@
 #include <QScrollArea>
 #include <QSlider>
 #include <QToolButton>
+#include <QStyle>
 #include <QWidgetAction>
 #include <QVBoxLayout>
 
@@ -366,6 +367,29 @@ QWidget *PresentationSurface::renderList(const QJsonObject &payload) {
             auto *detailLabel = new QLabel(detail);
             detailLabel->setProperty("tone", "muted");
             rowLayout->addWidget(detailLabel);
+        }
+        // Explains this one item (vauchi/private#479); Core names it
+        // "About <item>" so a screen reader says what the icon is for.
+        const QJsonObject info = row.value(QStringLiteral("info")).toObject();
+        if (!info.isEmpty()) {
+            auto *infoButton = new QToolButton;
+            infoButton->setObjectName(
+                info.value(QStringLiteral("interaction_id")).toString());
+            infoButton->setIcon(QIcon::fromTheme(
+                QStringLiteral("help-about"),
+                infoButton->style()->standardIcon(
+                    QStyle::SP_MessageBoxInformation)));
+            infoButton->setAutoRaise(true);
+            infoButton->setEnabled(
+                info.value(QStringLiteral("enabled")).toBool(true));
+            infoButton->setMinimumSize(m_minimumTargetSize, m_minimumTargetSize);
+            infoButton->setToolTip(
+                info.value(QStringLiteral("accessibility_label")).toString());
+            infoButton->setAccessibleName(
+                info.value(QStringLiteral("accessibility_label")).toString());
+            connect(infoButton, &QToolButton::clicked, this,
+                    [this, info]() { activate(info); });
+            rowLayout->addWidget(infoButton);
         }
         // A row without an activation has no button to carry its name, and
         // the avatar has to sit inside whatever does.
