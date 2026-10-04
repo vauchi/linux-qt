@@ -426,5 +426,61 @@ int main(int argc, char **argv) {
                    .contains(QStringLiteral("border-radius: 10px")));
     }
 
+    {
+        // A row can explain its item (vauchi/private#479): Core sends an
+        // `info` action named "About <item>", and the shell draws a button
+        // for it that reports the activation like any other.
+        QJsonObject info = action("row-info", "Info");
+        info.insert("accessibility_label", "About Home address");
+        const QJsonObject surface{
+            {"surface_id", "groups"},
+            {"revision", 3},
+            {"title", "Family"},
+            {"subtitle", QJsonValue::Null},
+            {"accessibility_label", "Family"},
+            {"layout", "scroll"},
+            {"tokens", QJsonObject{{"minimum_target_size", 48}}},
+            {"nodes",
+             QJsonArray{QJsonObject{
+                 {"List",
+                  QJsonObject{
+                      {"id", "entries"},
+                      {"label", QJsonValue::Null},
+                      {"rows",
+                       QJsonArray{QJsonObject{
+                           {"title", "Home address"},
+                           {"subtitle", QJsonValue::Null},
+                           {"detail", QJsonValue::Null},
+                           {"icon_token", QJsonValue::Null},
+                           {"image_data", QJsonValue::Null},
+                           {"fallback_text", QJsonValue::Null},
+                           {"selected", false},
+                           {"enabled", true},
+                           {"activation", QJsonValue::Null},
+                           {"secondary_actions", QJsonArray{}},
+                           {"info", info},
+                           {"controls", QJsonArray{}},
+                           {"accessibility", accessibility("Home address")},
+                       }}},
+                      {"searchable", false},
+                      {"paging", QJsonValue::Null},
+                      {"accessibility", accessibility("Entries")},
+                  }}}}},
+        };
+        PresentationSurface renderer(surface);
+        QString reported;
+        QObject::connect(&renderer, &PresentationSurface::interactionReady,
+                         [&](const QString &, const QString &interactionId) {
+                             reported = interactionId;
+                         });
+
+        auto *button = renderer.findChild<QToolButton *>("row-info");
+        assert(button != nullptr);
+        assert(button->accessibleName() == QStringLiteral("About Home address"));
+        assert(button->minimumHeight() == 48);
+        button->click();
+        assert(reported == QStringLiteral("row-info"));
+    }
+
     return 0;
 }
