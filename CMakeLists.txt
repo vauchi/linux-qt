@@ -44,6 +44,7 @@ find_library(VAUCHI_CABI vauchi_cabi PATHS ${VAUCHI_CABI_DIR} REQUIRED)
 set(QVAUCHI_SOURCES
     src/main.cpp
     src/app.cpp
+    src/wakeupschedule.cpp
     src/coreui/presentationstate.cpp
     src/coreui/presentationcontroller.cpp
     src/coreui/presentationcontroller_effects.cpp
@@ -224,7 +225,8 @@ add_executable(presentation_controller_test
     src/coreui/presentationsurface_qr.cpp
     src/coreui/qrpasteprompt.cpp
     src/platform/hardwarebackend.cpp
-    src/platform/directsendworker.cpp)
+    src/platform/directsendworker.cpp
+    src/wakeupschedule.cpp)
 target_include_directories(presentation_controller_test PRIVATE
     include src ${VAUCHI_CABI_INCLUDE} ${QRENCODE_INCLUDE_DIRS})
 target_link_directories(presentation_controller_test PRIVATE

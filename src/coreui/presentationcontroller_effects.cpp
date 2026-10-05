@@ -6,6 +6,7 @@
 #include "presentationeffectpayload.h"
 
 #include "../platform/hardwarebackend.h"
+#include "../wakeupschedule.h"
 
 #include <QDesktopServices>
 #include <QDialog>
@@ -25,6 +26,7 @@
 #include <QUrl>
 #include <QVBoxLayout>
 #include <memory>
+#include <optional>
 
 void PresentationController::dispatchRawEvent(const QJsonValue &event) {
     if (!m_app) {
@@ -95,10 +97,18 @@ void PresentationController::executeEffect(const QJsonValue &command) {
         return;
     }
     if (object.contains(QStringLiteral("ScheduleWakeup"))) {
-        const auto seconds = static_cast<uint32_t>(
-            object.value(QStringLiteral("ScheduleWakeup")).toObject()
-                .value(QStringLiteral("deadline_secs")).toInt(30));
-        emit wakeupScheduled(seconds);
+        const QJsonObject schedule =
+            object.value(QStringLiteral("ScheduleWakeup")).toObject();
+        const QJsonValue millis =
+            schedule.value(QStringLiteral("earliest_millis"));
+        emit wakeupScheduled(vauchi::wakeupDelayMillis(
+            static_cast<uint32_t>(
+                schedule.value(QStringLiteral("earliest_secs")).toInt()),
+            static_cast<uint32_t>(
+                schedule.value(QStringLiteral("deadline_secs")).toInt(30)),
+            millis.isDouble()
+                ? std::optional<uint32_t>(static_cast<uint32_t>(millis.toInt()))
+                : std::nullopt));
         return;
     }
     if (object.contains(QStringLiteral("FilePickFromUser"))) {

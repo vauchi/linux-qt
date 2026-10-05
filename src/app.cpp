@@ -8,6 +8,7 @@
 #include "platform/menubar.h"
 #include "platform/notificationseverity.h"
 #include "platform/systemtray.h"
+#include "wakeupschedule.h"
 
 #include <QApplication>
 #include <QHBoxLayout>
@@ -24,6 +25,7 @@
 #include <QMessageBox>
 #include <QProcessEnvironment>
 #include <QStatusBar>
+#include <optional>
 
 VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
     setWindowTitle(tr_vauchi("app.name", "Vauchi"));
@@ -233,11 +235,12 @@ void VauchiWindow::resizeEvent(QResizeEvent *event) {
     }
 }
 
-void VauchiWindow::scheduleWakeup(uint32_t seconds) {
+void VauchiWindow::scheduleWakeup(uint32_t milliseconds) {
     if (!m_wakeupTimer) return;
     // Cap at a sensible maximum to avoid a stray huge value stalling the loop.
-    constexpr uint32_t maxSeconds = 3600;
-    m_wakeupTimer->start(static_cast<int>(std::min(seconds, maxSeconds)) * 1000);
+    constexpr uint32_t maxMilliseconds = 3600 * 1000;
+    m_wakeupTimer->start(
+        static_cast<int>(std::min(milliseconds, maxMilliseconds)));
 }
 
 void VauchiWindow::onWakeup() {
@@ -257,13 +260,21 @@ void VauchiWindow::onWakeup() {
     drainAndShowNotificationsArray(notifications);
 
     QJsonArray hardwareCommands;
-    uint32_t nextWakeupSeconds = 30; // default fallback if no ScheduleWakeup
+    uint32_t nextWakeupMillis = 30000; // default fallback if no ScheduleWakeup
     for (const auto &cmd : commands) {
         if (cmd.isObject() && cmd.toObject().contains("ScheduleWakeup")) {
-            QJsonObject sched = cmd.toObject()["ScheduleWakeup"].toObject();
-            // Use deadline_secs as the next fire point; the shell only needs
-            // an interval, and deadline is the conservative choice.
-            nextWakeupSeconds = static_cast<uint32_t>(sched["deadline_secs"].toInt(30));
+            const QJsonObject sched = cmd.toObject()["ScheduleWakeup"].toObject();
+            const QJsonValue millis = sched["earliest_millis"];
+            // earliest_millis wins when present (a live QR exchange asks for
+            // wakes every ~100ms, which whole seconds cannot express);
+            // either way the deadline caps the delay.
+            nextWakeupMillis = vauchi::wakeupDelayMillis(
+                static_cast<uint32_t>(sched["earliest_secs"].toInt()),
+                static_cast<uint32_t>(sched["deadline_secs"].toInt(30)),
+                millis.isDouble()
+                    ? std::optional<uint32_t>(
+                          static_cast<uint32_t>(millis.toInt()))
+                    : std::nullopt);
             continue;
         }
         hardwareCommands.append(cmd);
@@ -273,7 +284,7 @@ void VauchiWindow::onWakeup() {
         m_presentation->dispatchCommands(hardwareCommands);
     }
 
-    scheduleWakeup(nextWakeupSeconds);
+    scheduleWakeup(nextWakeupMillis);
 }
 
 void VauchiWindow::importContactsFromFile() {

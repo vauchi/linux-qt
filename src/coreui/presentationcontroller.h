@@ -30,7 +30,9 @@ public:
 signals:
     void presentationChanged();
     void nativeBackRequested();
-    void wakeupScheduled(uint32_t seconds);
+    /// Core's requested delay before the next wakeup, in milliseconds
+    /// (vauchi/private#450: sub-second during a live QR exchange).
+    void wakeupScheduled(uint32_t milliseconds);
 
 private:
     void dispatchEvent(const QJsonObject &event);
