@@ -188,6 +188,27 @@ target_link_libraries(presentation_image_test PRIVATE
     Qt6::Widgets Qt6::Core ${QRENCODE_LIBRARIES})
 add_test(NAME presentation_image_test COMMAND presentation_image_test)
 
+# Pure QR placement/error-correction mapping: Core's display code
+# `placement` (side + top-left corner, in permille of the node's square)
+# and `error_correction` level fields (vauchi/private#450, as on
+# iOS/macOS).
+add_executable(presentation_qr_placement_test
+    tests/presentation_qr_placement_test.cpp
+    src/coreui/navigationicons.cpp
+    src/coreui/presentationaccessibility.cpp
+    src/coreui/presentationsurface.cpp
+    src/coreui/presentationsurface_avatar.cpp
+    src/coreui/presentationsurface_nodes.cpp
+    src/coreui/presentationsurface_qr.cpp)
+target_include_directories(presentation_qr_placement_test PRIVATE
+    src ${QRENCODE_INCLUDE_DIRS})
+target_link_directories(presentation_qr_placement_test PRIVATE
+    ${QRENCODE_LIBRARY_DIRS})
+target_link_libraries(presentation_qr_placement_test PRIVATE
+    Qt6::Widgets Qt6::Core ${QRENCODE_LIBRARIES})
+add_test(NAME presentation_qr_placement_test
+    COMMAND presentation_qr_placement_test)
+
 add_executable(presentation_controller_test
     tests/presentation_controller_test.cpp
     src/coreui/presentationcontroller.cpp
@@ -269,6 +290,15 @@ target_include_directories(screen_catalog_test PRIVATE src)
 target_link_libraries(screen_catalog_test PRIVATE Qt6::Core)
 add_test(NAME screen_catalog_test COMMAND screen_catalog_test)
 
+# Pure wakeup-delay computation from Core's `ScheduleWakeup`: millis wins
+# over whole seconds, and the deadline caps either (vauchi/private#450,
+# as on macOS's `armWakeupTimer`). No Qt or CABI dependency needed.
+add_executable(wakeup_schedule_test
+    tests/wakeup_schedule_test.cpp
+    src/wakeupschedule.cpp)
+target_include_directories(wakeup_schedule_test PRIVATE src)
+add_test(NAME wakeup_schedule_test COMMAND wakeup_schedule_test)
+
 # Every C++ test here states its expectations with assert(). NDEBUG compiles
 # assert() to nothing, so a Release-configured build turns the whole suite into
 # no-ops that exit 0 while checking nothing — indistinguishable from passing.
@@ -286,13 +316,15 @@ foreach(vauchi_test_target
         presentation_state_test
         presentation_surface_test
         presentation_image_test
+        presentation_qr_placement_test
         presentation_controller_test
         presentation_navigation_test
         navigation_icons_test
         theme_test
         screen_catalog_test
         notification_severity_test
-        menubar_test)
+        menubar_test
+        wakeup_schedule_test)
     target_compile_options(${vauchi_test_target} PRIVATE -UNDEBUG)
 endforeach()
 
