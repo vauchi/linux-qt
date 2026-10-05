@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "presentationsurface.h"
+#include "presentationsurface_qr.h"
 
 #include <QJsonArray>
+#include <QJsonObject>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPainter>
@@ -12,16 +14,47 @@
 #include <QVBoxLayout>
 #include <qrencode.h>
 
+namespace vauchi {
+
+QrFrameSpec qrFrameSpec(const QJsonValue &placement, int squareSide) {
+    if (!placement.isObject()) {
+        return {squareSide, 0, 0};
+    }
+    const QJsonObject wire = placement.toObject();
+    int size = wire.value(QStringLiteral("size")).toInt();
+    if (size <= 0) {
+        return {squareSide, 0, 0};
+    }
+    constexpr int kFull = 1000;
+    size = qMin(size, kFull);
+    const int room = kFull - size;
+    const int x = qBound(0, wire.value(QStringLiteral("x")).toInt(), room);
+    const int y = qBound(0, wire.value(QStringLiteral("y")).toInt(), room);
+    // Multiply before dividing: 650 x 200 / 1000 is exact.
+    const auto scaled = [squareSide, kFull](int permille) {
+        return permille * squareSide / kFull;
+    };
+    return {scaled(size), scaled(x), scaled(y)};
+}
+
+QRecLevel qrCorrectionLevel(const QJsonValue &errorCorrection) {
+    return errorCorrection.toString() == QStringLiteral("low") ? QR_ECLEVEL_L
+                                                                : QR_ECLEVEL_M;
+}
+
+} // namespace vauchi
+
 namespace {
 
 constexpr int qrExtent = 200;
 constexpr int quietZoneModules = 4;
 constexpr int frameIntervalMilliseconds = 250;
 
-QPixmap encodeQr(const QString &payload) {
+QPixmap encodeQr(const QString &payload, const QJsonValue &placement,
+                 QRecLevel level) {
     const QByteArray bytes = payload.toUtf8();
     QRcode *code =
-        QRcode_encodeString(bytes.constData(), 0, QR_ECLEVEL_M, QR_MODE_8, 1);
+        QRcode_encodeString(bytes.constData(), 0, level, QR_MODE_8, 1);
     if (code == nullptr || code->width <= 0) {
         if (code != nullptr) {
             QRcode_free(code);
@@ -31,10 +64,13 @@ QPixmap encodeQr(const QString &payload) {
 
     const int modules = code->width;
     const int extentWithQuietZone = modules + quietZoneModules * 2;
-    const int scale = qMax(1, qrExtent / extentWithQuietZone);
-    const int imageExtent = extentWithQuietZone * scale;
+    const vauchi::QrFrameSpec frame = vauchi::qrFrameSpec(placement, qrExtent);
+    const int scale = qMax(1, frame.side / extentWithQuietZone);
     const int offset = quietZoneModules * scale;
-    QPixmap image(imageExtent, imageExtent);
+
+    // The whole square is painted light; the modules are drawn only
+    // inside the placed sub-square Core named (vauchi/private#450).
+    QPixmap image(qrExtent, qrExtent);
     image.fill(Qt::white);
 
     QPainter painter(&image);
@@ -43,7 +79,8 @@ QPixmap encodeQr(const QString &payload) {
     for (int y = 0; y < modules; ++y) {
         for (int x = 0; x < modules; ++x) {
             if ((code->data[y * modules + x] & 1U) != 0U) {
-                painter.drawRect(offset + x * scale, offset + y * scale, scale,
+                painter.drawRect(frame.left + offset + x * scale,
+                                 frame.top + offset + y * scale, scale,
                                  scale);
             }
         }
@@ -87,6 +124,10 @@ QWidget *PresentationSurface::renderQr(const QJsonObject &payload) {
     applyAccessibility(image, accessibility);
     layout->addWidget(image);
 
+    const QJsonValue placement = payload.value(QStringLiteral("placement"));
+    const QRecLevel level = vauchi::qrCorrectionLevel(
+        payload.value(QStringLiteral("error_correction")));
+
     const QJsonArray payloadValues =
         payload.value(QStringLiteral("payloads")).toArray();
     QStringList frames;
@@ -95,15 +136,16 @@ QWidget *PresentationSurface::renderQr(const QJsonObject &payload) {
         frames.push_back(value.toString());
     }
     if (!frames.isEmpty()) {
-        image->setPixmap(encodeQr(frames.first()));
+        image->setPixmap(encodeQr(frames.first(), placement, level));
     }
     if (frames.size() > 1) {
         auto *timer = new QTimer(container);
         timer->setInterval(frameIntervalMilliseconds);
         connect(timer, &QTimer::timeout, image,
-                [image, frames, frame = 0]() mutable {
+                [image, frames, placement, level, frame = 0]() mutable {
                     frame = (frame + 1) % frames.size();
-                    image->setPixmap(encodeQr(frames.at(frame)));
+                    image->setPixmap(
+                        encodeQr(frames.at(frame), placement, level));
                 });
         timer->start();
     }
