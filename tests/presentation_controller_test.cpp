@@ -144,6 +144,26 @@ void assertNativeBarAndFocusRestoration() {
     assert(secondary != nullptr);
     assert(secondary->shortcut()
            == QKeySequence(QStringLiteral("Alt+Down")));
+
+    // Design 2026-10-06 (vauchi/private#534): the separate row above the
+    // tab bar/sidebar is retired. Back, navigation and secondary move into
+    // the surface's own title row; primary moves to the bottom of the
+    // surface content, not that row.
+    assert(controller.findChild<QWidget *>("contextual-command-bar")
+           == nullptr);
+    auto *titleRow = controller.findChild<QWidget *>("surface-title-row");
+    assert(titleRow != nullptr);
+    auto *back = controller.findChild<QPushButton *>("context-back");
+    assert(back != nullptr);
+    assert(back->parentWidget() == titleRow);
+    assert(back->shortcut() == QKeySequence::Back);
+    assert(!back->icon().isNull());
+    auto *screenTitle = controller.findChild<QLabel *>("screen_title");
+    assert(screenTitle != nullptr);
+    assert(screenTitle->parentWidget() == titleRow);
+    assert(navigation->parentWidget() == titleRow);
+    assert(secondary->parentWidget() == titleRow);
+    assert(primary->parentWidget() != titleRow);
 }
 
 void assertOverlayStructures(bool reducedMotion) {
@@ -250,6 +270,10 @@ void assertNoNavigationButtonBesideTheSidebarAndAnInfoButton() {
     assert(info != nullptr);
     assert(info->text() == QStringLiteral("Info"));
     assert(controller.findChild<QPushButton *>("context-primary") != nullptr);
+
+    auto *titleRow = controller.findChild<QWidget *>("surface-title-row");
+    assert(titleRow != nullptr);
+    assert(info->parentWidget() == titleRow);
 }
 
 // An information overlay is read, not chosen from: a dialog with Core's
