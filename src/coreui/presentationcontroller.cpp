@@ -11,8 +11,6 @@
 #include <QApplication>
 #include <QBoxLayout>
 #include <QJsonDocument>
-#include <QKeySequence>
-#include <QPushButton>
 #include <QSplitter>
 
 PresentationController::PresentationController(struct VauchiApp *app,
@@ -205,12 +203,28 @@ void PresentationController::renderPresentation() {
     }
     auto *outer = new QVBoxLayout(this);
     const QStringList visible = m_state.visibleSurfaceIds();
+    // Persistent left column, not the overlay's modal dialog: Core now
+    // publishes navigation on every surface via SetNavigation rather than
+    // only inside a PresentOverlay (D4), so an empty list simply means no
+    // sidebar rather than "wait for a dismiss".
+    const QJsonObject navigation = m_state.navigation();
+    const bool sidebarShown =
+        !navigation.value(QStringLiteral("items")).toArray().isEmpty();
+    // Design 2026-10-06 (vauchi/private#534): the bar is drawn inside the
+    // active surface (title row + a primary button at the bottom of its
+    // content), not as a separate row here, so only that surface — never
+    // a split layout's other pane — receives it.
+    const QJsonObject contextBar = m_state.contextBar();
+    const QString activeSurfaceId = m_state.activeSurfaceId();
     QWidget *body = nullptr;
     if (visible.size() > 1) {
         auto *splitter = new QSplitter(Qt::Horizontal);
         for (const QString &surfaceId : visible) {
             if (const auto surface = m_state.surface(surfaceId)) {
-                auto *widget = new PresentationSurface(*surface);
+                auto *widget = new PresentationSurface(
+                    *surface,
+                    surfaceId == activeSurfaceId ? contextBar : QJsonObject(),
+                    sidebarShown);
                 connect(widget, &PresentationSurface::interactionReady, this,
                         &PresentationController::dispatchInteraction,
                         Qt::QueuedConnection);
@@ -229,7 +243,8 @@ void PresentationController::renderPresentation() {
         body = splitter;
     } else if (!visible.isEmpty()) {
         if (const auto surface = m_state.surface(visible.constFirst())) {
-            auto *widget = new PresentationSurface(*surface);
+            auto *widget =
+                new PresentationSurface(*surface, contextBar, sidebarShown);
             connect(widget, &PresentationSurface::interactionReady, this,
                     &PresentationController::dispatchInteraction,
                     Qt::QueuedConnection);
@@ -248,15 +263,10 @@ void PresentationController::renderPresentation() {
     if (!body) {
         body = new QWidget;
     }
-    // Persistent left column, not the overlay's modal dialog: Core now
-    // publishes navigation on every surface via SetNavigation rather than
-    // only inside a PresentOverlay (D4), so an empty list simply means no
-    // sidebar rather than "wait for a dismiss".
-    const QJsonObject navigation = m_state.navigation();
     QWidget *row = body;
-    if (!navigation.value(QStringLiteral("items")).toArray().isEmpty()) {
+    if (sidebarShown) {
         auto *sidebar = new NavigationSidebar(navigation);
-        const QString surfaceId = m_state.activeSurfaceId();
+        const QString surfaceId = activeSurfaceId;
         connect(sidebar, &NavigationSidebar::interactionReady, this,
                 [this, surfaceId](const QString &interactionId) {
                     dispatchInteraction(surfaceId, interactionId);
@@ -270,7 +280,6 @@ void PresentationController::renderPresentation() {
         row = splitter;
     }
     outer->addWidget(row, 1);
-    renderContextBar(outer);
     if (!focusObjectName.isEmpty()) {
         if (QWidget *restored =
                 findChild<QWidget *>(focusObjectName);
@@ -280,67 +289,3 @@ void PresentationController::renderPresentation() {
     }
 }
 
-void PresentationController::renderContextBar(QBoxLayout *layout) {
-    const QJsonObject bar = m_state.contextBar();
-    auto *strip = new QWidget;
-    strip->setObjectName(QStringLiteral("contextual-command-bar"));
-    auto *row = new QHBoxLayout(strip);
-    const QString surfaceId = m_state.activeSurfaceId();
-    // Beside the sidebar the navigation launcher is left out: both open
-    // the same destinations (vauchi/private#479). `info` is Core's fifth
-    // slot, absent from a Core that has no text for the surface.
-    const bool sidebarShown = !m_state.navigation()
-                                   .value(QStringLiteral("items"))
-                                   .toArray()
-                                   .isEmpty();
-    for (const QString &role :
-         {QStringLiteral("back"), QStringLiteral("navigation"),
-          QStringLiteral("primary"), QStringLiteral("secondary"),
-          QStringLiteral("info")}) {
-        if (sidebarShown && role == QStringLiteral("navigation")) {
-            continue;
-        }
-        const QJsonObject action = bar.value(role).toObject();
-        if (action.isEmpty()) {
-            continue;
-        }
-        auto *button =
-            new QPushButton(action.value(QStringLiteral("label")).toString());
-        button->setObjectName(QStringLiteral("context-") + role);
-        button->setAccessibleName(
-            action.value(QStringLiteral("accessibility_label")).toString());
-        button->setEnabled(
-            action.value(QStringLiteral("enabled")).toBool(true));
-        button->setProperty(
-            "tone", action.value(QStringLiteral("tone")).toString());
-        if (role == QStringLiteral("primary")) {
-            button->setSizePolicy(QSizePolicy::Expanding,
-                                  QSizePolicy::Preferred);
-            button->setDefault(true);
-        }
-        const QString shortcut =
-            action.value(QStringLiteral("shortcut")).toString();
-        if (shortcut == QStringLiteral("back")) {
-            button->setShortcut(QKeySequence::Back);
-        } else if (shortcut == QStringLiteral("undo")) {
-            button->setShortcut(QKeySequence::Undo);
-        } else if (shortcut == QStringLiteral("activate_primary")) {
-            button->setShortcut(QKeySequence(QStringLiteral("Ctrl+Return")));
-        } else if (role == QStringLiteral("navigation")) {
-            button->setShortcut(QKeySequence(QStringLiteral("Ctrl+K")));
-        } else if (role == QStringLiteral("secondary")) {
-            button->setShortcut(QKeySequence(QStringLiteral("Alt+Down")));
-        } else if (role == QStringLiteral("info")) {
-            button->setShortcut(QKeySequence::HelpContents);
-        }
-        const QString interaction =
-            action.value(QStringLiteral("interaction_id")).toString();
-        connect(button, &QPushButton::clicked, this,
-                [this, surfaceId, interaction]() {
-                    dispatchInteraction(surfaceId, interaction);
-                },
-                Qt::QueuedConnection);
-        row->addWidget(button);
-    }
-    layout->addWidget(strip);
-}

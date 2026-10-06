@@ -8,6 +8,7 @@
 
 class QBoxLayout;
 class QJsonArray;
+class QPushButton;
 
 /// Domain-free native renderer for one Core SurfaceSpec.
 class PresentationSurface : public QWidget {
@@ -15,6 +16,8 @@ class PresentationSurface : public QWidget {
 
 public:
     explicit PresentationSurface(const QJsonObject &surface,
+                                 const QJsonObject &contextBar = QJsonObject(),
+                                 bool sidebarShown = false,
                                  QWidget *parent = nullptr);
 
 signals:
@@ -47,6 +50,8 @@ private:
     QWidget *renderImage(const QJsonObject &payload);
     QWidget *renderQr(const QJsonObject &payload);
     QWidget *actionButton(const QJsonObject &action);
+    QPushButton *contextBarButton(const QJsonObject &action,
+                                  const QString &role);
     void activate(const QJsonObject &action);
     QString targetSizeStyleSheet() const;
     static void applyAccessibility(QWidget *widget,

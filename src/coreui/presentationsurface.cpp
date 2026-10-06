@@ -10,7 +10,9 @@
 #include <QEvent>
 #include <QFrame>
 #include <QGroupBox>
+#include <QHBoxLayout>
 #include <QJsonArray>
+#include <QKeySequence>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMenu>
@@ -26,6 +28,8 @@
 #include <QVBoxLayout>
 
 PresentationSurface::PresentationSurface(const QJsonObject &surface,
+                                         const QJsonObject &contextBar,
+                                         bool sidebarShown,
                                          QWidget *parent)
     : QWidget(parent),
       m_surfaceId(surface.value(QStringLiteral("surface_id")).toString()) {
@@ -38,13 +42,49 @@ PresentationSurface::PresentationSurface(const QJsonObject &surface,
     setAccessibleName(
         surface.value(QStringLiteral("accessibility_label")).toString());
     auto *outer = new QVBoxLayout(this);
+
+    // Design 2026-10-06 (vauchi/private#534): Core's ContextBar slots move
+    // into the surface itself instead of a separate row above the tab
+    // bar/sidebar. Back, navigation (where no sidebar shows the same
+    // destinations) and secondary sit beside the title; absent slots take
+    // no space; the title wraps rather than ceding room to them.
+    auto *titleRow = new QWidget;
+    titleRow->setObjectName(QStringLiteral("surface-title-row"));
+    auto *titleRowLayout = new QHBoxLayout(titleRow);
+    titleRowLayout->setContentsMargins(0, 0, 0, 0);
+
+    const QJsonObject back = contextBar.value(QStringLiteral("back")).toObject();
+    if (!back.isEmpty()) {
+        titleRowLayout->addWidget(contextBarButton(back, QStringLiteral("back")));
+    }
+    const QJsonObject navigation =
+        contextBar.value(QStringLiteral("navigation")).toObject();
+    if (!sidebarShown && !navigation.isEmpty()) {
+        titleRowLayout->addWidget(
+            contextBarButton(navigation, QStringLiteral("navigation")));
+    }
+
     auto *title = new QLabel(surface.value(QStringLiteral("title")).toString());
     title->setObjectName(QStringLiteral("screen_title"));
     QFont titleFont = title->font();
     titleFont.setPointSize(titleFont.pointSize() + 5);
     titleFont.setBold(true);
     title->setFont(titleFont);
-    outer->addWidget(title);
+    title->setWordWrap(true);
+    titleRowLayout->addWidget(title, 1);
+
+    const QJsonObject info = contextBar.value(QStringLiteral("info")).toObject();
+    if (!info.isEmpty()) {
+        titleRowLayout->addWidget(contextBarButton(info, QStringLiteral("info")));
+    }
+    const QJsonObject secondary =
+        contextBar.value(QStringLiteral("secondary")).toObject();
+    if (!secondary.isEmpty()) {
+        titleRowLayout->addWidget(
+            contextBarButton(secondary, QStringLiteral("secondary")));
+    }
+    outer->addWidget(titleRow);
+
     const QString subtitle =
         surface.value(QStringLiteral("subtitle")).toString();
     if (!subtitle.isEmpty()) {
@@ -68,6 +108,15 @@ PresentationSurface::PresentationSurface(const QJsonObject &surface,
         scroll->setFrameShape(QFrame::NoFrame);
         scroll->setWidget(content);
         outer->addWidget(scroll, 1);
+    }
+
+    // Primary sits at the bottom of the surface, inside it, never in the
+    // title row: a fixed layout keeps it in view above; a scrolling one
+    // pins it under the scroll area rather than letting it scroll away.
+    const QJsonObject primary =
+        contextBar.value(QStringLiteral("primary")).toObject();
+    if (!primary.isEmpty()) {
+        outer->addWidget(contextBarButton(primary, QStringLiteral("primary")));
     }
 }
 

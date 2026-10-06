@@ -13,11 +13,15 @@
 #include <QComboBox>
 #include <QGroupBox>
 #include <QHBoxLayout>
+#include <QIcon>
 #include <QJsonArray>
+#include <QKeySequence>
 #include <QLabel>
 #include <QPalette>
 #include <QPixmap>
 #include <QPushButton>
+#include <QSizePolicy>
+#include <QStyle>
 #include <QToolButton>
 #include <QVBoxLayout>
 
@@ -290,6 +294,45 @@ QWidget *PresentationSurface::actionButton(const QJsonObject &action) {
     const QString tone = action.value(QStringLiteral("tone")).toString();
     if (tone == QStringLiteral("destructive") || tone == QStringLiteral("serious")) {
         button->setProperty("tone", tone);
+    }
+    connect(button, &QPushButton::clicked, this,
+            [this, action]() { activate(action); });
+    return button;
+}
+
+QPushButton *PresentationSurface::contextBarButton(const QJsonObject &action,
+                                                    const QString &role) {
+    auto *button =
+        new QPushButton(action.value(QStringLiteral("label")).toString());
+    button->setObjectName(QStringLiteral("context-") + role);
+    button->setAccessibleName(
+        action.value(QStringLiteral("accessibility_label")).toString());
+    button->setEnabled(action.value(QStringLiteral("enabled")).toBool(true));
+    button->setProperty(
+        "tone", action.value(QStringLiteral("tone")).toString());
+    if (role == QStringLiteral("back")) {
+        // The platform back chevron, beside Core's own label.
+        button->setIcon(QIcon::fromTheme(
+            QStringLiteral("go-previous"),
+            button->style()->standardIcon(QStyle::SP_ArrowBack)));
+    }
+    if (role == QStringLiteral("primary")) {
+        button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        button->setDefault(true);
+    }
+    const QString shortcut = action.value(QStringLiteral("shortcut")).toString();
+    if (shortcut == QStringLiteral("back")) {
+        button->setShortcut(QKeySequence::Back);
+    } else if (shortcut == QStringLiteral("undo")) {
+        button->setShortcut(QKeySequence::Undo);
+    } else if (shortcut == QStringLiteral("activate_primary")) {
+        button->setShortcut(QKeySequence(QStringLiteral("Ctrl+Return")));
+    } else if (role == QStringLiteral("navigation")) {
+        button->setShortcut(QKeySequence(QStringLiteral("Ctrl+K")));
+    } else if (role == QStringLiteral("secondary")) {
+        button->setShortcut(QKeySequence(QStringLiteral("Alt+Down")));
+    } else if (role == QStringLiteral("info")) {
+        button->setShortcut(QKeySequence::HelpContents);
     }
     connect(button, &QPushButton::clicked, this,
             [this, action]() { activate(action); });

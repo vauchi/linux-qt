@@ -10,7 +10,6 @@
 #include <QWidget>
 
 class HardwareBackend;
-class QBoxLayout;
 class QrPastePrompt;
 
 /// Applies Core reducer batches atomically and renders native Qt equivalents.
@@ -51,7 +50,6 @@ private:
     void applyEnvelope(const QByteArray &json);
     void applyBatch(const QJsonArray &commands);
     void renderPresentation();
-    void renderContextBar(QBoxLayout *layout);
     void presentOverlay(const QString &surfaceId,
                         const QJsonObject &overlay);
     void executeEffect(const QJsonValue &command);

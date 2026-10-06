@@ -10,11 +10,13 @@
 #include <QComboBox>
 #include <QFrame>
 #include <QJsonArray>
+#include <QKeySequence>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMetaObject>
 #include <QProgressBar>
 #include <QPushButton>
+#include <QSizePolicy>
 #include <QSlider>
 #include <QToolButton>
 #include <cassert>
@@ -480,6 +482,67 @@ int main(int argc, char **argv) {
         assert(button->minimumHeight() == 48);
         button->click();
         assert(reported == QStringLiteral("row-info"));
+    }
+
+    {
+        // Design 2026-10-06 (vauchi/private#534): Core's ContextBar slots
+        // render inside the surface — back/info/secondary in its title
+        // row, primary pinned under its content — not in a separate row.
+        const QJsonObject bar{
+            {"back", action("surface-back", "Contacts")},
+            {"navigation", action("surface-navigation", "Navigate")},
+            {"secondary", action("surface-secondary", "More")},
+            {"info", action("surface-info", "Info")},
+            {"primary", action("surface-primary", "Add Entry")},
+        };
+        const QJsonObject barSurface{
+            {"surface_id", "card"},
+            {"revision", 1},
+            {"title", "My Card"},
+            {"subtitle", QJsonValue::Null},
+            {"accessibility_label", "My Card"},
+            {"layout", "scroll"},
+            {"tokens", QJsonObject{}},
+            {"nodes", QJsonArray{}},
+        };
+
+        PresentationSurface withSidebar(barSurface, bar,
+                                        /*sidebarShown=*/true);
+        auto *titleRow =
+            withSidebar.findChild<QWidget *>("surface-title-row");
+        assert(titleRow != nullptr);
+        auto *back = withSidebar.findChild<QPushButton *>("context-back");
+        assert(back != nullptr);
+        assert(back->parentWidget() == titleRow);
+        assert(back->text() == QStringLiteral("Contacts"));
+        assert(!back->icon().isNull());
+        auto *info = withSidebar.findChild<QPushButton *>("context-info");
+        assert(info != nullptr);
+        assert(info->parentWidget() == titleRow);
+        auto *secondary =
+            withSidebar.findChild<QPushButton *>("context-secondary");
+        assert(secondary != nullptr);
+        assert(secondary->parentWidget() == titleRow);
+        // The sidebar already lists the same destinations the launcher
+        // opens (vauchi/private#479), so it stays out of the title row.
+        assert(withSidebar.findChild<QPushButton *>("context-navigation")
+               == nullptr);
+        auto *primary =
+            withSidebar.findChild<QPushButton *>("context-primary");
+        assert(primary != nullptr);
+        assert(primary->parentWidget() != titleRow);
+        assert(primary->sizePolicy().horizontalPolicy()
+               == QSizePolicy::Expanding);
+        assert(withSidebar.findChild<QWidget *>("contextual-command-bar")
+               == nullptr);
+
+        PresentationSurface withoutSidebar(barSurface, bar,
+                                           /*sidebarShown=*/false);
+        auto *navigation =
+            withoutSidebar.findChild<QPushButton *>("context-navigation");
+        assert(navigation != nullptr);
+        assert(navigation->parentWidget()
+               == withoutSidebar.findChild<QWidget *>("surface-title-row"));
     }
 
     return 0;

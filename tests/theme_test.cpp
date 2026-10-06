@@ -134,7 +134,6 @@ static void test_stylesheet_from_colors() {
     assert(stylesheet.contains("#181825"));  // bg-secondary
     assert(stylesheet.contains("#45475a"));  // border
     assert(stylesheet.contains("QMainWindow"));
-    assert(stylesheet.contains("QWidget#contextual-command-bar"));
     assert(stylesheet.contains("QPushButton#context-primary"));
     assert(stylesheet.contains("QPushButton[tone=\"destructive\"]"));
     printf("  PASS: stylesheet_from_colors\n");

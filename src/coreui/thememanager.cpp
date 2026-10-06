@@ -173,8 +173,6 @@ QString ThemeManager::stylesheetFromColors(const QJsonObject &colors) {
         "  font-family: \"%12\"; font-weight: %13; }"
         "QLabel[textStyle=\"monospace\"] { font-family: \"%14\"; }"
         "QMainWindow { background-color: %1; color: %2; }"
-        "QWidget#contextual-command-bar { background-color: %3; "
-        "  border-top: 1px solid %4; }"
         "QLineEdit { border: 1px solid %4; background-color: %3; color: %2; }"
         "QLabel { color: %2; }"
         "QPushButton { background-color: %5; color: %2; border: 1px solid %4; "
