@@ -356,6 +356,28 @@ void assertQrScanRequestOpensNonBlockingPastePrompt() {
     QApplication::processEvents();
 }
 
+// Core computes the wait and sends it as `delay_millis`; the shell arms
+// exactly that, whatever the other fields would suggest
+// (vauchi/private#548).
+void assertScheduleWakeupArmsCoresDelay() {
+    PresentationController controller(nullptr);
+    QVector<uint32_t> scheduled;
+    QObject::connect(&controller, &PresentationController::wakeupScheduled,
+                     &controller, [&scheduled](uint32_t milliseconds) {
+                         scheduled.append(milliseconds);
+                     });
+    controller.dispatchCommands(QJsonArray{QJsonObject{
+        {"ScheduleWakeup",
+         QJsonObject{{"earliest_secs", 5},
+                     {"deadline_secs", 10},
+                     {"min_interval_secs", 1},
+                     {"earliest_millis", QJsonValue::Null},
+                     {"delay_millis", 2000}}}}});
+    QApplication::processEvents();
+    assert(scheduled.size() == 1);
+    assert(scheduled.constFirst() == 2000);
+}
+
 QJsonObject qrScannedEvent(const QString &data) {
     return {{QStringLiteral("QrScanned"),
              QJsonObject{{QStringLiteral("data"), data}}}};
@@ -458,6 +480,7 @@ int main(int argc, char **argv) {
     assertQrPastePromptCancelNotifiesCore();
     assertQrPastePromptEmptyAcceptNotifiesCore();
     assertQrPastePromptReusesOpenDialog();
+    assertScheduleWakeupArmsCoresDelay();
     qunsetenv("QT_REDUCE_MOTION");
     return 0;
 }
