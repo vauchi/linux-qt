@@ -4,4 +4,4 @@
 #
 # The Core release this app builds its C ABI from — the only copy of the
 # pin (ADR-026 amendment). Core's release pipeline opens the bump MR.
-v0.76.0
+v0.76.1
