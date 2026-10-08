@@ -8,7 +8,6 @@
 #include "platform/menubar.h"
 #include "platform/notificationseverity.h"
 #include "platform/systemtray.h"
-#include "wakeupschedule.h"
 
 #include <QApplication>
 #include <QHBoxLayout>
@@ -264,17 +263,9 @@ void VauchiWindow::onWakeup() {
     for (const auto &cmd : commands) {
         if (cmd.isObject() && cmd.toObject().contains("ScheduleWakeup")) {
             const QJsonObject sched = cmd.toObject()["ScheduleWakeup"].toObject();
-            const QJsonValue millis = sched["earliest_millis"];
-            // earliest_millis wins when present (a live QR exchange asks for
-            // wakes every ~100ms, which whole seconds cannot express);
-            // either way the deadline caps the delay.
-            nextWakeupMillis = vauchi::wakeupDelayMillis(
-                static_cast<uint32_t>(sched["earliest_secs"].toInt()),
-                static_cast<uint32_t>(sched["deadline_secs"].toInt(30)),
-                millis.isDouble()
-                    ? std::optional<uint32_t>(
-                          static_cast<uint32_t>(millis.toInt()))
-                    : std::nullopt);
+            // Core computes the wait, never past the deadline (#548).
+            nextWakeupMillis = static_cast<uint32_t>(
+                sched["delay_millis"].toInt(static_cast<int>(nextWakeupMillis)));
             continue;
         }
         hardwareCommands.append(cmd);

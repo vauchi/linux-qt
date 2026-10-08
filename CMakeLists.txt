@@ -44,7 +44,6 @@ find_library(VAUCHI_CABI vauchi_cabi PATHS ${VAUCHI_CABI_DIR} REQUIRED)
 set(QVAUCHI_SOURCES
     src/main.cpp
     src/app.cpp
-    src/wakeupschedule.cpp
     src/coreui/presentationstate.cpp
     src/coreui/presentationcontroller.cpp
     src/coreui/presentationcontroller_effects.cpp
@@ -225,8 +224,7 @@ add_executable(presentation_controller_test
     src/coreui/presentationsurface_qr.cpp
     src/coreui/qrpasteprompt.cpp
     src/platform/hardwarebackend.cpp
-    src/platform/directsendworker.cpp
-    src/wakeupschedule.cpp)
+    src/platform/directsendworker.cpp)
 target_include_directories(presentation_controller_test PRIVATE
     include src ${VAUCHI_CABI_INCLUDE} ${QRENCODE_INCLUDE_DIRS})
 target_link_directories(presentation_controller_test PRIVATE
@@ -292,14 +290,6 @@ target_include_directories(screen_catalog_test PRIVATE src)
 target_link_libraries(screen_catalog_test PRIVATE Qt6::Core)
 add_test(NAME screen_catalog_test COMMAND screen_catalog_test)
 
-# Pure wakeup-delay computation from Core's `ScheduleWakeup`: millis wins
-# over whole seconds, and the deadline caps either (vauchi/private#450,
-# as on macOS's `armWakeupTimer`). No Qt or CABI dependency needed.
-add_executable(wakeup_schedule_test
-    tests/wakeup_schedule_test.cpp
-    src/wakeupschedule.cpp)
-target_include_directories(wakeup_schedule_test PRIVATE src)
-add_test(NAME wakeup_schedule_test COMMAND wakeup_schedule_test)
 
 # Every C++ test here states its expectations with assert(). NDEBUG compiles
 # assert() to nothing, so a Release-configured build turns the whole suite into
@@ -325,8 +315,7 @@ foreach(vauchi_test_target
         theme_test
         screen_catalog_test
         notification_severity_test
-        menubar_test
-        wakeup_schedule_test)
+        menubar_test)
     target_compile_options(${vauchi_test_target} PRIVATE -UNDEBUG)
 endforeach()
 

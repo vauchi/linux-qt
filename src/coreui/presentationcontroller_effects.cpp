@@ -6,7 +6,6 @@
 #include "presentationeffectpayload.h"
 
 #include "../platform/hardwarebackend.h"
-#include "../wakeupschedule.h"
 
 #include <QDesktopServices>
 #include <QDialog>
@@ -99,16 +98,9 @@ void PresentationController::executeEffect(const QJsonValue &command) {
     if (object.contains(QStringLiteral("ScheduleWakeup"))) {
         const QJsonObject schedule =
             object.value(QStringLiteral("ScheduleWakeup")).toObject();
-        const QJsonValue millis =
-            schedule.value(QStringLiteral("earliest_millis"));
-        emit wakeupScheduled(vauchi::wakeupDelayMillis(
-            static_cast<uint32_t>(
-                schedule.value(QStringLiteral("earliest_secs")).toInt()),
-            static_cast<uint32_t>(
-                schedule.value(QStringLiteral("deadline_secs")).toInt(30)),
-            millis.isDouble()
-                ? std::optional<uint32_t>(static_cast<uint32_t>(millis.toInt()))
-                : std::nullopt));
+        // Core computes the wait, never past the deadline (#548).
+        emit wakeupScheduled(static_cast<uint32_t>(
+            schedule.value(QStringLiteral("delay_millis")).toInt(30000)));
         return;
     }
     if (object.contains(QStringLiteral("FilePickFromUser"))) {
