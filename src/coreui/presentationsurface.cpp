@@ -160,11 +160,12 @@ QWidget *PresentationSurface::renderNode(const QJsonValue &nodeValue) {
         input->setPlaceholderText(
             payload.value(QStringLiteral("placeholder")).toString());
         input->setEnabled(payload.value(QStringLiteral("enabled")).toBool(true));
-        input->setEchoMode(
-            payload.value(QStringLiteral("input_kind")).toString()
-                    == QStringLiteral("password")
-                ? QLineEdit::Password
-                : QLineEdit::Normal);
+        const QString inputKind =
+            payload.value(QStringLiteral("input_kind")).toString();
+        input->setEchoMode(inputKind == QStringLiteral("password")
+                                   || inputKind == QStringLiteral("pin")
+                               ? QLineEdit::Password
+                               : QLineEdit::Normal);
         const int maxLength =
             payload.value(QStringLiteral("max_length")).toInt();
         if (maxLength > 0) {
