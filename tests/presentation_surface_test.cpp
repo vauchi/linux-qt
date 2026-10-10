@@ -82,6 +82,28 @@ int main(int argc, char **argv) {
                               {"enabled", true},
                               {"accessibility", accessibility("Name")}}}},
              QJsonObject{
+                 {"Input",
+                  QJsonObject{{"binding_id", "app_password"},
+                              {"label", "Password"},
+                              {"value", ""},
+                              {"placeholder", QJsonValue::Null},
+                              {"input_kind", "password"},
+                              {"max_length", 128},
+                              {"validation_error", QJsonValue::Null},
+                              {"enabled", true},
+                              {"accessibility", accessibility("Password")}}}},
+             QJsonObject{
+                 {"Input",
+                  QJsonObject{{"binding_id", "duress_pin"},
+                              {"label", "Duress PIN"},
+                              {"value", ""},
+                              {"placeholder", QJsonValue::Null},
+                              {"input_kind", "pin"},
+                              {"max_length", 6},
+                              {"validation_error", QJsonValue::Null},
+                              {"enabled", true},
+                              {"accessibility", accessibility("Duress PIN")}}}},
+             QJsonObject{
                  {"Toggle",
                   QJsonObject{{"binding_id", "sharing"},
                               {"label", "Sharing"},
@@ -215,6 +237,13 @@ int main(int argc, char **argv) {
 
     auto *nameInput = renderer.findChild<QLineEdit *>("name");
     assert(nameInput != nullptr);
+    // vauchi/private#619: the app password and the duress PIN are never
+    // drawn as typed.
+    assert(nameInput->echoMode() == QLineEdit::Normal);
+    assert(renderer.findChild<QLineEdit *>("app_password")->echoMode()
+           == QLineEdit::Password);
+    assert(renderer.findChild<QLineEdit *>("duress_pin")->echoMode()
+           == QLineEdit::Password);
     nameInput->setText("Alice");
     assert(binding == QStringLiteral("name"));
     assert(value.toObject().value("text").toString()
