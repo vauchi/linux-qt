@@ -6,6 +6,7 @@
 #include "app.h"
 #include "coreui/presentationsurface.h"
 #include "coreui/thememanager.h"
+#include "platform/deeplink.h"
 #include "platform/screencaptureprotection.h"
 #include "rendercatalog.h"
 #include "vauchi.h"
@@ -81,6 +82,12 @@ int main(int argc, char *argv[]) {
     const int catalogRc = maybeRenderCatalog(qtApp.arguments());
     if (catalogRc >= 0) return catalogRc;
 
+    // A link opened while qvauchi runs goes to that instance; this launch
+    // ends there (vauchi/private#650).
+    const QStringList deepLinks = vauchi::deepLinkUris(qtApp.arguments());
+    vauchi::DeepLinkRelay deepLinkRelay(vauchi::DeepLinkRelay::defaultServerName());
+    if (!deepLinks.isEmpty() && deepLinkRelay.handOff(deepLinks)) return 0;
+
     enableScreenCaptureProtection();
     qtApp.setApplicationName("vauchi");
     qtApp.setApplicationVersion("0.5.0");
@@ -90,6 +97,13 @@ int main(int argc, char *argv[]) {
     VauchiWindow window;
     window.show();
     window.activateWindow();
+
+    QObject::connect(&deepLinkRelay, &vauchi::DeepLinkRelay::linkReceived, &window,
+                     &VauchiWindow::openDeepLink);
+    if (!deepLinkRelay.listen()) {
+        std::fprintf(stderr, "[vauchi] deep links from later launches unavailable\n");
+    }
+    for (const QString &uri : deepLinks) window.openDeepLink(uri);
 
     return qtApp.exec();
 }

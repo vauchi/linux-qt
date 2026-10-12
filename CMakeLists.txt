@@ -44,6 +44,7 @@ find_library(VAUCHI_CABI vauchi_cabi PATHS ${VAUCHI_CABI_DIR} REQUIRED)
 set(QVAUCHI_SOURCES
     src/main.cpp
     src/app.cpp
+    src/platform/deeplink.cpp
     src/coreui/presentationstate.cpp
     src/coreui/presentationcontroller.cpp
     src/coreui/presentationcontroller_effects.cpp
@@ -67,7 +68,7 @@ set(QVAUCHI_SOURCES
     resources/resources.qrc
 )
 
-set(QVAUCHI_LIBS Qt6::Widgets Qt6::Core ${VAUCHI_CABI} ${QRENCODE_LIBRARIES})
+set(QVAUCHI_LIBS Qt6::Widgets Qt6::Core Qt6::Network ${VAUCHI_CABI} ${QRENCODE_LIBRARIES})
 set(VAUCHI_TOKENS_INCLUDE "${CMAKE_SOURCE_DIR}/../themes/generated" CACHE PATH "Path to generated design tokens")
 set(QVAUCHI_INCLUDES include ${QRENCODE_INCLUDE_DIRS} ${VAUCHI_CABI_INCLUDE} ${VAUCHI_TOKENS_INCLUDE})
 set(QVAUCHI_DEFINES "")

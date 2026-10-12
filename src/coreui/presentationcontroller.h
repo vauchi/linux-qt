@@ -22,6 +22,7 @@ public:
     void initialize();
     void refresh();
     void appBackgrounded();
+    void deepLinkOpened(const QString &uri);
     void reportEnvironment(int width, int height);
     void dispatchCommands(const QJsonArray &commands);
     void requestBack();

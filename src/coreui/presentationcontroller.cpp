@@ -57,6 +57,11 @@ void PresentationController::appBackgrounded() {
     dispatchRawEvent(QJsonValue(QStringLiteral("AppBackgrounded")));
 }
 
+void PresentationController::deepLinkOpened(const QString &uri) {
+    dispatchEvent(QJsonObject{
+        {QStringLiteral("DeepLinkOpened"), QJsonObject{{QStringLiteral("uri"), uri}}}});
+}
+
 void PresentationController::reportEnvironment(int width, int height) {
     dispatchEvent(QJsonObject{
         {QStringLiteral("PresentationEnvironmentChanged"),

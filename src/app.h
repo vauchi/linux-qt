@@ -19,6 +19,10 @@ public:
     explicit VauchiWindow(QWidget *parent = nullptr);
     ~VauchiWindow() override;
 
+    /// Brings the window forward and hands a `vauchi://` link to Core,
+    /// which owns its destination.
+    void openDeepLink(const QString &uri);
+
 protected:
     void changeEvent(QEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;

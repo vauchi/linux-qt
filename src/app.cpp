@@ -175,6 +175,13 @@ VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
     m_presentation->initialize();
 }
 
+void VauchiWindow::openDeepLink(const QString &uri) {
+    showNormal();
+    raise();
+    activateWindow();
+    m_presentation->deepLinkOpened(uri);
+}
+
 void VauchiWindow::changeEvent(QEvent *event) {
     QMainWindow::changeEvent(event);
     if (event->type() == QEvent::WindowDeactivate && m_app) {

@@ -4,8 +4,9 @@
 [Desktop Entry]
 Name=Vauchi
 Comment=Privacy-focused updatable contact cards
-Exec=qvauchi
+Exec=qvauchi %u
 Icon=vauchi
 Terminal=false
 Type=Application
 Categories=Network;Chat;
+MimeType=x-scheme-handler/vauchi;
