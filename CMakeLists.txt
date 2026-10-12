@@ -23,7 +23,7 @@ if(COVERAGE)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
 endif()
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Core)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Core Network)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(QRENCODE REQUIRED libqrencode)
@@ -263,6 +263,16 @@ target_include_directories(notification_severity_test PRIVATE src)
 target_link_libraries(notification_severity_test PRIVATE Qt6::Widgets Qt6::Core)
 add_test(NAME notification_severity_test COMMAND notification_severity_test)
 
+# Deep links: the desktop entry registers vauchi://, only vauchi:// arguments
+# reach Core, and a second launch hands its link to the running instance
+# (vauchi/private#650).
+add_executable(deep_link_test tests/deep_link_test.cpp src/platform/deeplink.cpp)
+target_include_directories(deep_link_test PRIVATE src)
+target_link_libraries(deep_link_test PRIVATE Qt6::Core Qt6::Network)
+target_compile_definitions(deep_link_test PRIVATE
+    VAUCHI_DESKTOP_ENTRY="${CMAKE_CURRENT_SOURCE_DIR}/packaging/vauchi-qt.desktop")
+add_test(NAME deep_link_test COMMAND deep_link_test)
+
 # Menu bar test: the import entry's label is Core menu copy with a neutral fallback
 add_executable(menubar_test tests/menubar_test.cpp src/platform/menubar.cpp)
 target_include_directories(menubar_test PRIVATE src ${VAUCHI_CABI_INCLUDE})
@@ -315,6 +325,7 @@ foreach(vauchi_test_target
         theme_test
         screen_catalog_test
         notification_severity_test
+        deep_link_test
         menubar_test)
     target_compile_options(${vauchi_test_target} PRIVATE -UNDEBUG)
 endforeach()
