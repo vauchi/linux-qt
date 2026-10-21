@@ -7,6 +7,7 @@
 #include "coreui/thememanager.h"
 #include "platform/menubar.h"
 #include "platform/notificationseverity.h"
+#include "platform/systemlocale.h"
 #include "platform/systemtray.h"
 
 #include <QApplication>
@@ -88,6 +89,7 @@ VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
     if (!m_app) {
         m_app = vauchi_app_create_with_config(dataDirUtf8.constData(), relayPtr);
     }
+    vauchi::reportSystemLocale(m_app);
 
 #ifndef NDEBUG
     // --reset-for-testing: create a test identity so the app skips onboarding.
