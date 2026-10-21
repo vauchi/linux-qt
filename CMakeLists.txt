@@ -264,6 +264,12 @@ target_include_directories(notification_severity_test PRIVATE src)
 target_link_libraries(notification_severity_test PRIVATE Qt6::Widgets Qt6::Core)
 add_test(NAME notification_severity_test COMMAND notification_severity_test)
 
+# The OS language tag reaches Core for "Follow system" (vauchi/private#721).
+add_executable(system_locale_test tests/system_locale_test.cpp)
+target_include_directories(system_locale_test PRIVATE src)
+target_link_libraries(system_locale_test PRIVATE Qt6::Core)
+add_test(NAME system_locale_test COMMAND system_locale_test)
+
 # Deep links: the desktop entry registers vauchi://, only vauchi:// arguments
 # reach Core, and a second launch hands its link to the running instance
 # (vauchi/private#650).
@@ -326,6 +332,7 @@ foreach(vauchi_test_target
         theme_test
         screen_catalog_test
         notification_severity_test
+        system_locale_test
         deep_link_test
         menubar_test)
     target_compile_options(${vauchi_test_target} PRIVATE -UNDEBUG)
