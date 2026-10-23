@@ -231,7 +231,7 @@ target_include_directories(presentation_controller_test PRIVATE
 target_link_directories(presentation_controller_test PRIVATE
     ${QRENCODE_LIBRARY_DIRS})
 target_link_libraries(presentation_controller_test PRIVATE
-    Qt6::Widgets Qt6::Core ${QRENCODE_LIBRARIES} ${VAUCHI_CABI})
+    Qt6::Widgets Qt6::Core Qt6::Network ${QRENCODE_LIBRARIES} ${VAUCHI_CABI})
 add_test(NAME presentation_controller_test COMMAND presentation_controller_test)
 # The QrRequestScan paste-fallback test fails a blocking (exec-style) prompt
 # by hanging; bound the red so CI reports a failure instead of stalling.

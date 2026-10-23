@@ -6,6 +6,7 @@
 #include "coreui/presentationcontroller.h"
 #include "coreui/thememanager.h"
 #include "platform/menubar.h"
+#include "platform/networkcost.h"
 #include "platform/notificationseverity.h"
 #include "platform/systemlocale.h"
 #include "platform/systemtray.h"
@@ -175,6 +176,9 @@ VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
     onWakeup(); // bootstrap the schedule
 
     m_presentation->initialize();
+    vauchi::watchNetworkCost(this, [this](const QString &cost) {
+        m_presentation->reportNetworkCost(cost);
+    });
 }
 
 void VauchiWindow::openDeepLink(const QString &uri) {

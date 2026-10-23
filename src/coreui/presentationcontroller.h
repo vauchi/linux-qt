@@ -24,6 +24,7 @@ public:
     void appBackgrounded();
     void deepLinkOpened(const QString &uri);
     void reportEnvironment(int width, int height);
+    void reportNetworkCost(const QString &cost);
     void dispatchCommands(const QJsonArray &commands);
     void requestBack();
 

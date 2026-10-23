@@ -7,6 +7,7 @@
 #include "presentationsurface.h"
 #include "qrpasteprompt.h"
 #include "../platform/hardwarebackend.h"
+#include "../platform/networkcost.h"
 
 #include <QApplication>
 #include <QBoxLayout>
@@ -60,6 +61,10 @@ void PresentationController::appBackgrounded() {
 void PresentationController::deepLinkOpened(const QString &uri) {
     dispatchEvent(QJsonObject{
         {QStringLiteral("DeepLinkOpened"), QJsonObject{{QStringLiteral("uri"), uri}}}});
+}
+
+void PresentationController::reportNetworkCost(const QString &cost) {
+    dispatchEvent(vauchi::networkCostEvent(cost));
 }
 
 void PresentationController::reportEnvironment(int width, int height) {
