@@ -270,6 +270,13 @@ target_include_directories(system_locale_test PRIVATE src)
 target_link_libraries(system_locale_test PRIVATE Qt6::Core)
 add_test(NAME system_locale_test COMMAND system_locale_test)
 
+# The network cost reaches Core for "Wi-Fi only" content updates
+# (vauchi/private#733 D6).
+add_executable(network_cost_test tests/network_cost_test.cpp)
+target_include_directories(network_cost_test PRIVATE src)
+target_link_libraries(network_cost_test PRIVATE Qt6::Core Qt6::Network)
+add_test(NAME network_cost_test COMMAND network_cost_test)
+
 # Deep links: the desktop entry registers vauchi://, only vauchi:// arguments
 # reach Core, and a second launch hands its link to the running instance
 # (vauchi/private#650).
@@ -333,6 +340,7 @@ foreach(vauchi_test_target
         screen_catalog_test
         notification_severity_test
         system_locale_test
+        network_cost_test
         deep_link_test
         menubar_test)
     target_compile_options(${vauchi_test_target} PRIVATE -UNDEBUG)
