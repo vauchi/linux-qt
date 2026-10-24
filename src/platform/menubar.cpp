@@ -46,6 +46,6 @@ VauchiMenuBar::VauchiMenuBar(QWidget *parent) : QMenuBar(parent) {
                       "Vauchi \u2014 Privacy-focused updatable "
                       "contact cards.\n\n"
                       "Version 0.5.0\n"
-                      "License: GPL-3.0-or-later"));
+                      "License: AGPL-3.0-or-later (core), GPL-3.0-or-later (app)"));
     });
 }
