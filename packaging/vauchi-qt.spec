@@ -5,7 +5,7 @@ Name:           vauchi-qt
 Version:        0.5.0
 Release:        1%{?dist}
 Summary:        Privacy-focused updatable contact cards (Qt desktop)
-License:        GPL-3.0-or-later
+License:        GPL-3.0-or-later AND AGPL-3.0-or-later
 URL:            https://vauchi.app
 Source0:        %{name}-%{version}.tar.gz
 
@@ -57,7 +57,7 @@ install -Dm644 resources/vauchi.svg \
     %{buildroot}%{_datadir}/icons/hicolor/scalable/apps/vauchi-qt.svg
 
 %files
-%license LICENSE
+%license LICENSE vauchi-core/LICENSE
 %{_bindir}/qvauchi
 %{_libdir}/libvauchi_cabi.so
 %{_datadir}/applications/vauchi-qt.desktop

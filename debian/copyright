@@ -10,6 +10,12 @@ Files: *
 Copyright: 2026 Mattia Egloff <mattia.egloff@pm.me>
 License: GPL-3.0-or-later
 
+Files: vauchi-core/*
+Copyright: 2026 Mattia Egloff <mattia.egloff@pm.me>
+License: AGPL-3.0-or-later
+Comment: Vauchi core, cloned by debian/rules and shipped as
+ libvauchi_cabi.so. Source: https://gitlab.com/vauchi/core
+
 Files: resources/fonts/BricolageGrotesque*.ttf
 Copyright: 2022 The Bricolage Grotesque Project Authors (https://github.com/ateliertriay/bricolage)
 License: OFL-1.1
@@ -38,6 +44,23 @@ License: GPL-3.0-or-later
  .
  On Debian systems, the complete text of the GNU General Public License
  version 3 can be found in "/usr/share/common-licenses/GPL-3".
+
+License: AGPL-3.0-or-later
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU Affero General Public License as
+ published by the Free Software Foundation, either version 3 of the
+ License, or (at your option) any later version.
+ .
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU Affero General Public License for more details.
+ .
+ You should have received a copy of the GNU Affero General Public License
+ along with this program. If not, see <https://www.gnu.org/licenses/>.
+ .
+ Debian does not ship the AGPL in /usr/share/common-licenses; the full
+ text is in vauchi-core/LICENSE.
 
 License: OFL-1.1
  This Font Software is licensed under the SIL Open Font License,
