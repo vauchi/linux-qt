@@ -103,6 +103,16 @@ void PresentationController::dispatchEvent(const QJsonObject &event) {
     dispatchRawEvent(event);
 }
 
+void PresentationController::reportApplicationMenuAvailability(bool available) {
+    dispatchEvent(QJsonObject{{QStringLiteral("ApplicationMenuAvailabilityChanged"),
+                              QJsonObject{{QStringLiteral("available"), available}}}});
+}
+
+void PresentationController::activateAction(const QString &surfaceId,
+                                          const QString &interactionId) {
+    dispatchInteraction(surfaceId, interactionId);
+}
+
 void PresentationController::dispatchInteraction(
     const QString &surfaceId, const QString &interactionId) {
     if (surfaceId.isEmpty() || interactionId.isEmpty()) {

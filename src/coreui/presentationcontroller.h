@@ -27,10 +27,13 @@ public:
     void reportNetworkCost(const QString &cost);
     void dispatchCommands(const QJsonArray &commands);
     void requestBack();
+    void reportApplicationMenuAvailability(bool available);
+    void activateAction(const QString &surfaceId, const QString &interactionId);
 
 signals:
     void presentationChanged();
     void nativeBackRequested();
+    void applicationMenuChanged(const QJsonObject &payload);
     /// Core's requested delay before the next wakeup, in milliseconds
     /// (vauchi/private#450: sub-second during a live QR exchange).
     void wakeupScheduled(uint32_t milliseconds);

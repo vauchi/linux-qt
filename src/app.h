@@ -31,7 +31,6 @@ protected:
 private:
     void drainAndShowNotifications();
     void drainAndShowNotificationsArray(const QJsonArray &notifications);
-    void importContactsFromFile();
     void scheduleWakeup(uint32_t milliseconds);
     void onWakeup();
 

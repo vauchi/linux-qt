@@ -62,6 +62,14 @@ void PresentationController::executeEffect(const QJsonValue &command) {
         return;
     }
     const QJsonObject object = command.toObject();
+    if (object.contains(QStringLiteral("SetApplicationMenu"))) {
+        const QJsonObject payload = object.value(QStringLiteral("SetApplicationMenu")).toObject();
+        if (m_state.isCurrentRevision(payload.value(QStringLiteral("surface_id")).toString(),
+                                      payload.value(QStringLiteral("revision")).toInteger())) {
+            emit applicationMenuChanged(payload);
+        }
+        return;
+    }
     if (object.contains(QStringLiteral("PresentOverlay"))) {
         const QJsonObject payload =
             object.value(QStringLiteral("PresentOverlay")).toObject();

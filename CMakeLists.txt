@@ -287,7 +287,7 @@ target_compile_definitions(deep_link_test PRIVATE
     VAUCHI_DESKTOP_ENTRY="${CMAKE_CURRENT_SOURCE_DIR}/packaging/vauchi-qt.desktop")
 add_test(NAME deep_link_test COMMAND deep_link_test)
 
-# Menu bar test: the import entry's label is Core menu copy with a neutral fallback
+# Native menus render Core actions and preserve platform Quit placement.
 add_executable(menubar_test tests/menubar_test.cpp src/platform/menubar.cpp)
 target_include_directories(menubar_test PRIVATE src ${VAUCHI_CABI_INCLUDE})
 target_link_libraries(menubar_test PRIVATE Qt6::Widgets Qt6::Core ${VAUCHI_CABI} ${CMAKE_DL_LIBS})

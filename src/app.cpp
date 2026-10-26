@@ -21,11 +21,7 @@
 #include <QStandardPaths>
 #include <QTimer>
 #include <QDir>
-#include <QFile>
-#include <QFileDialog>
-#include <QMessageBox>
 #include <QProcessEnvironment>
-#include <QStatusBar>
 #include <optional>
 
 VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
@@ -124,9 +120,10 @@ VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
     auto *menuBar = new VauchiMenuBar(this);
     setMenuBar(menuBar);
     connect(menuBar, &VauchiMenuBar::quitRequested, qApp, &QApplication::quit);
-    connect(menuBar, &VauchiMenuBar::importContactsRequested, this, [this]() {
-        importContactsFromFile();
-    });
+    connect(m_presentation, &PresentationController::applicationMenuChanged,
+            menuBar, &VauchiMenuBar::applyApplicationMenu);
+    connect(menuBar, &VauchiMenuBar::actionActivated,
+            m_presentation, &PresentationController::activateAction);
 
     // System tray
     m_tray = new SystemTray(this);
@@ -176,6 +173,7 @@ VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
     onWakeup(); // bootstrap the schedule
 
     m_presentation->initialize();
+    m_presentation->reportApplicationMenuAvailability(true);
     vauchi::watchNetworkCost(this, [this](const QString &cost) {
         m_presentation->reportNetworkCost(cost);
     });
@@ -289,91 +287,4 @@ void VauchiWindow::onWakeup() {
     }
 
     scheduleWakeup(nextWakeupMillis);
-}
-
-void VauchiWindow::importContactsFromFile() {
-    if (!m_app) return;
-
-    QString path = QFileDialog::getOpenFileName(
-        this,
-        tr_vauchi("contacts.importContacts", "Import Contacts"),
-        QString(),
-        tr_vauchi("contacts.import_file_filter", "vCard Files (*.vcf)"));
-    if (path.isEmpty()) return;
-
-    QFile file(path);
-    if (!file.open(QIODevice::ReadOnly)) {
-        statusBar()->showMessage(
-            tr_vauchi("platform.error_could_not_read_file",
-                      "Could not read file"),
-            4000);
-        return;
-    }
-
-    QByteArray data = file.readAll();
-    file.close();
-
-    char *result = vauchi_app_import_contacts_from_vcf(
-        m_app,
-        reinterpret_cast<const uint8_t *>(data.constData()),
-        static_cast<uintptr_t>(data.size()));
-
-    if (!result) {
-        statusBar()->showMessage(
-            tr_vauchi("platform.error_import_failed",
-                      "Import failed"),
-            4000);
-        return;
-    }
-
-    QJsonObject obj = QJsonDocument::fromJson(result).object();
-    vauchi_string_free(result);
-
-    // TODO(HUMBLE): T — frontend assembles contact-import result messages from imported/skipped/warnings; core should return localized summary or Banner/Toast component (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations)
-    if (obj.contains("error")) {
-        statusBar()->showMessage(
-            tr_vauchi("platform.error_import_failed_with_reason",
-                      "Import failed: {error}")
-            .replace(QStringLiteral("{error}"), obj["error"].toString()),
-            4000);
-        return;
-    }
-
-    int imported = obj["imported"].toInt();
-    int skipped = obj["skipped"].toInt();
-    QString importedLine = tr_vauchi("import_contacts.result_imported",
-                                     QStringLiteral("{count} contact(s) imported"))
-                               .replace(QStringLiteral("{count}"),
-                                        QString::number(imported));
-    QString msg = importedLine;
-    if (skipped > 0) {
-        QString skippedLine = tr_vauchi("import_contacts.result_skipped",
-                                        QStringLiteral("{count} skipped (duplicates or invalid)"))
-                                  .replace(QStringLiteral("{count}"),
-                                           QString::number(skipped));
-        msg = importedLine + QStringLiteral(" — ") + skippedLine;
-    }
-
-    QJsonArray warnings = obj["warnings"].toArray();
-    if (warnings.isEmpty()) {
-        statusBar()->showMessage(msg, 4000);
-    } else {
-        QStringList lines;
-        for (const auto &w : warnings) {
-            QJsonObject wo = w.toObject();
-            QString key = wo["key"].toString();
-            QString legacyText = wo["legacy_text"].toString();
-            QString rendered = tr_vauchi(key.toUtf8().constData(), legacyText);
-            const QJsonObject args = wo["args"].toObject();
-            for (auto it = args.begin(); it != args.end(); ++it) {
-                rendered.replace(QStringLiteral("{%1}").arg(it.key()),
-                                 it.value().toString());
-            }
-            lines << QStringLiteral("• ") + rendered;
-        }
-        QMessageBox::information(this, msg, lines.join(QStringLiteral("\n")));
-    }
-
-    // Refresh screen to show imported contacts
-    m_presentation->refresh();
 }
