@@ -35,7 +35,7 @@ def test_onboarding_identity_survives_restart(qt_app_restartable):
     app = _refresh_app(first_proc)
     assert wait_for_element(
         app, role="text", name="Display name input", timeout=5.0
-    )
+    ), dump_tree(app, max_depth=10)
     edited = set_text(app, "Display name input", "Qt Harness Explorer")
     process_error = ""
     if first_proc.poll() is not None:
