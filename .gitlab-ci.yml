@@ -5,7 +5,7 @@ include:
   - template: Security/SAST.gitlab-ci.yml
   - template: Security/Secret-Detection.gitlab-ci.yml
   - project: 'vauchi/scripts'
-    ref: ci-templates-v2026.10.04
+    ref: b6f3076201937f8305faa269f2a0718a77075afd
     file:
       - '/ci-templates/design-drift.yml'
       - '/ci-templates/parser-parity.yml'
@@ -18,7 +18,7 @@ include:
       - '/ci-templates/cross-cutting-lint.yml'
 
 variables:
-  VAUCHI_SCRIPTS_REF: "ci-templates-v2026.10.04"
+  VAUCHI_SCRIPTS_REF: "b6f3076201937f8305faa269f2a0718a77075afd"
   SAST_EXCLUDED_PATHS: "build/, vauchi-core/"
   SECRET_DETECTION_EXCLUDED_PATHS: "build/, vauchi-core/"
   SAST_ANALYZER_IMAGE_TAG: "5"
@@ -41,6 +41,8 @@ workflow:
     - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
       when: never
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      auto_cancel:
+        on_new_commit: none
     - if: $CI_COMMIT_TAG
     - if: $CI_PIPELINE_SOURCE == "schedule"
     - if: $CI_PIPELINE_SOURCE == "pipeline" || $CI_PIPELINE_SOURCE == "trigger"
@@ -327,7 +329,7 @@ check:parser-parity:
     FRONTEND_NAME: "linux-qt"
     PARSER_FILE: "src/coreui"
     PARSER_PROTOCOL: "presentation"
-    PARSER_SCRIPT_REF: "ci-templates-v2026.10.04"
+    PARSER_SCRIPT_REF: "b6f3076201937f8305faa269f2a0718a77075afd"
     CORE_PIN_FILE: "core-ref"
     CORE_PIN_KIND: "ref-file"
 
