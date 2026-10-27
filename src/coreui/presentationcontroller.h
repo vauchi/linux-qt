@@ -11,6 +11,7 @@
 
 class HardwareBackend;
 class QrPastePrompt;
+class FilePicker;
 
 /// Applies Core reducer batches atomically and renders native Qt equivalents.
 class PresentationController : public QWidget {
@@ -66,5 +67,6 @@ private:
     PresentationState m_state;
     HardwareBackend *m_hardware;
     QrPastePrompt *m_qrPaste;
+    FilePicker *m_filePicker;
     bool m_reducedMotion = false;
 };

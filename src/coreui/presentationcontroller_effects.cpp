@@ -6,12 +6,12 @@
 #include "presentationeffectpayload.h"
 
 #include "../platform/hardwarebackend.h"
+#include "../platform/filepicker.h"
 
 #include <QDesktopServices>
 #include <QDialog>
 #include <QFile>
 #include <QFileDialog>
-#include <QFileInfo>
 #include <QFrame>
 #include <QJsonDocument>
 #include <QMenu>
@@ -297,22 +297,8 @@ void PresentationController::presentOverlay(
     menu->popup(mapToGlobal(QPoint(width(), height())));
 }
 
-void PresentationController::pickFile(const QJsonObject &) {
-    const QString path = QFileDialog::getOpenFileName(this, tr("Open file"));
-    if (path.isEmpty()) {
-        dispatchRawEvent(QStringLiteral("FilePickCancelledByUser"));
-        return;
-    }
-    QFile file(path);
-    if (!file.open(QIODevice::ReadOnly)) {
-        dispatchRawEvent(QStringLiteral("FilePickCancelledByUser"));
-        return;
-    }
-    dispatchEvent(QJsonObject{
-        {QStringLiteral("FilePickedFromUser"),
-         QJsonObject{{QStringLiteral("bytes"), bytesToJson(file.readAll())},
-                     {QStringLiteral("filename"),
-                      QFileInfo(path).fileName()}}}});
+void PresentationController::pickFile(const QJsonObject &payload) {
+    m_filePicker->pick(payload);
 }
 
 void PresentationController::pickImage() {

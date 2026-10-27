@@ -62,6 +62,7 @@ set(QVAUCHI_SOURCES
     src/coreui/navigationsidebar.cpp
     src/platform/systemtray.cpp
     src/platform/menubar.cpp
+    src/platform/filepicker.cpp
     src/platform/hardwarebackend.cpp
     src/platform/directsendworker.cpp
     src/platform/screencaptureprotection.cpp
@@ -226,6 +227,7 @@ add_executable(presentation_controller_test
     src/coreui/qrpasteprompt.cpp
     src/platform/hardwarebackend.cpp
     src/platform/directsendworker.cpp)
+target_sources(presentation_controller_test PRIVATE src/platform/filepicker.cpp)
 target_include_directories(presentation_controller_test PRIVATE
     include src ${VAUCHI_CABI_INCLUDE} ${QRENCODE_INCLUDE_DIRS})
 target_link_directories(presentation_controller_test PRIVATE
@@ -293,6 +295,12 @@ target_include_directories(menubar_test PRIVATE src ${VAUCHI_CABI_INCLUDE})
 target_link_libraries(menubar_test PRIVATE Qt6::Widgets Qt6::Core ${VAUCHI_CABI} ${CMAKE_DL_LIBS})
 add_test(NAME menubar_test COMMAND menubar_test)
 
+add_executable(file_picker_test tests/file_picker_test.cpp src/platform/filepicker.cpp)
+target_include_directories(file_picker_test PRIVATE src)
+target_link_libraries(file_picker_test PRIVATE Qt6::Widgets Qt6::Core)
+add_test(NAME file_picker_test COMMAND file_picker_test)
+set_tests_properties(file_picker_test PROPERTIES TIMEOUT 30)
+
 # ThemeManager test: palette generation, stylesheet output, file loading,
 # brand font registration. Needs resources.qrc so registerBrandFonts() has
 # real :/fonts/... payloads to register, same as the qvauchi target.
@@ -342,7 +350,8 @@ foreach(vauchi_test_target
         system_locale_test
         network_cost_test
         deep_link_test
-        menubar_test)
+        menubar_test
+        file_picker_test)
     target_compile_options(${vauchi_test_target} PRIVATE -UNDEBUG)
 endforeach()
 

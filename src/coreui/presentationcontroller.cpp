@@ -8,6 +8,7 @@
 #include "qrpasteprompt.h"
 #include "../platform/hardwarebackend.h"
 #include "../platform/networkcost.h"
+#include "../platform/filepicker.h"
 
 #include <QApplication>
 #include <QBoxLayout>
@@ -19,6 +20,7 @@ PresentationController::PresentationController(struct VauchiApp *app,
     : QWidget(parent), m_app(app),
       m_hardware(new HardwareBackend(this)),
       m_qrPaste(new QrPastePrompt(this)),
+      m_filePicker(new FilePicker(this)),
       m_reducedMotion(qEnvironmentVariableIsSet("QT_REDUCE_MOTION")) {
     connect(m_hardware, &HardwareBackend::eventReady, this,
             [this](const QJsonObject &event) { dispatchEvent(event); });
@@ -34,6 +36,8 @@ PresentationController::PresentationController(struct VauchiApp *app,
             });
     connect(m_qrPaste, &QrPastePrompt::eventReady, this,
             [this](const QJsonObject &event) { dispatchEvent(event); });
+    connect(m_filePicker, &FilePicker::eventReady, this,
+            [this](const QJsonValue &event) { dispatchRawEvent(event); });
 }
 
 void PresentationController::initialize() {
