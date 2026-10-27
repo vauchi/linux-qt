@@ -464,6 +464,27 @@ void assertQrPastePromptReusesOpenDialog() {
     QApplication::processEvents();
 }
 
+// @scenario: generic_presentation_protocol.feature :: Unknown input fails closed
+void assertApplicationMenusUseTheCurrentSurfaceRevision() {
+    PresentationController controller(nullptr);
+    QList<QJsonObject> menus;
+    QObject::connect(&controller, &PresentationController::applicationMenuChanged,
+                     &controller, [&](const QJsonObject &menu) { menus.append(menu); });
+    controller.dispatchCommands(baseCommands());
+    const QJsonObject current{{"surface_id", "settings"}, {"revision", 1},
+        {"menus", QJsonArray{QJsonObject{{"role", "file"}, {"label", "Prepared files"},
+            {"items", QJsonArray{action("opaque.native", "Prepared operation")}}}}}};
+    controller.dispatchCommands(QJsonArray{QJsonObject{{"SetApplicationMenu", current}}});
+    assert(menus == QList<QJsonObject>{current});
+    auto stale = current;
+    stale["revision"] = 0;
+    controller.dispatchCommands(QJsonArray{QJsonObject{{"SetApplicationMenu", stale}}});
+    auto unknown = current;
+    unknown["surface_id"] = "unpresented";
+    controller.dispatchCommands(QJsonArray{QJsonObject{{"SetApplicationMenu", unknown}}});
+    assert(menus == QList<QJsonObject>{current});
+}
+
 } // namespace
 
 int main(int argc, char **argv) {
@@ -481,6 +502,7 @@ int main(int argc, char **argv) {
     assertQrPastePromptEmptyAcceptNotifiesCore();
     assertQrPastePromptReusesOpenDialog();
     assertScheduleWakeupArmsCoresDelay();
+    assertApplicationMenusUseTheCurrentSurfaceRevision();
     qunsetenv("QT_REDUCE_MOTION");
     return 0;
 }

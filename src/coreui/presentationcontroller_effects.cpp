@@ -64,8 +64,9 @@ void PresentationController::executeEffect(const QJsonValue &command) {
     const QJsonObject object = command.toObject();
     if (object.contains(QStringLiteral("SetApplicationMenu"))) {
         const QJsonObject payload = object.value(QStringLiteral("SetApplicationMenu")).toObject();
-        if (m_state.isCurrentRevision(payload.value(QStringLiteral("surface_id")).toString(),
-                                      payload.value(QStringLiteral("revision")).toInteger())) {
+        const auto surface = m_state.surface(payload.value(QStringLiteral("surface_id")).toString());
+        if (surface && surface->value(QStringLiteral("revision")).toInteger()
+            == payload.value(QStringLiteral("revision")).toInteger(-1)) {
             emit applicationMenuChanged(payload);
         }
         return;
