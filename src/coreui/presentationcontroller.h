@@ -42,6 +42,7 @@ signals:
 private:
     void dispatchEvent(const QJsonObject &event);
     void dispatchRawEvent(const QJsonValue &event);
+    void dispatchEncodedEvent(const QByteArray &eventJson);
     void dispatchInteraction(const QString &surfaceId,
                              const QString &interactionId);
     void dispatchInputSubmitted(const QString &surfaceId,

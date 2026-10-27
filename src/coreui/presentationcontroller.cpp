@@ -37,7 +37,7 @@ PresentationController::PresentationController(struct VauchiApp *app,
     connect(m_qrPaste, &QrPastePrompt::eventReady, this,
             [this](const QJsonObject &event) { dispatchEvent(event); });
     connect(m_filePicker, &FilePicker::eventReady, this,
-            [this](const QJsonValue &event) { dispatchRawEvent(event); });
+            &PresentationController::dispatchEncodedEvent);
 }
 
 void PresentationController::initialize() {
@@ -51,6 +51,8 @@ void PresentationController::initialize() {
     const QByteArray envelope(json);
     vauchi_string_free(json);
     applyEnvelope(envelope);
+    dispatchEvent(QJsonObject{{"FilePickerCapabilitiesChanged",
+                              QJsonObject{{"correlated_results", true}}}});
     reportEnvironment(width(), height());
 }
 

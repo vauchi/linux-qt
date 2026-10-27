@@ -23,7 +23,7 @@ if(COVERAGE)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
 endif()
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Core Network)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Core Network Concurrent)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(QRENCODE REQUIRED libqrencode)
@@ -69,7 +69,7 @@ set(QVAUCHI_SOURCES
     resources/resources.qrc
 )
 
-set(QVAUCHI_LIBS Qt6::Widgets Qt6::Core Qt6::Network ${VAUCHI_CABI} ${QRENCODE_LIBRARIES})
+set(QVAUCHI_LIBS Qt6::Widgets Qt6::Core Qt6::Network Qt6::Concurrent ${VAUCHI_CABI} ${QRENCODE_LIBRARIES})
 set(VAUCHI_TOKENS_INCLUDE "${CMAKE_SOURCE_DIR}/../themes/generated" CACHE PATH "Path to generated design tokens")
 set(QVAUCHI_INCLUDES include ${QRENCODE_INCLUDE_DIRS} ${VAUCHI_CABI_INCLUDE} ${VAUCHI_TOKENS_INCLUDE})
 set(QVAUCHI_DEFINES "")
@@ -233,7 +233,7 @@ target_include_directories(presentation_controller_test PRIVATE
 target_link_directories(presentation_controller_test PRIVATE
     ${QRENCODE_LIBRARY_DIRS})
 target_link_libraries(presentation_controller_test PRIVATE
-    Qt6::Widgets Qt6::Core Qt6::Network ${QRENCODE_LIBRARIES} ${VAUCHI_CABI})
+    Qt6::Widgets Qt6::Core Qt6::Network Qt6::Concurrent ${QRENCODE_LIBRARIES} ${VAUCHI_CABI})
 add_test(NAME presentation_controller_test COMMAND presentation_controller_test)
 # The QrRequestScan paste-fallback test fails a blocking (exec-style) prompt
 # by hanging; bound the red so CI reports a failure instead of stalling.
@@ -297,7 +297,7 @@ add_test(NAME menubar_test COMMAND menubar_test)
 
 add_executable(file_picker_test tests/file_picker_test.cpp src/platform/filepicker.cpp)
 target_include_directories(file_picker_test PRIVATE src)
-target_link_libraries(file_picker_test PRIVATE Qt6::Widgets Qt6::Core)
+target_link_libraries(file_picker_test PRIVATE Qt6::Widgets Qt6::Core Qt6::Concurrent)
 add_test(NAME file_picker_test COMMAND file_picker_test)
 set_tests_properties(file_picker_test PROPERTIES TIMEOUT 30)
 

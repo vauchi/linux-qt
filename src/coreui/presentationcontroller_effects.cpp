@@ -43,6 +43,11 @@ void PresentationController::dispatchRawEvent(const QJsonValue &event) {
         eventJson = QJsonDocument(wrapper).toJson(QJsonDocument::Compact);
         eventJson = eventJson.mid(1, eventJson.size() - 2);
     }
+    dispatchEncodedEvent(eventJson);
+}
+
+void PresentationController::dispatchEncodedEvent(const QByteArray &eventJson) {
+    if (!m_app) return;
     char *json = vauchi_app_dispatch(m_app, eventJson.constData());
     if (!json) {
         return;
@@ -112,8 +117,13 @@ void PresentationController::executeEffect(const QJsonValue &command) {
             schedule.value(QStringLiteral("delay_millis")).toInt(30000)));
         return;
     }
-    if (object.contains(QStringLiteral("FilePickFromUser"))) {
-        pickFile(object.value(QStringLiteral("FilePickFromUser")).toObject());
+    if (object.contains(QStringLiteral("PickFile"))) {
+        pickFile(object.value(QStringLiteral("PickFile")).toObject());
+        return;
+    }
+    if (object.contains(QStringLiteral("CancelFilePick"))) {
+        m_filePicker->cancel(object.value(QStringLiteral("CancelFilePick")).toObject()
+                                 .value(QStringLiteral("request_id")).toString());
         return;
     }
     if (object.contains(QStringLiteral("ImagePickFromFile"))
