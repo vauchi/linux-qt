@@ -8,7 +8,7 @@
 #include <QTemporaryDir>
 #include <cassert>
 
-// @scenario: core_file_picker :: FilePickedFromUser on Contacts imports vCard
+// @scenario: generic_presentation_protocol.feature :: User interaction returns as an opaque event
 static void selected_file_preserves_bytes_and_only_the_basename() {
     QTemporaryDir directory;
     const QString path = directory.filePath(QStringLiteral("chosen.data"));
@@ -36,7 +36,7 @@ static void file_errors_are_not_cancellations() {
     }
 }
 
-// @scenario: core_file_picker :: cancellation produces no result
+// @scenario: generic_presentation_protocol.feature :: User interaction returns as an opaque event
 static void picker_uses_supplied_filters_and_reports_cancel_without_blocking() {
     QWidget owner;
     FilePicker picker(&owner);

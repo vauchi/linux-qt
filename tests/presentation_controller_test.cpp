@@ -464,7 +464,7 @@ void assertQrPastePromptReusesOpenDialog() {
     QApplication::processEvents();
 }
 
-// @scenario: generic_presentation_protocol.feature :: Unknown input fails closed
+// @scenario: generic_presentation_protocol.feature :: Invalid boundary input fails safely
 void assertApplicationMenusUseTheCurrentSurfaceRevision() {
     PresentationController controller(nullptr);
     QList<QJsonObject> menus;
