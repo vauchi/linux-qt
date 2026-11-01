@@ -248,16 +248,16 @@ test:screen-catalog:
     VRT_SCREENSHOT_DIR: build/screen-catalog
   script:
     - |
-      core_files="${CI_API_V4_URL}/projects/vauchi%2Fcore/repository/files"
+      contract_files="${CI_API_V4_URL}/projects/vauchi%2Fcontract/repository/files"
       if curl -fsSL -u "gitlab-ci-token:${CI_JOB_TOKEN}" \
-           "${core_files}/vauchi-app%2Ffixtures%2Fscreen_catalog_v1.json/raw?ref=main" \
+           "${contract_files}/fixtures%2Fscreen_catalog_v1.json/raw?ref=main" \
            -o screen-catalog.json; then
-        echo "[screen-catalog] source: core main vauchi-app/fixtures/screen_catalog_v1.json"
+        echo "[screen-catalog] source: contract main fixtures/screen_catalog_v1.json (ADR-078)"
       else
         curl -fsSL -u "gitlab-ci-token:${CI_JOB_TOKEN}" \
-          "${core_files}/vauchi-app%2Ffixtures%2Fpresentation_contract_v1.json/raw?ref=main" \
+          "${contract_files}/fixtures%2Fpresentation_contract_v1.json/raw?ref=main" \
           -o screen-catalog.json
-        echo "[screen-catalog] source: FALLBACK core main vauchi-app/fixtures/presentation_contract_v1.json (screen_catalog_v1.json is not on core main yet)"
+        echo "[screen-catalog] source: FALLBACK contract main fixtures/presentation_contract_v1.json (screen_catalog_v1.json unreadable)"
       fi
     - mkdir -p build/screen-catalog
     - build/qvauchi --render-catalog screen-catalog.json build/screen-catalog 900 1400
