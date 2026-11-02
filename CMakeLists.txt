@@ -35,6 +35,36 @@ find_package(Qt6 QUIET COMPONENTS DBus)
 pkg_check_modules(ZBAR QUIET zbar)
 pkg_check_modules(PCSCLITE QUIET libpcsclite)
 
+# The display shell behind the C ABI of include/qt_display.h (ADR-078
+# step 2.2, D1 B): the renderer sources and nothing of the engine. The
+# Rust crate in qt-display/ builds this target alone, without Core's C
+# ABI, which is why the cabi lookup below is skipped for it.
+option(QT_DISPLAY_ONLY "Build only the qt_display library (no qvauchi)" OFF)
+set(QT_DISPLAY_SOURCES
+    src/display_abi.cpp
+    src/coreui/presentationstate.cpp
+    src/coreui/presentationaccessibility.cpp
+    src/coreui/presentationsurface.cpp
+    src/coreui/presentationsurface_avatar.cpp
+    src/coreui/presentationsurface_nodes.cpp
+    src/coreui/presentationsurface_qr.cpp
+    src/coreui/thememanager.cpp
+    src/coreui/navigationicons.cpp
+)
+set(VAUCHI_TOKENS_INCLUDE "${CMAKE_SOURCE_DIR}/../themes/generated" CACHE PATH "Path to generated design tokens")
+add_library(qt_display STATIC ${QT_DISPLAY_SOURCES})
+# The Release flags add -flto=auto, which leaves GCC LTO bytecode in the
+# archive; the Rust consumer links with rust-lld, which cannot read it and
+# reports the three C symbols undefined. The library is built without LTO.
+target_compile_options(qt_display PRIVATE -fno-lto)
+target_include_directories(qt_display PUBLIC include PRIVATE src ${QRENCODE_INCLUDE_DIRS} ${VAUCHI_TOKENS_INCLUDE})
+target_link_directories(qt_display PUBLIC ${QRENCODE_LIBRARY_DIRS})
+target_link_libraries(qt_display PUBLIC Qt6::Widgets Qt6::Core ${QRENCODE_LIBRARIES})
+
+if(QT_DISPLAY_ONLY)
+    return()
+endif()
+
 # vauchi-cabi shared library
 set(VAUCHI_CABI_DIR "${CMAKE_SOURCE_DIR}/../core/target/debug" CACHE PATH "Path to vauchi-cabi build output")
 set(VAUCHI_CABI_INCLUDE "${CMAKE_SOURCE_DIR}/../core/vauchi-cabi/include" CACHE PATH "Path to vauchi-cabi headers")
@@ -70,7 +100,6 @@ set(QVAUCHI_SOURCES
 )
 
 set(QVAUCHI_LIBS Qt6::Widgets Qt6::Core Qt6::Network Qt6::Concurrent ${VAUCHI_CABI} ${QRENCODE_LIBRARIES})
-set(VAUCHI_TOKENS_INCLUDE "${CMAKE_SOURCE_DIR}/../themes/generated" CACHE PATH "Path to generated design tokens")
 set(QVAUCHI_INCLUDES include ${QRENCODE_INCLUDE_DIRS} ${VAUCHI_CABI_INCLUDE} ${VAUCHI_TOKENS_INCLUDE})
 set(QVAUCHI_DEFINES "")
 
