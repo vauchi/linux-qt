@@ -32,7 +32,9 @@ PresentationSurface::PresentationSurface(const QJsonObject &surface,
                                          bool sidebarShown,
                                          QWidget *parent)
     : QWidget(parent),
-      m_surfaceId(surface.value(QStringLiteral("surface_id")).toString()) {
+      m_surfaceId(surface.value(QStringLiteral("surface_id")).toString()),
+      m_surface(surface), m_contextBar(contextBar),
+      m_sidebarShown(sidebarShown) {
     const QJsonObject tokens = surface.value(QStringLiteral("tokens")).toObject();
     m_minimumTargetSize = tokens.value(QStringLiteral("minimum_target_size"))
                               .toInt(m_minimumTargetSize);
@@ -72,6 +74,7 @@ PresentationSurface::PresentationSurface(const QJsonObject &surface,
     title->setFont(titleFont);
     title->setWordWrap(true);
     titleRowLayout->addWidget(title, 1);
+    m_title = title;
 
     const QJsonObject info = contextBar.value(QStringLiteral("info")).toObject();
     if (!info.isEmpty()) {
@@ -91,12 +94,16 @@ PresentationSurface::PresentationSurface(const QJsonObject &surface,
         auto *label = new QLabel(subtitle);
         label->setWordWrap(true);
         outer->addWidget(label);
+        m_subtitle = label;
     }
 
     auto *content = new QWidget;
     auto *contentLayout = new QVBoxLayout(content);
+    m_contentLayout = contentLayout;
     for (const auto &value : surface.value(QStringLiteral("nodes")).toArray()) {
-        contentLayout->addWidget(renderNode(value));
+        QWidget *widget = renderNode(value);
+        contentLayout->addWidget(widget);
+        m_nodeWidgets.append(widget);
     }
     contentLayout->addStretch();
     if (surface.value(QStringLiteral("layout")).toString()

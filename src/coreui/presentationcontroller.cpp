@@ -214,6 +214,23 @@ void PresentationController::applyBatch(const QJsonArray &commands) {
 }
 
 void PresentationController::renderPresentation() {
+    if (const QStringList shown = m_state.visibleSurfaceIds();
+        shown.size() == 1 && m_singleSurface
+        && m_state.navigation() == m_renderedNavigation) {
+        if (const auto surface = m_state.surface(shown.constFirst());
+            surface
+            && m_singleSurface->update(
+                *surface,
+                shown.constFirst() == m_state.activeSurfaceId()
+                    ? m_state.contextBar()
+                    : QJsonObject(),
+                !m_renderedNavigation.value(QStringLiteral("items"))
+                     .toArray()
+                     .isEmpty())) {
+            return;
+        }
+    }
+    m_singleSurface = nullptr;
     QString focusObjectName;
     if (QWidget *focused = QApplication::focusWidget();
         focused != nullptr
@@ -271,6 +288,7 @@ void PresentationController::renderPresentation() {
         if (const auto surface = m_state.surface(visible.constFirst())) {
             auto *widget =
                 new PresentationSurface(*surface, contextBar, sidebarShown);
+            m_singleSurface = widget;
             connect(widget, &PresentationSurface::interactionReady, this,
                     &PresentationController::dispatchInteraction,
                     Qt::QueuedConnection);
@@ -306,6 +324,7 @@ void PresentationController::renderPresentation() {
         row = splitter;
     }
     outer->addWidget(row, 1);
+    m_renderedNavigation = navigation;
     if (!focusObjectName.isEmpty()) {
         if (QWidget *restored =
                 findChild<QWidget *>(focusObjectName);

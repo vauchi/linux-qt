@@ -53,9 +53,15 @@ bool PresentationState::apply(const QJsonObject &command) {
         return true;
     }
     if (command.contains(QStringLiteral("SetPresentationProfile"))) {
-        m_profile =
+        const QJsonObject profile =
             command.value(QStringLiteral("SetPresentationProfile")).toObject()
                 .value(QStringLiteral("profile")).toObject();
+        // The same profile again changes nothing to render
+        // (vauchi/private#1062).
+        if (profile == m_profile) {
+            return false;
+        }
+        m_profile = profile;
         return !m_profile.isEmpty();
     }
     if (command.contains(QStringLiteral("PresentOverlay"))) {

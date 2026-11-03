@@ -7,11 +7,14 @@
 #include "vauchi.h"
 
 #include <QJsonArray>
+#include <QJsonObject>
+#include <QPointer>
 #include <QWidget>
 
 class HardwareBackend;
 class QrPastePrompt;
 class FilePicker;
+class PresentationSurface;
 
 /// Applies Core reducer batches atomically and renders native Qt equivalents.
 class PresentationController : public QWidget {
@@ -66,6 +69,10 @@ private:
 
     struct ::VauchiApp *m_app;
     PresentationState m_state;
+    // The single surface shown and the navigation it was rendered with: a
+    // same-revision replacement updates it in place (vauchi/private#1062).
+    QPointer<PresentationSurface> m_singleSurface;
+    QJsonObject m_renderedNavigation;
     HardwareBackend *m_hardware;
     QrPastePrompt *m_qrPaste;
     FilePicker *m_filePicker;

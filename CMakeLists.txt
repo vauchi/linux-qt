@@ -47,6 +47,7 @@ set(QT_DISPLAY_SOURCES
     src/coreui/presentationsurface.cpp
     src/coreui/presentationsurface_avatar.cpp
     src/coreui/presentationsurface_nodes.cpp
+    src/coreui/presentationsurface_update.cpp
     src/coreui/presentationsurface_qr.cpp
     src/coreui/thememanager.cpp
     src/coreui/navigationicons.cpp
@@ -83,6 +84,7 @@ set(QVAUCHI_SOURCES
     src/coreui/presentationsurface.cpp
     src/coreui/presentationsurface_avatar.cpp
     src/coreui/presentationsurface_nodes.cpp
+    src/coreui/presentationsurface_update.cpp
     src/coreui/presentationsurface_qr.cpp
     src/coreui/qrpasteprompt.cpp
     src/coreui/thememanager.cpp
@@ -194,6 +196,7 @@ add_executable(presentation_surface_test
     src/coreui/presentationsurface.cpp
     src/coreui/presentationsurface_avatar.cpp
     src/coreui/presentationsurface_nodes.cpp
+    src/coreui/presentationsurface_update.cpp
     src/coreui/presentationsurface_qr.cpp)
 target_include_directories(presentation_surface_test PRIVATE
     src ${QRENCODE_INCLUDE_DIRS})
@@ -210,6 +213,7 @@ add_executable(presentation_image_test
     src/coreui/presentationsurface.cpp
     src/coreui/presentationsurface_avatar.cpp
     src/coreui/presentationsurface_nodes.cpp
+    src/coreui/presentationsurface_update.cpp
     src/coreui/presentationsurface_qr.cpp)
 target_include_directories(presentation_image_test PRIVATE
     src ${QRENCODE_INCLUDE_DIRS})
@@ -230,6 +234,7 @@ add_executable(presentation_qr_placement_test
     src/coreui/presentationsurface.cpp
     src/coreui/presentationsurface_avatar.cpp
     src/coreui/presentationsurface_nodes.cpp
+    src/coreui/presentationsurface_update.cpp
     src/coreui/presentationsurface_qr.cpp)
 target_include_directories(presentation_qr_placement_test PRIVATE
     src ${QRENCODE_INCLUDE_DIRS})
@@ -252,6 +257,7 @@ add_executable(presentation_controller_test
     src/coreui/presentationsurface.cpp
     src/coreui/presentationsurface_avatar.cpp
     src/coreui/presentationsurface_nodes.cpp
+    src/coreui/presentationsurface_update.cpp
     src/coreui/presentationsurface_qr.cpp
     src/coreui/qrpasteprompt.cpp
     src/platform/hardwarebackend.cpp
@@ -394,6 +400,7 @@ add_executable(atspi_fixture_probe
     src/coreui/presentationsurface.cpp
     src/coreui/presentationsurface_avatar.cpp
     src/coreui/presentationsurface_nodes.cpp
+    src/coreui/presentationsurface_update.cpp
     src/coreui/presentationsurface_qr.cpp)
 target_include_directories(atspi_fixture_probe PRIVATE
     src ${QRENCODE_INCLUDE_DIRS})

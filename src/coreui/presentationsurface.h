@@ -4,9 +4,11 @@
 #pragma once
 
 #include <QJsonObject>
+#include <QVector>
 #include <QWidget>
 
 class QBoxLayout;
+class QLabel;
 class QJsonArray;
 class QPushButton;
 
@@ -19,6 +21,12 @@ public:
                                  const QJsonObject &contextBar = QJsonObject(),
                                  bool sidebarShown = false,
                                  QWidget *parent = nullptr);
+
+    /// Applies a replacement in place when it keeps this surface's
+    /// structure (same id and revision: contract `SurfaceSpec::revision`)
+    /// and the same context bar; false when the caller must rebuild.
+    bool update(const QJsonObject &surface, const QJsonObject &contextBar,
+                bool sidebarShown);
 
 signals:
     void interactionReady(const QString &surfaceId,
@@ -57,7 +65,18 @@ private:
     static void applyAccessibility(QWidget *widget,
                                    const QJsonObject &accessibility);
 
+    bool keepsFocusedTypedValue(const QJsonObject &previous,
+                                const QJsonObject &next,
+                                const QWidget *widget) const;
+
     QString m_surfaceId;
+    QJsonObject m_surface;
+    QJsonObject m_contextBar;
+    bool m_sidebarShown = false;
+    QLabel *m_title = nullptr;
+    QLabel *m_subtitle = nullptr;
+    QBoxLayout *m_contentLayout = nullptr;
+    QVector<QWidget *> m_nodeWidgets;
     // PresentationTokens defaults (prepared_surface.rs): touch_target.minimum
     // and border_radius.md_lg. Real surfaces always carry `tokens`; these
     // only cover a fixture that omits the field.
