@@ -5,7 +5,7 @@ include:
   - template: Security/SAST.gitlab-ci.yml
   - template: Security/Secret-Detection.gitlab-ci.yml
   - project: 'vauchi/scripts'
-    ref: ci-templates-v2026.11.02
+    ref: ci-templates-v2026.11.04
     file:
       - '/ci-templates/design-drift.yml'
       - '/ci-templates/parser-parity.yml'
@@ -18,7 +18,7 @@ include:
       - '/ci-templates/cross-cutting-lint.yml'
 
 variables:
-  VAUCHI_SCRIPTS_REF: "ci-templates-v2026.11.02"
+  VAUCHI_SCRIPTS_REF: "ci-templates-v2026.11.04"
   SAST_EXCLUDED_PATHS: "build/, vauchi-core/"
   SECRET_DETECTION_EXCLUDED_PATHS: "build/, vauchi-core/"
   SAST_ANALYZER_IMAGE_TAG: "5"
@@ -325,7 +325,7 @@ check:parser-parity:
     FRONTEND_NAME: "linux-qt"
     PARSER_FILE: "src/coreui"
     PARSER_PROTOCOL: "presentation"
-    PARSER_SCRIPT_REF: "ci-templates-v2026.11.02"
+    PARSER_SCRIPT_REF: "ci-templates-v2026.11.04"
     CORE_PIN_FILE: "core-ref"
     CORE_PIN_KIND: "ref-file"
 
@@ -356,6 +356,12 @@ lint:cross-cutting-blocking:
       curl --silent --fail \
         "${CI_API_V4_URL}/projects/vauchi%2Fscripts/repository/files/scripts%2Fhumble_check.baseline.json/raw?ref=${VAUCHI_SCRIPTS_REF}" \
         -o .ratchet-scripts/humble_check.baseline.json
+      for file in check-no-core-build.sh check-no-core-build.baseline; do
+        curl --silent --fail \
+          "${CI_API_V4_URL}/projects/vauchi%2Fscripts/repository/files/scripts%2F${file}/raw?ref=${VAUCHI_SCRIPTS_REF}" \
+          -o ".ratchet-scripts/${file}"
+      done
+      chmod +x .ratchet-scripts/check-no-core-build.sh
   script:
     - |
       curl --silent --fail \
@@ -364,6 +370,10 @@ lint:cross-cutting-blocking:
       chmod +x check-design-tokens.sh
     - ./check-design-tokens.sh --strict src/
     - python3 .ratchet-scripts/humble_check.py --repo "${CI_PROJECT_NAME}" --repo-path "${CI_PROJECT_DIR}" --config .ratchet-scripts/humble_check_rules.json --check .ratchet-scripts/humble_check.baseline.json
+    # VCI01 (ADR-025): no Core build beyond the shrink-only baseline; the
+    # vauchi-cabi build stays listed until the Qt pairing moves into
+    # linux-app (ADR-078, private#1029).
+    - .ratchet-scripts/check-no-core-build.sh "${CI_PROJECT_DIR}" .ratchet-scripts/check-no-core-build.baseline
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes:
@@ -375,6 +385,8 @@ lint:cross-cutting-blocking:
           - "**/*.h"
           - "**/*.hpp"
           - ".gitlab-ci.yml"
+          - "ci/**/*"
+          - "scripts/**/*.sh"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 # ============================================================
