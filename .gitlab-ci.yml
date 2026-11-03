@@ -232,15 +232,14 @@ test:snapshots:
 # Screen catalog: every app screen of Core's screen_catalog_v1.json rendered
 # through the production renderer (surface, context bar, navigation sidebar;
 # no navigation driven) to build/screen-catalog/ on every MR and main
-# pipeline, in dark, light, and large-text variants. Until that fixture is
-# on Core main the job renders the presentation contract fixture's batches
-# instead; the trace names which source it used. Stays `allow_failure: true`:
-# it surfaces screenshots (and uploads them to VRT), it does not gate merges.
+# pipeline, in dark, light, and large-text variants. The full catalog is
+# resolved from core-ref's contract dependency, with revision and hash
+# preserved alongside the rendered artifacts.
 test:screen-catalog:
   stage: test
   needs: [build:qt, build:cabi]
   tags: [linux]
-  allow_failure: true
+  allow_failure: false
   variables:
     QT_QPA_PLATFORM: offscreen
     LD_LIBRARY_PATH: "${CI_PROJECT_DIR}/cabi-lib"
@@ -248,17 +247,12 @@ test:screen-catalog:
     VRT_SCREENSHOT_DIR: build/screen-catalog
   script:
     - |
-      contract_files="${CI_API_V4_URL}/projects/vauchi%2Fcontract/repository/files"
-      if curl -fsSL -u "gitlab-ci-token:${CI_JOB_TOKEN}" \
-           "${contract_files}/fixtures%2Fscreen_catalog_v1.json/raw?ref=main" \
-           -o screen-catalog.json; then
-        echo "[screen-catalog] source: contract main fixtures/screen_catalog_v1.json (ADR-078)"
-      else
-        curl -fsSL -u "gitlab-ci-token:${CI_JOB_TOKEN}" \
-          "${contract_files}/fixtures%2Fpresentation_contract_v1.json/raw?ref=main" \
-          -o screen-catalog.json
-        echo "[screen-catalog] source: FALLBACK contract main fixtures/presentation_contract_v1.json (screen_catalog_v1.json unreadable)"
-      fi
+      mkdir -p build
+      curl --fail-with-body --silent --show-error \
+        --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+        "${CI_API_V4_URL}/projects/vauchi%2Fcontract/repository/files/ci%2Ffetch-screen-catalog.py/raw?ref=5c8409f776e60bc6d0748d46a3a4c93c08516a9d" \
+        -o build/fetch-screen-catalog.py
+      python3 build/fetch-screen-catalog.py screen-catalog.json
     - mkdir -p build/screen-catalog
     - build/qvauchi --render-catalog screen-catalog.json build/screen-catalog 900 1400
     - echo "[screen-catalog] $(ls -1 build/screen-catalog | wc -l) PNG files in build/screen-catalog/"
@@ -267,6 +261,8 @@ test:screen-catalog:
   artifacts:
     when: always
     paths:
+      - screen-catalog.json
+      - screen-catalog.provenance.json
       - build/screen-catalog/
     expire_in: 30 days
   rules:
