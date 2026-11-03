@@ -121,9 +121,11 @@ void assertNativeBarAndFocusRestoration() {
     controller.dispatchCommands(
         QJsonArray{baseCommands().at(2)});
     QApplication::processEvents();
+    // The same profile again changes nothing, so nothing is rebuilt
+    // (vauchi/private#1062).
     auto *restored = controller.findChild<QLineEdit *>("name");
     assert(restored != nullptr);
-    assert(restored != input);
+    assert(restored == input);
     assert(QApplication::focusWidget() == restored);
 
     auto *primary =
@@ -485,12 +487,77 @@ void assertApplicationMenusUseTheCurrentSurfaceRevision() {
     assert(menus == QList<QJsonObject>{current});
 }
 
+/// The base surface again at `revision`, with `value` in the input and
+/// `title` on the screen.
+QJsonObject replacement(int revision, const QString &value,
+                        const QString &title) {
+    QJsonObject surface = baseCommands()
+                              .at(0)
+                              .toObject()
+                              .value(QStringLiteral("ReplaceSurface"))
+                              .toObject()
+                              .value(QStringLiteral("surface"))
+                              .toObject();
+    surface.insert(QStringLiteral("revision"), revision);
+    surface.insert(QStringLiteral("title"), title);
+    QJsonArray nodes = surface.value(QStringLiteral("nodes")).toArray();
+    QJsonObject node = nodes.at(0).toObject();
+    QJsonObject input = node.value(QStringLiteral("Input")).toObject();
+    input.insert(QStringLiteral("value"), value);
+    node.insert(QStringLiteral("Input"), input);
+    nodes.replace(0, node);
+    surface.insert(QStringLiteral("nodes"), nodes);
+    return {{"ReplaceSurface", QJsonObject{{"surface", surface}}}};
+}
+
+/// A replacement at the revision already shown keeps the surface's
+/// structure (contract `SurfaceSpec::revision`), so the widgets stay: the
+/// line edit being typed in keeps its text and caret when Core echoes the
+/// value back, and a changed title is set in place (vauchi/private#1062).
+void assertSameRevisionReplacementKeepsTheWidgets() {
+    PresentationController controller(nullptr);
+    controller.resize(700, 600);
+    controller.show();
+    QApplication::setActiveWindow(&controller);
+    controller.dispatchCommands(baseCommands());
+    QApplication::processEvents();
+
+    auto *input = controller.findChild<QLineEdit *>("name");
+    assert(input != nullptr);
+    input->setFocus(Qt::OtherFocusReason);
+    input->setText(QStringLiteral("Alice B"));
+    input->setCursorPosition(3);
+    QApplication::processEvents();
+
+    // As Core answers a keystroke: the surface, then its context bar.
+    controller.dispatchCommands(
+        QJsonArray{replacement(1, QStringLiteral("Alice B"),
+                               QStringLiteral("Settings")),
+                   baseCommands().at(1)});
+    QApplication::processEvents();
+    assert(controller.findChild<QLineEdit *>("name") == input);
+    assert(input->text() == QStringLiteral("Alice B"));
+    assert(input->cursorPosition() == 3);
+    assert(QApplication::focusWidget() == input);
+
+    controller.dispatchCommands(
+        QJsonArray{replacement(1, QStringLiteral("Alice B"),
+                               QStringLiteral("Your settings")),
+                   baseCommands().at(1)});
+    QApplication::processEvents();
+    assert(controller.findChild<QLineEdit *>("name") == input);
+    auto *title = controller.findChild<QLabel *>("screen_title");
+    assert(title != nullptr);
+    assert(title->text() == QStringLiteral("Your settings"));
+}
+
 } // namespace
 
 int main(int argc, char **argv) {
     QApplication app(argc, argv);
     assertExportPayloadUsesCanonicalSchema();
     assertNativeBarAndFocusRestoration();
+    assertSameRevisionReplacementKeepsTheWidgets();
     assertNoNavigationButtonBesideTheSidebarAndAnInfoButton();
     assertInformationOverlayShowsItsText();
     assertOverlayStructures(false);
