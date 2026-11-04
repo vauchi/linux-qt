@@ -81,6 +81,15 @@ foreach(case composition context navigation revisions values focus)
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endforeach()
 
+add_executable(display_overlay_test tests/display_overlay_test.cpp)
+target_link_libraries(display_overlay_test PRIVATE qt_display)
+target_compile_options(display_overlay_test PRIVATE -UNDEBUG)
+foreach(case information navigation menu dismissal)
+    add_test(NAME display_overlay_${case} COMMAND display_overlay_test ${case})
+    set_tests_properties(display_overlay_${case} PROPERTIES TIMEOUT 30
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endforeach()
+
 if(QT_DISPLAY_ONLY)
     return()
 endif()
