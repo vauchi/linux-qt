@@ -122,6 +122,7 @@ QWidget *PresentationSurface::renderQr(const QJsonObject &payload) {
             payload.value(QStringLiteral("capture_submit_label"))
                 .toString(accessibility.value(QStringLiteral("label")).toString()));
         applyAccessibility(button, accessibility);
+        button->setAccessibleName(button->text());
         connect(button, &QPushButton::clicked, this, submit);
         layout->addWidget(button);
         return container;
