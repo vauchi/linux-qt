@@ -75,7 +75,10 @@ void assertPreparedCaptureCopyAndSubmission() {
         assert(buttons.size() == 1);
         auto *button = buttons.first();
         assert(button->text() == (supplied ? QStringLiteral("Valider") : QStringLiteral("Lire le code")));
-        assert(button->accessibleName() == QStringLiteral("Lire le code"));
+        auto *accessible = QAccessible::queryAccessibleInterface(button);
+        assert(accessible != nullptr);
+        assert(accessible->text(QAccessible::Name)
+               == (supplied ? QStringLiteral("Valider") : QStringLiteral("Lire le code")));
 
         QJsonArray observations;
         QObject::connect(&widget, &PresentationSurface::valueReady, &widget,
