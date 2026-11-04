@@ -70,6 +70,15 @@ add_test(NAME display_copy_test COMMAND display_copy_test)
 set_tests_properties(display_copy_test PROPERTIES TIMEOUT 30
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
+add_executable(display_contract_test tests/display_contract_test.cpp)
+target_link_libraries(display_contract_test PRIVATE qt_display)
+target_compile_options(display_contract_test PRIVATE -UNDEBUG)
+foreach(case composition context navigation revisions values focus)
+    add_test(NAME display_${case} COMMAND display_contract_test ${case})
+    set_tests_properties(display_${case} PROPERTIES TIMEOUT 30
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endforeach()
+
 if(QT_DISPLAY_ONLY)
     return()
 endif()

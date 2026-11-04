@@ -1,0 +1,92 @@
+// SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+#pragma once
+
+#include "qt_display.h"
+#include <QApplication>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QMainWindow>
+#include <QTimer>
+#include <cassert>
+#include <functional>
+
+namespace display_test {
+
+struct Step {
+    QJsonArray commands;
+    std::function<void()> verify;
+};
+
+inline QList<Step> steps;
+inline QJsonArray events;
+
+inline QJsonObject action(const QString &id, const QString &label) {
+    return {{"interaction_id", id}, {"label", label},
+            {"accessibility_label", label}, {"enabled", true}};
+}
+
+inline QJsonObject surface(const QString &id, int revision, const QString &title,
+                           const QJsonArray &nodes = {}) {
+    return {{"ReplaceSurface", QJsonObject{{"surface", QJsonObject{
+        {"surface_id", id}, {"revision", revision}, {"title", title},
+        {"layout", "fixed"}, {"tokens", QJsonObject{}}, {"nodes", nodes}}}}}};
+}
+
+inline QJsonObject profile(const QString &active, bool split = false) {
+    return {{"SetPresentationProfile", QJsonObject{{"profile", QJsonObject{
+        {"window_class", "expanded"}, {"pane_layout", split ? "split" : "single"},
+        {"primary_surface", "first"}, {"detail_surface", "second"},
+        {"active_surface", active}}}}}};
+}
+
+inline QJsonObject scoped(const QString &command, int revision,
+                          const QString &key, const QJsonValue &value,
+                          const QString &id = QStringLiteral("first")) {
+    return {{command, QJsonObject{{"surface_id", id}, {"revision", revision},
+                                  {key, value}}}};
+}
+
+inline QMainWindow *window() {
+    QList<QMainWindow *> windows;
+    for (QWidget *widget : QApplication::topLevelWidgets()) {
+        if (auto *main = qobject_cast<QMainWindow *>(widget);
+            main && main->isVisible()) windows.append(main);
+    }
+    assert(windows.size() == 1);
+    return windows.first();
+}
+
+inline QJsonObject event(const QString &variant, const QJsonObject &payload) {
+    return {{variant, payload}};
+}
+
+inline QJsonArray activation(const QString &id, const QString &interaction) {
+    return {event("SurfaceActivated", {{"surface_id", id}}),
+            event("ActionActivated", {{"surface_id", id}, {"interaction_id", interaction}})};
+}
+
+inline void receive(const char *json, void *context) {
+    assert(context == &events);
+    events.append(QJsonDocument::fromJson(json).object());
+}
+
+// @internal
+inline void runStep(int index) {
+    const auto step = steps.at(index);
+    const auto json = QJsonDocument(step.commands).toJson(QJsonDocument::Compact);
+    assert(qt_display_render(json.constData(), static_cast<size_t>(json.size())) == 0);
+    QMetaObject::invokeMethod(qApp, [step, index] {
+        step.verify();
+        if (index + 1 == steps.size()) qt_display_stop();
+        else runStep(index + 1);
+    }, Qt::QueuedConnection);
+}
+
+inline void schedule() {
+    QTimer::singleShot(0, [] { runStep(0); });
+}
+
+} // namespace display_test
