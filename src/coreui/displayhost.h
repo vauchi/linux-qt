@@ -1,0 +1,37 @@
+// SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+#pragma once
+
+#include "qt_display.h"
+#include "presentationstate.h"
+#include <QMainWindow>
+#include <QPointer>
+
+class NavigationSidebar;
+class PresentationSurface;
+class QSplitter;
+
+class QtDisplayHost : public QMainWindow {
+public:
+    QtDisplayHost(QtDisplayEventCallback onEvent, void *userData);
+    void render(const QJsonArray &commands);
+
+private:
+    void renderPresentation();
+    PresentationSurface *createSurface(const QJsonObject &surface,
+                                      const QJsonObject &bar, bool sidebar);
+    void activate(const QString &surfaceId, const QString &interactionId);
+    void emitEvent(const QJsonObject &event);
+    void snapshotIfAsked();
+
+    QtDisplayEventCallback m_onEvent;
+    void *m_userData;
+    PresentationState m_state;
+    QSplitter *m_row;
+    QSplitter *m_panes;
+    QPointer<NavigationSidebar> m_sidebar;
+    QJsonObject m_navigation;
+    QString m_navigationSurface;
+    QHash<QString, QPointer<PresentationSurface>> m_surfaces;
+};
