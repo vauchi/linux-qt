@@ -23,8 +23,8 @@ public:
                                  QWidget *parent = nullptr);
 
     /// Applies a replacement in place when it keeps this surface's
-    /// structure (same id and revision: contract `SurfaceSpec::revision`)
-    /// and the same context bar; false when the caller must rebuild.
+    /// structure (same id and revision: contract `SurfaceSpec::revision`);
+    /// contextual controls update without rebuilding the content widgets.
     bool update(const QJsonObject &surface, const QJsonObject &contextBar,
                 bool sidebarShown);
 
@@ -68,6 +68,7 @@ private:
     bool keepsFocusedTypedValue(const QJsonObject &previous,
                                 const QJsonObject &next,
                                 const QWidget *widget) const;
+    void updateContextBar(const QJsonObject &contextBar, bool sidebarShown);
 
     QString m_surfaceId;
     QJsonObject m_surface;

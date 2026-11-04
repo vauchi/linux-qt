@@ -15,6 +15,7 @@
 #include <QJsonArray>
 #include <QLabel>
 #include <QLineEdit>
+#include <QPushButton>
 
 namespace {
 
@@ -38,9 +39,11 @@ bool sameFrame(const QJsonObject &shown, const QJsonObject &next) {
 bool PresentationSurface::update(const QJsonObject &surface,
                                  const QJsonObject &contextBar,
                                  bool sidebarShown) {
-    if (!sameFrame(m_surface, surface) || contextBar != m_contextBar
-        || sidebarShown != m_sidebarShown || m_contentLayout == nullptr) {
+    if (!sameFrame(m_surface, surface) || m_contentLayout == nullptr) {
         return false;
+    }
+    if (contextBar != m_contextBar || sidebarShown != m_sidebarShown) {
+        updateContextBar(contextBar, sidebarShown);
     }
     m_title->setText(surface.value(QStringLiteral("title")).toString());
     if (m_subtitle != nullptr) {
@@ -64,6 +67,33 @@ bool PresentationSurface::update(const QJsonObject &surface,
     }
     m_surface = surface;
     return true;
+}
+
+void PresentationSurface::updateContextBar(const QJsonObject &contextBar,
+                                           bool sidebarShown) {
+    auto *titleRow = qobject_cast<QBoxLayout *>(m_title->parentWidget()->layout());
+    while (auto *item = titleRow->takeAt(0)) {
+        if (item->widget() != m_title) delete item->widget();
+        delete item;
+    }
+    for (const QString &role : {QStringLiteral("back"), QStringLiteral("navigation")}) {
+        const auto action = contextBar.value(role).toObject();
+        if (!action.isEmpty() && !(role == QStringLiteral("navigation") && sidebarShown))
+            titleRow->addWidget(contextBarButton(action, role));
+    }
+    titleRow->addWidget(m_title, 1);
+    for (const QString &role : {QStringLiteral("info"), QStringLiteral("secondary")}) {
+        const auto action = contextBar.value(role).toObject();
+        if (!action.isEmpty()) titleRow->addWidget(contextBarButton(action, role));
+    }
+    delete findChild<QPushButton *>(QStringLiteral("context-primary"), Qt::FindDirectChildrenOnly);
+    const auto primary = contextBar.value(QStringLiteral("primary")).toObject();
+    if (!primary.isEmpty()) {
+        auto *outer = qobject_cast<QBoxLayout *>(layout());
+        outer->addWidget(contextBarButton(primary, QStringLiteral("primary")));
+    }
+    m_contextBar = contextBar;
+    m_sidebarShown = sidebarShown;
 }
 
 bool PresentationSurface::keepsFocusedTypedValue(const QJsonObject &previous,
