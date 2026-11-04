@@ -6,6 +6,7 @@
 #include <QDialog>
 #include <QLabel>
 #include <QMenu>
+#include <QKeyEvent>
 #include <QPushButton>
 
 using namespace display_test;
@@ -24,6 +25,13 @@ QList<QDialog *> dialogs() {
         if (dialog->isVisible()) shown.append(dialog);
     }
     return shown;
+}
+
+QMenu *visibleMenu() {
+    for (auto *menu : window()->findChildren<QMenu *>()) {
+        if (menu->isVisible()) return menu;
+    }
+    return nullptr;
 }
 
 QList<Step> information() {
@@ -76,15 +84,30 @@ QList<Step> navigation() {
 QList<Step> menu() {
     return {
         {{surface("first", 2, "First"), profile("first"), overlay("action_menu")}, [] {
-            auto *menu = window()->findChild<QMenu *>();
+            auto *menu = visibleMenu();
             assert(menu && menu->isVisible());
             const auto actions = menu->actions();
             assert(actions.size() == 1);
             assert(actions.first()->text() == QStringLiteral("Choose"));
-            actions.first()->trigger();
-            menu->close();
+            menu->setActiveAction(actions.first());
+            QKeyEvent enter(QEvent::KeyPress, Qt::Key_Return, Qt::NoModifier);
+            QApplication::sendEvent(menu, &enter);
         }},
-        {{}, [] { assert(events == activation("first", "choose")); }},
+        {{}, [] {
+            assert(events == activation("first", "choose"));
+            events = {};
+        }},
+        {{overlay("action_menu")}, [] {
+            auto *menu = visibleMenu();
+            assert(menu != nullptr);
+            QKeyEvent escape(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
+            QApplication::sendEvent(menu, &escape);
+        }},
+        {{}, [] {
+            assert(visibleMenu() == nullptr);
+            assert((events == QJsonArray{event("OverlayDismissed",
+                {{"surface_id", "first"}, {"kind", "action_menu"}})}));
+        }},
     };
 }
 
