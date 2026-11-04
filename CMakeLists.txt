@@ -62,6 +62,14 @@ target_include_directories(qt_display PUBLIC include PRIVATE src ${QRENCODE_INCL
 target_link_directories(qt_display PUBLIC ${QRENCODE_LIBRARY_DIRS})
 target_link_libraries(qt_display PUBLIC Qt6::Widgets Qt6::Core ${QRENCODE_LIBRARIES})
 
+enable_testing()
+add_executable(display_copy_test tests/display_copy_test.cpp)
+target_link_libraries(display_copy_test PRIVATE qt_display)
+target_compile_options(display_copy_test PRIVATE -UNDEBUG)
+add_test(NAME display_copy_test COMMAND display_copy_test)
+set_tests_properties(display_copy_test PROPERTIES TIMEOUT 30
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
 if(QT_DISPLAY_ONLY)
     return()
 endif()
