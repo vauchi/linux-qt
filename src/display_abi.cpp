@@ -36,14 +36,19 @@ public:
     void render(const QJsonArray &commands) {
         for (const QJsonValue &value : commands) {
             const QJsonObject command = value.toObject();
+            if (command.contains(QStringLiteral("SetPresentationProfile"))) {
+                const auto profile = command.value(QStringLiteral("SetPresentationProfile"))
+                                         .toObject().value(QStringLiteral("profile")).toObject();
+                const auto title = profile.value(QStringLiteral("window_title"));
+                if (title.isString()) setWindowTitle(title.toString());
+            }
             if (command.contains(QStringLiteral("ReplaceSurface"))) {
                 replaceSurface(command.value(QStringLiteral("ReplaceSurface"))
                                    .toObject()
                                    .value(QStringLiteral("surface"))
                                    .toObject());
             }
-            // Every other command is the app's or a later slice's; the
-            // spike renders surfaces only.
+            // TODO(private#1073): route the remaining display commands.
         }
         snapshotIfAsked();
     }
@@ -87,7 +92,6 @@ private:
         QWidget *previous = m_scroll->takeWidget();
         m_scroll->setWidget(next);
         delete previous;
-        setWindowTitle(surface.value(QStringLiteral("title")).toString());
     }
 
     // QT_DISPLAY_SNAPSHOT=<png> writes the window after each batch, so a
