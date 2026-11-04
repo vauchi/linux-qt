@@ -245,8 +245,7 @@ target_link_libraries(presentation_qr_placement_test PRIVATE
 add_test(NAME presentation_qr_placement_test
     COMMAND presentation_qr_placement_test)
 
-add_executable(presentation_controller_test
-    tests/presentation_controller_test.cpp
+set(PRESENTATION_CONTROLLER_TEST_SOURCES
     src/coreui/presentationcontroller.cpp
     src/coreui/presentationcontroller_effects.cpp
     src/coreui/presentationeffectpayload.cpp
@@ -262,14 +261,23 @@ add_executable(presentation_controller_test
     src/coreui/qrpasteprompt.cpp
     src/platform/hardwarebackend.cpp
     src/platform/directsendworker.cpp)
-target_sources(presentation_controller_test PRIVATE src/platform/filepicker.cpp)
-target_include_directories(presentation_controller_test PRIVATE
+add_executable(presentation_controller_test tests/presentation_controller_test.cpp
+    ${PRESENTATION_CONTROLLER_TEST_SOURCES})
+add_executable(presentation_copy_test tests/presentation_copy_test.cpp
+    ${PRESENTATION_CONTROLLER_TEST_SOURCES})
+foreach(controller_target presentation_controller_test presentation_copy_test)
+target_sources(${controller_target} PRIVATE src/platform/filepicker.cpp)
+target_include_directories(${controller_target} PRIVATE
     include src ${VAUCHI_CABI_INCLUDE} ${QRENCODE_INCLUDE_DIRS})
-target_link_directories(presentation_controller_test PRIVATE
+target_link_directories(${controller_target} PRIVATE
     ${QRENCODE_LIBRARY_DIRS})
-target_link_libraries(presentation_controller_test PRIVATE
+target_link_libraries(${controller_target} PRIVATE
     Qt6::Widgets Qt6::Core Qt6::Network Qt6::Concurrent ${QRENCODE_LIBRARIES} ${VAUCHI_CABI})
+endforeach()
 add_test(NAME presentation_controller_test COMMAND presentation_controller_test)
+add_test(NAME presentation_profile_copy COMMAND presentation_copy_test profile)
+add_test(NAME presentation_capture_copy COMMAND presentation_copy_test capture)
+add_test(NAME presentation_overlay_copy COMMAND presentation_copy_test overlay)
 # The QrRequestScan paste-fallback test fails a blocking (exec-style) prompt
 # by hanging; bound the red so CI reports a failure instead of stalling.
 set_tests_properties(presentation_controller_test PROPERTIES TIMEOUT 60)
@@ -377,6 +385,7 @@ foreach(vauchi_test_target
         presentation_image_test
         presentation_qr_placement_test
         presentation_controller_test
+        presentation_copy_test
         presentation_navigation_test
         navigation_icons_test
         theme_test
