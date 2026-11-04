@@ -189,6 +189,7 @@ void PresentationController::presentOverlay(
         auto *close = new QPushButton(closeLabel);
         if (closeLabel.isEmpty()) {
             close->setIcon(close->style()->standardIcon(QStyle::SP_DialogCloseButton));
+            close->setAccessibleName(overlay.value(QStringLiteral("title")).toString());
         }
         close->setMinimumHeight(minimumTargetSize);
         close->setDefault(true);

@@ -112,10 +112,10 @@ QWidget *PresentationSurface::renderQr(const QJsonObject &payload) {
             payload.value(QStringLiteral("capture_placeholder")).toString());
         applyAccessibility(input, accessibility);
         const auto submit = [this, input, binding]() {
-                    emit valueReady(
-                        m_surfaceId, binding,
-                        QJsonObject{{QStringLiteral("text"), input->text()}});
-                };
+            emit valueReady(
+                m_surfaceId, binding,
+                QJsonObject{{QStringLiteral("text"), input->text()}});
+        };
         connect(input, &QLineEdit::returnPressed, this, submit);
         layout->addWidget(input);
         auto *button = new QPushButton(

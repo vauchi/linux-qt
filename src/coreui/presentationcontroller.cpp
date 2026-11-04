@@ -205,7 +205,10 @@ void PresentationController::applyBatch(const QJsonArray &commands) {
 }
 
 void PresentationController::renderPresentation() {
-    setWindowTitle(m_state.profile().value(QStringLiteral("window_title")).toString());
+    const QJsonValue title = m_state.profile().value(QStringLiteral("window_title"));
+    if (title.isString()) {
+        setWindowTitle(title.toString());
+    }
     if (const QStringList shown = m_state.visibleSurfaceIds();
         shown.size() == 1 && m_singleSurface
         && m_state.navigation() == m_renderedNavigation) {
