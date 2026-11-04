@@ -165,6 +165,12 @@ QList<Step> focus() {
             assert(field()->selectedText() == QStringLiteral("lic"));
             assert(hasTitle("Updated"));
         }},
+        {{context(1, "Save")}, [] {
+            assert(retained && retained == field());
+            assert(field()->hasFocus());
+            assert(field()->selectedText() == QStringLiteral("lic"));
+            assert(button("Save") != nullptr);
+        }},
     };
 }
 
