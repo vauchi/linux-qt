@@ -24,6 +24,10 @@ private:
     void activate(const QString &surfaceId, const QString &interactionId);
     void emitEvent(const QJsonObject &event);
     void snapshotIfAsked();
+    void applyOverlay(const QJsonObject &command);
+    void closeOverlay();
+    void overlayDismissed(QWidget *widget, const QString &surfaceId,
+                          const QString &kind);
 
     QtDisplayEventCallback m_onEvent;
     void *m_userData;
@@ -34,4 +38,7 @@ private:
     QJsonObject m_navigation;
     QString m_navigationSurface;
     QHash<QString, QPointer<PresentationSurface>> m_surfaces;
+    QPointer<QWidget> m_overlay;
+    QString m_overlaySurface;
+    QString m_overlayKind;
 };

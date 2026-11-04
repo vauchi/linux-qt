@@ -21,12 +21,21 @@ void QtDisplayHost::render(const QJsonArray &commands) {
     bool changed = false;
     for (const auto &value : commands) {
         const auto command = value.toObject();
+        if (command.contains("PresentOverlay") || command.contains("DismissOverlay")) {
+            applyOverlay(command);
+            continue;
+        }
         const bool structural = command.contains("ReplaceSurface")
             || command.contains("SetPresentationProfile")
             || command.contains("SetContextBar")
             || command.contains("SetNavigation");
         if (!structural || !m_state.apply(command)) continue;
         changed = true;
+        if (command.contains("ReplaceSurface")) {
+            const auto id = command.value("ReplaceSurface").toObject()
+                                .value("surface").toObject().value("surface_id").toString();
+            if (id == m_overlaySurface) closeOverlay();
+        }
         if (command.contains("SetPresentationProfile")) {
             const auto title = m_state.profile().value("window_title");
             if (title.isString()) setWindowTitle(title.toString());
