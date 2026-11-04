@@ -2,11 +2,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "coreui/presentationcontroller.h"
+#include "coreui/presentationeffectpayload.h"
 #include "coreui/presentationsurface.h"
 
 #include <QApplication>
 #include <QDialog>
 #include <QJsonArray>
+#include <QInputDialog>
+#include <QKeyEvent>
 #include <QLineEdit>
 #include <QPushButton>
 #include <cassert>
@@ -78,6 +81,10 @@ void assertPreparedCaptureCopyAndSubmission() {
         assert((observations == QJsonArray{QJsonObject{
             {"surface_id", "prepared"}, {"binding_id", "capture"},
             {"value", QJsonObject{{"text", "opaque QR data"}}}}}));
+        QKeyEvent enter(QEvent::KeyPress, Qt::Key_Return, Qt::NoModifier);
+        QApplication::sendEvent(input, &enter);
+        assert(observations.size() == 2);
+        assert(observations.last() == observations.first());
     }
 }
 
@@ -104,6 +111,22 @@ void assertOptionalOverlayCloseCopy() {
     }
 }
 
+// @internal
+void assertScanOutcomeHasNoShellOwnedPrompt() {
+    const QJsonObject unavailable{{"HardwareUnavailable",
+        QJsonObject{{"transport", "qr_scan"}}}};
+    assert(PresentationEffectPayload::qrScanResult(QString()) == unavailable);
+    for (const QString &data : {QStringLiteral("opaque QR data"), QStringLiteral("  raw data  ")}) {
+        const QJsonObject scanned{{"QrScanned", QJsonObject{{"data", data}}}};
+        assert(PresentationEffectPayload::qrScanResult(data) == scanned);
+    }
+    PresentationController controller(nullptr);
+    controller.dispatchCommands({replacement(surface()), QStringLiteral("QrRequestScan")});
+    QApplication::processEvents();
+    assert(controller.findChildren<QInputDialog *>().isEmpty());
+    assert(controller.findChild<PresentationSurface *>() != nullptr);
+}
+
 } // namespace
 
 int main(int argc, char **argv) {
@@ -113,6 +136,7 @@ int main(int argc, char **argv) {
     if (test == QStringLiteral("profile")) assertPreparedWindowTitle();
     else if (test == QStringLiteral("capture")) assertPreparedCaptureCopyAndSubmission();
     else if (test == QStringLiteral("overlay")) assertOptionalOverlayCloseCopy();
+    else if (test == QStringLiteral("scan")) assertScanOutcomeHasNoShellOwnedPrompt();
     else return 2;
     return 0;
 }

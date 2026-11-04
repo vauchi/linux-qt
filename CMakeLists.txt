@@ -278,6 +278,7 @@ add_test(NAME presentation_controller_test COMMAND presentation_controller_test)
 add_test(NAME presentation_profile_copy COMMAND presentation_copy_test profile)
 add_test(NAME presentation_capture_copy COMMAND presentation_copy_test capture)
 add_test(NAME presentation_overlay_copy COMMAND presentation_copy_test overlay)
+add_test(NAME presentation_scan_outcome COMMAND presentation_copy_test scan)
 # The QrRequestScan paste-fallback test fails a blocking (exec-style) prompt
 # by hanging; bound the red so CI reports a failure instead of stalling.
 set_tests_properties(presentation_controller_test PROPERTIES TIMEOUT 60)
