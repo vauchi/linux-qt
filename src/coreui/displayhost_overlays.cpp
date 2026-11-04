@@ -119,6 +119,6 @@ void QtDisplayHost::applyOverlay(const QJsonObject &command) {
     connect(menu, &QMenu::aboutToHide, this, [this, menu, id, kind] {
         overlayDismissed(menu, id, kind);
         menu->deleteLater();
-    });
+    }, Qt::QueuedConnection); // Qt hides before triggering the chosen action (#1073).
     menu->popup(mapToGlobal(rect().center()));
 }
