@@ -6,6 +6,7 @@
 #include "coreui/presentationsurface.h"
 
 #include <QApplication>
+#include <QAccessible>
 #include <QDialog>
 #include <QJsonArray>
 #include <QInputDialog>
@@ -43,6 +44,14 @@ void assertPreparedWindowTitle() {
     assert(controller.windowTitle() == QStringLiteral("Autre titre"));
 
     profile.remove(QStringLiteral("window_title"));
+    controller.dispatchCommands({QJsonObject{{"SetPresentationProfile",
+        QJsonObject{{"profile", profile}}}}});
+    assert(controller.windowTitle() == QStringLiteral("Autre titre"));
+    profile.insert(QStringLiteral("window_title"), QJsonValue::Null);
+    controller.dispatchCommands({QJsonObject{{"SetPresentationProfile",
+        QJsonObject{{"profile", profile}}}}});
+    assert(controller.windowTitle() == QStringLiteral("Autre titre"));
+    profile.insert(QStringLiteral("window_title"), QString());
     controller.dispatchCommands({QJsonObject{{"SetPresentationProfile",
         QJsonObject{{"profile", profile}}}}});
     assert(controller.windowTitle().isEmpty());
@@ -105,6 +114,9 @@ void assertOptionalOverlayCloseCopy() {
         assert(buttons.size() == 1);
         assert(buttons.first()->text().isEmpty());
         assert(!buttons.first()->icon().isNull());
+        auto *accessible = QAccessible::queryAccessibleInterface(buttons.first());
+        assert(accessible != nullptr);
+        assert(accessible->text(QAccessible::Name) == QStringLiteral("Information"));
         buttons.first()->click();
         assert(!dialog->isVisible());
         QApplication::processEvents();
