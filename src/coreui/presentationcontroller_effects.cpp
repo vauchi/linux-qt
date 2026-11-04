@@ -21,6 +21,7 @@
 #include <QPushButton>
 #include <QSaveFile>
 #include <QScrollArea>
+#include <QStyle>
 #include <QToolTip>
 #include <QUrl>
 #include <QVBoxLayout>
@@ -183,11 +184,12 @@ void PresentationController::presentOverlay(
         body->setWordWrap(true);
         body->setTextInteractionFlags(Qt::TextSelectableByMouse);
         layout->addWidget(body);
-        // Core names the way out in the person's language; the old word
-        // stays only for a batch from an older Core (vauchi/private#479).
         const QString closeLabel =
-            overlay.value(QStringLiteral("close_label")).toString(tr("Close"));
+            overlay.value(QStringLiteral("close_label")).toString();
         auto *close = new QPushButton(closeLabel);
+        if (closeLabel.isEmpty()) {
+            close->setIcon(close->style()->standardIcon(QStyle::SP_DialogCloseButton));
+        }
         close->setMinimumHeight(minimumTargetSize);
         close->setDefault(true);
         connect(close, &QPushButton::clicked, dialog, &QDialog::accept);

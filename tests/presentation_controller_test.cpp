@@ -3,7 +3,6 @@
 
 #include "coreui/presentationcontroller.h"
 #include "coreui/presentationeffectpayload.h"
-#include "coreui/qrpasteprompt.h"
 
 #include <QApplication>
 #include <QDialog>
@@ -341,23 +340,6 @@ void assertExportPayloadUsesCanonicalSchema() {
     assert(!obsolete.has_value());
 }
 
-void assertQrScanRequestOpensNonBlockingPastePrompt() {
-    PresentationController controller(nullptr);
-    controller.resize(700, 600);
-    controller.show();
-    // The test target never defines VAUCHI_HAS_CAMERA, so QrRequestScan
-    // deterministically takes the no-camera paste fallback. A blocking
-    // (exec-style) prompt would never return here, so reaching the
-    // assertions at all is the non-blocking guarantee.
-    controller.dispatchCommands(QJsonArray{QStringLiteral("QrRequestScan")});
-    QApplication::processEvents();
-    auto *dialog = controller.findChild<QInputDialog *>();
-    assert(dialog != nullptr);
-    assert(dialog->windowModality() == Qt::WindowModal);
-    dialog->reject();
-    QApplication::processEvents();
-}
-
 // Core computes the wait and sends it as `delay_millis`; the shell arms
 // exactly that, whatever the other fields would suggest
 // (vauchi/private#548).
@@ -378,92 +360,6 @@ void assertScheduleWakeupArmsCoresDelay() {
     QApplication::processEvents();
     assert(scheduled.size() == 1);
     assert(scheduled.constFirst() == 2000);
-}
-
-QJsonObject qrScannedEvent(const QString &data) {
-    return {{QStringLiteral("QrScanned"),
-             QJsonObject{{QStringLiteral("data"), data}}}};
-}
-
-QJsonObject qrUnavailableEvent() {
-    return {{QStringLiteral("HardwareUnavailable"),
-             QJsonObject{{QStringLiteral("transport"),
-                          QStringLiteral("qr_scan")}}}};
-}
-
-void assertQrPastePromptAcceptEmitsQrScanned() {
-    QWidget parent;
-    QrPastePrompt prompt(&parent);
-    QVector<QJsonObject> events;
-    QObject::connect(&prompt, &QrPastePrompt::eventReady, &parent,
-                     [&events](const QJsonObject &event) {
-                         events.append(event);
-                     });
-    prompt.prompt();
-    QApplication::processEvents();
-    auto *dialog = parent.findChild<QInputDialog *>();
-    assert(dialog != nullptr);
-    assert(dialog->windowModality() == Qt::WindowModal);
-    dialog->setTextValue(QStringLiteral("  vauchi://qr-payload  "));
-    dialog->accept();
-    QApplication::processEvents();
-    assert(events.size() == 1);
-    assert(events.constFirst()
-           == qrScannedEvent(QStringLiteral("vauchi://qr-payload")));
-    // The prompt destroys the dialog with deleteLater(), which is the only
-    // safe way to free it from inside its own finished handler. Plain
-    // processEvents() does not drain DeferredDelete, so pump it explicitly
-    // before asserting the dialog is gone.
-    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
-    assert(parent.findChild<QInputDialog *>() == nullptr);
-}
-
-void assertQrPastePromptCancelNotifiesCore() {
-    QWidget parent;
-    QrPastePrompt prompt(&parent);
-    QVector<QJsonObject> events;
-    QObject::connect(&prompt, &QrPastePrompt::eventReady, &parent,
-                     [&events](const QJsonObject &event) {
-                         events.append(event);
-                     });
-    prompt.prompt();
-    QApplication::processEvents();
-    auto *dialog = parent.findChild<QInputDialog *>();
-    assert(dialog != nullptr);
-    dialog->reject();
-    QApplication::processEvents();
-    assert(events.size() == 1);
-    assert(events.constFirst() == qrUnavailableEvent());
-}
-
-void assertQrPastePromptEmptyAcceptNotifiesCore() {
-    QWidget parent;
-    QrPastePrompt prompt(&parent);
-    QVector<QJsonObject> events;
-    QObject::connect(&prompt, &QrPastePrompt::eventReady, &parent,
-                     [&events](const QJsonObject &event) {
-                         events.append(event);
-                     });
-    prompt.prompt();
-    QApplication::processEvents();
-    auto *dialog = parent.findChild<QInputDialog *>();
-    assert(dialog != nullptr);
-    dialog->accept();
-    QApplication::processEvents();
-    assert(events.size() == 1);
-    assert(events.constFirst() == qrUnavailableEvent());
-}
-
-void assertQrPastePromptReusesOpenDialog() {
-    QWidget parent;
-    QrPastePrompt prompt(&parent);
-    prompt.prompt();
-    prompt.prompt();
-    QApplication::processEvents();
-    const auto dialogs = parent.findChildren<QInputDialog *>();
-    assert(dialogs.size() == 1);
-    dialogs.constFirst()->reject();
-    QApplication::processEvents();
 }
 
 // @scenario: generic_presentation_protocol.feature :: Invalid boundary input fails safely
@@ -563,11 +459,6 @@ int main(int argc, char **argv) {
     assertOverlayStructures(false);
     assertOverlayStructures(true);
     assertNavigationItemsRespectMinimumTargetSize();
-    assertQrScanRequestOpensNonBlockingPastePrompt();
-    assertQrPastePromptAcceptEmitsQrScanned();
-    assertQrPastePromptCancelNotifiesCore();
-    assertQrPastePromptEmptyAcceptNotifiesCore();
-    assertQrPastePromptReusesOpenDialog();
     assertScheduleWakeupArmsCoresDelay();
     assertApplicationMenusUseTheCurrentSurfaceRevision();
     qunsetenv("QT_REDUCE_MOTION");

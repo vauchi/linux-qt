@@ -5,7 +5,7 @@
 
 #include "navigationsidebar.h"
 #include "presentationsurface.h"
-#include "qrpasteprompt.h"
+#include "presentationeffectpayload.h"
 #include "../platform/hardwarebackend.h"
 #include "../platform/networkcost.h"
 #include "../platform/filepicker.h"
@@ -19,23 +19,14 @@ PresentationController::PresentationController(struct VauchiApp *app,
                                                QWidget *parent)
     : QWidget(parent), m_app(app),
       m_hardware(new HardwareBackend(this)),
-      m_qrPaste(new QrPastePrompt(this)),
       m_filePicker(new FilePicker(this)),
       m_reducedMotion(qEnvironmentVariableIsSet("QT_REDUCE_MOTION")) {
     connect(m_hardware, &HardwareBackend::eventReady, this,
             [this](const QJsonObject &event) { dispatchEvent(event); });
     connect(m_hardware, &HardwareBackend::qrScanned, this,
             [this](const QString &data) {
-                if (data.isEmpty()) {
-                    m_qrPaste->prompt();
-                    return;
-                }
-                dispatchEvent(QJsonObject{
-                    {QStringLiteral("QrScanned"),
-                     QJsonObject{{QStringLiteral("data"), data}}}});
+                dispatchEvent(PresentationEffectPayload::qrScanResult(data));
             });
-    connect(m_qrPaste, &QrPastePrompt::eventReady, this,
-            [this](const QJsonObject &event) { dispatchEvent(event); });
     connect(m_filePicker, &FilePicker::eventReady, this,
             &PresentationController::dispatchEncodedEvent);
 }
@@ -214,6 +205,7 @@ void PresentationController::applyBatch(const QJsonArray &commands) {
 }
 
 void PresentationController::renderPresentation() {
+    setWindowTitle(m_state.profile().value(QStringLiteral("window_title")).toString());
     if (const QStringList shown = m_state.visibleSurfaceIds();
         shown.size() == 1 && m_singleSurface
         && m_state.navigation() == m_renderedNavigation) {

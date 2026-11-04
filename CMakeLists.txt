@@ -86,7 +86,6 @@ set(QVAUCHI_SOURCES
     src/coreui/presentationsurface_nodes.cpp
     src/coreui/presentationsurface_update.cpp
     src/coreui/presentationsurface_qr.cpp
-    src/coreui/qrpasteprompt.cpp
     src/coreui/thememanager.cpp
     src/coreui/screencatalog.cpp
     src/rendercatalog.cpp
@@ -258,7 +257,6 @@ set(PRESENTATION_CONTROLLER_TEST_SOURCES
     src/coreui/presentationsurface_nodes.cpp
     src/coreui/presentationsurface_update.cpp
     src/coreui/presentationsurface_qr.cpp
-    src/coreui/qrpasteprompt.cpp
     src/platform/hardwarebackend.cpp
     src/platform/directsendworker.cpp)
 add_executable(presentation_controller_test tests/presentation_controller_test.cpp

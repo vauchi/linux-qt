@@ -55,7 +55,7 @@ void HardwareBackend::dispatchCommands(const QJsonArray &commands) {
                     continue;
                 }
 #endif
-                emit qrScanned(QString()); // empty = prompt paste
+                emit qrScanned(QString());
                 continue;
             }
 

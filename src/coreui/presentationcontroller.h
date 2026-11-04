@@ -12,7 +12,6 @@
 #include <QWidget>
 
 class HardwareBackend;
-class QrPastePrompt;
 class FilePicker;
 class PresentationSurface;
 
@@ -74,7 +73,6 @@ private:
     QPointer<PresentationSurface> m_singleSurface;
     QJsonObject m_renderedNavigation;
     HardwareBackend *m_hardware;
-    QrPastePrompt *m_qrPaste;
     FilePicker *m_filePicker;
     bool m_reducedMotion = false;
 };

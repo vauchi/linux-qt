@@ -327,7 +327,7 @@ int main(int argc, char **argv) {
     auto *qrCapture = renderer.findChild<QLineEdit *>("scan-code");
     assert(qrCapture != nullptr);
     qrCapture->setText(QStringLiteral("vauchi://scanned"));
-    QMetaObject::invokeMethod(qrCapture, "editingFinished",
+    QMetaObject::invokeMethod(qrCapture, "returnPressed",
                               Qt::DirectConnection);
     assert(binding == QStringLiteral("scan-code"));
     assert(value.toObject().value("text").toString()

@@ -25,7 +25,6 @@
 #include <optional>
 
 VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
-    setWindowTitle(tr_vauchi("app.name", "Vauchi"));
     resize(700, 600);
 
     // Apply core theme colors via QPalette (runtime-switchable).
@@ -108,6 +107,8 @@ VauchiWindow::VauchiWindow(QWidget *parent) : QMainWindow(parent) {
     auto *central = new QWidget(this);
     auto *layout = new QHBoxLayout(central);
     m_presentation = new PresentationController(m_app, this);
+    connect(m_presentation, &QWidget::windowTitleChanged,
+            this, &QWidget::setWindowTitle);
     layout->addWidget(m_presentation, 1);
 
     setCentralWidget(central);

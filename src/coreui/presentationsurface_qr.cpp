@@ -10,6 +10,7 @@
 #include <QLineEdit>
 #include <QPainter>
 #include <QPixmap>
+#include <QPushButton>
 #include <QTimer>
 #include <QVBoxLayout>
 #include <qrencode.h>
@@ -107,15 +108,22 @@ QWidget *PresentationSurface::renderQr(const QJsonObject &payload) {
         const QString binding =
             payload.value(QStringLiteral("id")).toString();
         input->setObjectName(binding);
-        input->setPlaceholderText(labelText);
+        input->setPlaceholderText(
+            payload.value(QStringLiteral("capture_placeholder")).toString());
         applyAccessibility(input, accessibility);
-        connect(input, &QLineEdit::editingFinished, this,
-                [this, input, binding]() {
+        const auto submit = [this, input, binding]() {
                     emit valueReady(
                         m_surfaceId, binding,
                         QJsonObject{{QStringLiteral("text"), input->text()}});
-                });
+                };
+        connect(input, &QLineEdit::returnPressed, this, submit);
         layout->addWidget(input);
+        auto *button = new QPushButton(
+            payload.value(QStringLiteral("capture_submit_label"))
+                .toString(accessibility.value(QStringLiteral("label")).toString()));
+        applyAccessibility(button, accessibility);
+        connect(button, &QPushButton::clicked, this, submit);
+        layout->addWidget(button);
         return container;
     }
 

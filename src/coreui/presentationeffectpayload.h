@@ -16,6 +16,7 @@ struct ExportFilePayload {
 
 class PresentationEffectPayload {
 public:
+    static QJsonObject qrScanResult(const QString &data);
     static std::optional<ExportFilePayload>
     exportFile(const QJsonObject &command);
 };

@@ -5,6 +5,14 @@
 
 #include <QJsonArray>
 
+QJsonObject PresentationEffectPayload::qrScanResult(const QString &data) {
+    if (data.isEmpty()) {
+        return {{QStringLiteral("HardwareUnavailable"),
+                 QJsonObject{{QStringLiteral("transport"), QStringLiteral("qr_scan")}}}};
+    }
+    return {{QStringLiteral("QrScanned"), QJsonObject{{QStringLiteral("data"), data}}}};
+}
+
 std::optional<ExportFilePayload>
 PresentationEffectPayload::exportFile(const QJsonObject &command) {
     const QJsonValue exportValue =
