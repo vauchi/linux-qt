@@ -213,6 +213,18 @@ QList<Step> unicodeFont() {
     }}};
 }
 
+QList<Step> activeTheme() {
+    auto inactive = themed(colors(), fonts());
+    auto payload = inactive.value("ReplaceSurface").toObject();
+    auto value = payload.value("surface").toObject();
+    value.insert("surface_id", "second");
+    payload.insert("surface", value); inactive.insert("ReplaceSurface", payload);
+    auto active = colors(); active.insert("background", "#314159");
+    return {{{themed(active, fonts()), inactive, profile("first", true)}, [] {
+        assert(QApplication::palette().color(QPalette::Window) == QColor("#314159"));
+    }}};
+}
+
 void setup() { schedule(); }
 }
 Q_COREAPP_STARTUP_FUNCTION(setup)
@@ -229,6 +241,7 @@ int main(int argc, char **argv) {
     else if (name == "tones") steps = tones();
     else if (name == "reset") steps = resetTheme();
     else if (name == "unicode_font") steps = unicodeFont();
+    else if (name == "active") steps = activeTheme();
     else return 2;
     for (qsizetype index = 0; index < steps.size(); ++index) {
         if (name == "reset" && (index == 0 || index == 2)) continue;
