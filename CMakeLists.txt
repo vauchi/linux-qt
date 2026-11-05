@@ -139,6 +139,15 @@ foreach(case file image cancel limits)
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endforeach()
 
+add_executable(display_native_effects_test tests/display_native_effects_test.cpp)
+target_link_libraries(display_native_effects_test PRIVATE qt_display)
+target_compile_options(display_native_effects_test PRIVATE -UNDEBUG)
+foreach(case alert toast url malformed)
+    add_test(NAME display_native_effects_${case} COMMAND display_native_effects_test ${case})
+    set_tests_properties(display_native_effects_${case} PROPERTIES TIMEOUT 30
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endforeach()
+
 if(QT_DISPLAY_ONLY)
     return()
 endif()
