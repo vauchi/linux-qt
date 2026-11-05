@@ -32,6 +32,7 @@ QtDisplayHost::QtDisplayHost(QtDisplayEventCallback onEvent, void *userData)
 void QtDisplayHost::render(const QJsonArray &commands) {
     bool changed = false;
     for (const auto &value : commands) {
+        if (pickLegacyFile(value)) continue;
         const auto command = value.toObject();
         const QString transport = command.contains("SetScreenBrightness") ? "screen_brightness"
             : command.contains("SetIdleTimerDisabled") ? "idle_timer"

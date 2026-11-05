@@ -30,6 +30,7 @@ private:
     void snapshotIfAsked();
     void applyOverlay(const QJsonObject &command);
     void closeOverlay();
+    bool pickLegacyFile(const QJsonValue &command);
     void exportFile(const QJsonObject &command);
     void applyApplicationMenu(const QJsonObject &payload);
     void overlayDismissed(QWidget *widget, const QString &surfaceId,
@@ -51,5 +52,7 @@ private:
     QString m_menuSurface;
     qint64 m_menuRevision = -1;
     FilePicker *m_filePicker;
+    FilePicker *m_legacyPicker = nullptr;
+    bool m_legacyImage = false;
     QPointer<QFileDialog> m_exportDialog;
 };
