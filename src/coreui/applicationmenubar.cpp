@@ -4,6 +4,7 @@
 #include "applicationmenubar.h"
 #include "applicationmenuaccessibility.h"
 #include "navigationicons.h"
+#include <QAccessible>
 #include <QAction>
 #include <QJsonArray>
 #include <QKeySequence>
@@ -38,6 +39,9 @@ void ApplicationMenuBar::apply(const QJsonObject &payload) {
         menu->deleteLater();
     }
     m_menus.clear();
+    // Qt caches the menu-item owner per QAction, so moving Quit needs a fresh interface (#1073).
+    if (auto *accessible = QAccessible::queryAccessibleInterface(m_quit))
+        QAccessible::deleteAccessibleInterface(QAccessible::uniqueId(accessible));
     const auto surface = payload.value("surface_id").toString();
     QMenu *file = nullptr;
     for (const auto &value : payload.value("menus").toArray()) {
