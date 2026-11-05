@@ -166,7 +166,9 @@ QList<Step> quit() {
     return {{{surface("first", 2, "First"), profile("first"), menu(),
               scoped("SetApplicationMenu", 2, "menus", QJsonArray{})}, [] {
         stopAfterLastStep = false;
-        nativeQuit()->trigger();
+        auto *quit = nativeQuit();
+        assert(quit->isVisible());
+        quit->trigger();
     }}};
 }
 

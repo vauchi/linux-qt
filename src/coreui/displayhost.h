@@ -11,11 +11,13 @@
 class NavigationSidebar;
 class PresentationSurface;
 class QSplitter;
+class ApplicationMenuBar;
 
 class QtDisplayHost : public QMainWindow {
 public:
     QtDisplayHost(QtDisplayEventCallback onEvent, void *userData);
     void render(const QJsonArray &commands);
+    void reportCapabilities();
 
 private:
     void renderPresentation();
@@ -26,6 +28,7 @@ private:
     void snapshotIfAsked();
     void applyOverlay(const QJsonObject &command);
     void closeOverlay();
+    void applyApplicationMenu(const QJsonObject &payload);
     void overlayDismissed(QWidget *widget, const QString &surfaceId,
                           const QString &kind);
 
@@ -41,4 +44,7 @@ private:
     QPointer<QWidget> m_overlay;
     QString m_overlaySurface;
     QString m_overlayKind;
+    ApplicationMenuBar *m_applicationMenu;
+    QString m_menuSurface;
+    qint64 m_menuRevision = -1;
 };

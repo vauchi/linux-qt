@@ -37,6 +37,7 @@ extern "C" int qt_display_start(int argc, char **argv,
     g_host = &host;
     host.show();
     g_running = true;
+    host.reportCapabilities();
     const int rc = app.exec();
     g_running = false;
     g_host = nullptr;

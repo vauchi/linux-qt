@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "displayhost.h"
+#include "applicationmenubar.h"
 #include "navigationsidebar.h"
 #include "presentationsurface.h"
 #include <QCoreApplication>
@@ -14,6 +15,12 @@ QtDisplayHost::QtDisplayHost(QtDisplayEventCallback onEvent, void *userData)
       m_row(new QSplitter(Qt::Horizontal, this)),
       m_panes(new QSplitter(Qt::Horizontal, m_row)) {
     setCentralWidget(m_row);
+    m_applicationMenu = new ApplicationMenuBar(this);
+    setMenuBar(m_applicationMenu);
+    connect(m_applicationMenu, &ApplicationMenuBar::actionActivated, this,
+        &QtDisplayHost::activate, Qt::QueuedConnection);
+    connect(m_applicationMenu, &ApplicationMenuBar::quitRequested, qApp,
+        &QCoreApplication::quit, Qt::QueuedConnection);
     resize(900, 700);
 }
 
@@ -21,6 +28,10 @@ void QtDisplayHost::render(const QJsonArray &commands) {
     bool changed = false;
     for (const auto &value : commands) {
         const auto command = value.toObject();
+        if (command.contains("SetApplicationMenu")) {
+            applyApplicationMenu(command.value("SetApplicationMenu").toObject());
+            continue;
+        }
         if (command.contains("PresentOverlay") || command.contains("DismissOverlay")) {
             applyOverlay(command);
             continue;
@@ -35,6 +46,11 @@ void QtDisplayHost::render(const QJsonArray &commands) {
             const auto id = command.value("ReplaceSurface").toObject()
                                 .value("surface").toObject().value("surface_id").toString();
             if (id == m_overlaySurface) closeOverlay();
+            if (id == m_menuSurface && m_state.surface(id)->value("revision").toInteger() != m_menuRevision) {
+                m_applicationMenu->apply({});
+                m_menuSurface.clear();
+                m_menuRevision = -1;
+            }
         }
         if (command.contains("SetPresentationProfile")) {
             const auto title = m_state.profile().value("window_title");
@@ -43,6 +59,20 @@ void QtDisplayHost::render(const QJsonArray &commands) {
     }
     if (changed) renderPresentation();
     snapshotIfAsked();
+}
+
+void QtDisplayHost::reportCapabilities() {
+    emitEvent({{"ApplicationMenuAvailabilityChanged", QJsonObject{{"available", true}}}});
+}
+
+void QtDisplayHost::applyApplicationMenu(const QJsonObject &payload) {
+    const auto id = payload.value("surface_id").toString();
+    const auto surface = m_state.surface(id);
+    const auto revision = payload.value("revision").toInteger(-1);
+    if (!surface || revision != surface->value("revision").toInteger()) return;
+    m_applicationMenu->apply(payload);
+    m_menuSurface = id;
+    m_menuRevision = revision;
 }
 
 void QtDisplayHost::renderPresentation() {

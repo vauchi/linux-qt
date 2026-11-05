@@ -43,6 +43,8 @@ option(QT_DISPLAY_ONLY "Build only the qt_display library (no qvauchi)" OFF)
 set(QT_DISPLAY_SOURCES
     src/display_abi.cpp
     src/coreui/displayhost.cpp
+    src/coreui/applicationmenubar.cpp
+    src/coreui/applicationmenuaccessibility.cpp
     src/coreui/displayhost_overlays.cpp
     src/coreui/navigationsidebar.cpp
     src/coreui/presentationstate.cpp
