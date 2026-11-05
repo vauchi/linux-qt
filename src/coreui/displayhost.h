@@ -12,6 +12,7 @@ class NavigationSidebar;
 class PresentationSurface;
 class QSplitter;
 class ApplicationMenuBar;
+class FilePicker;
 
 class QtDisplayHost : public QMainWindow {
 public:
@@ -47,4 +48,5 @@ private:
     ApplicationMenuBar *m_applicationMenu;
     QString m_menuSurface;
     qint64 m_menuRevision = -1;
+    FilePicker *m_filePicker;
 };

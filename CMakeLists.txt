@@ -45,6 +45,7 @@ set(QT_DISPLAY_SOURCES
     src/coreui/displayhost.cpp
     src/coreui/applicationmenubar.cpp
     src/coreui/applicationmenuaccessibility.cpp
+    src/platform/filepicker.cpp
     src/coreui/displayhost_overlays.cpp
     src/coreui/navigationsidebar.cpp
     src/coreui/presentationstate.cpp
@@ -65,7 +66,7 @@ add_library(qt_display STATIC ${QT_DISPLAY_SOURCES})
 target_compile_options(qt_display PRIVATE -fno-lto)
 target_include_directories(qt_display PUBLIC include PRIVATE src ${QRENCODE_INCLUDE_DIRS} ${VAUCHI_TOKENS_INCLUDE})
 target_link_directories(qt_display PUBLIC ${QRENCODE_LIBRARY_DIRS})
-target_link_libraries(qt_display PUBLIC Qt6::Widgets Qt6::Core ${QRENCODE_LIBRARIES})
+target_link_libraries(qt_display PUBLIC Qt6::Widgets Qt6::Core Qt6::Concurrent ${QRENCODE_LIBRARIES})
 
 enable_testing()
 add_executable(display_copy_test tests/display_copy_test.cpp)

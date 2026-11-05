@@ -37,8 +37,14 @@ fn main() {
         built.join("build").display()
     );
     println!("cargo:rustc-link-lib=static=qt_display");
-    for flag in
-        pkg_config_libs(&["Qt6Widgets", "Qt6Gui", "Qt6Core", "libqrencode"]).split_whitespace()
+    for flag in pkg_config_libs(&[
+        "Qt6Widgets",
+        "Qt6Gui",
+        "Qt6Core",
+        "Qt6Concurrent",
+        "libqrencode",
+    ])
+    .split_whitespace()
     {
         if let Some(lib) = flag.strip_prefix("-l") {
             println!("cargo:rustc-link-lib={lib}");

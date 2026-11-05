@@ -5,6 +5,7 @@
 #include "applicationmenubar.h"
 #include "navigationsidebar.h"
 #include "presentationsurface.h"
+#include "../platform/filepicker.h"
 #include <QCoreApplication>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -15,6 +16,10 @@ QtDisplayHost::QtDisplayHost(QtDisplayEventCallback onEvent, void *userData)
       m_row(new QSplitter(Qt::Horizontal, this)),
       m_panes(new QSplitter(Qt::Horizontal, m_row)) {
     setCentralWidget(m_row);
+    m_filePicker = new FilePicker(this);
+    connect(m_filePicker, &FilePicker::eventReady, this, [this](const QByteArray &json) {
+        emitEvent(QJsonDocument::fromJson(json).object());
+    });
     m_applicationMenu = new ApplicationMenuBar(this);
     setMenuBar(m_applicationMenu);
     connect(m_applicationMenu, &ApplicationMenuBar::actionActivated, this,
@@ -28,6 +33,14 @@ void QtDisplayHost::render(const QJsonArray &commands) {
     bool changed = false;
     for (const auto &value : commands) {
         const auto command = value.toObject();
+        if (command.contains("PickFile")) {
+            m_filePicker->pick(command.value("PickFile").toObject());
+            continue;
+        }
+        if (command.contains("CancelFilePick")) {
+            m_filePicker->cancel(command.value("CancelFilePick").toObject().value("request_id").toString());
+            continue;
+        }
         if (command.contains("SetApplicationMenu")) {
             applyApplicationMenu(command.value("SetApplicationMenu").toObject());
             continue;
@@ -63,6 +76,7 @@ void QtDisplayHost::render(const QJsonArray &commands) {
 
 void QtDisplayHost::reportCapabilities() {
     emitEvent({{"ApplicationMenuAvailabilityChanged", QJsonObject{{"available", true}}}});
+    emitEvent({{"FilePickerCapabilitiesChanged", QJsonObject{{"correlated_results", true}}}});
 }
 
 void QtDisplayHost::applyApplicationMenu(const QJsonObject &payload) {
