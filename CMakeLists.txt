@@ -130,6 +130,15 @@ foreach(case selection cancellation invalid replacement empty)
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endforeach()
 
+add_executable(display_legacy_picker_test tests/display_legacy_picker_test.cpp)
+target_link_libraries(display_legacy_picker_test PRIVATE qt_display)
+target_compile_options(display_legacy_picker_test PRIVATE -UNDEBUG)
+foreach(case file image cancel limits)
+    add_test(NAME display_legacy_picker_${case} COMMAND display_legacy_picker_test ${case})
+    set_tests_properties(display_legacy_picker_${case} PROPERTIES TIMEOUT 30
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endforeach()
+
 if(QT_DISPLAY_ONLY)
     return()
 endif()
