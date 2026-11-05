@@ -102,6 +102,15 @@ foreach(case availability prepared accessibility revisions replacement quit)
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endforeach()
 
+add_executable(display_file_picker_test tests/display_file_picker_test.cpp)
+target_link_libraries(display_file_picker_test PRIVATE qt_display)
+target_compile_options(display_file_picker_test PRIVATE -UNDEBUG)
+foreach(case availability dialog cancel selection limits replacement)
+    add_test(NAME display_file_picker_${case} COMMAND display_file_picker_test ${case})
+    set_tests_properties(display_file_picker_${case} PROPERTIES TIMEOUT 30
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endforeach()
+
 if(QT_DISPLAY_ONLY)
     return()
 endif()
