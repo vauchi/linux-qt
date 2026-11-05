@@ -13,6 +13,7 @@ class PresentationSurface;
 class QSplitter;
 class ApplicationMenuBar;
 class FilePicker;
+class QFileDialog;
 
 class QtDisplayHost : public QMainWindow {
 public:
@@ -29,6 +30,7 @@ private:
     void snapshotIfAsked();
     void applyOverlay(const QJsonObject &command);
     void closeOverlay();
+    void exportFile(const QJsonObject &command);
     void applyApplicationMenu(const QJsonObject &payload);
     void overlayDismissed(QWidget *widget, const QString &surfaceId,
                           const QString &kind);
@@ -49,4 +51,5 @@ private:
     QString m_menuSurface;
     qint64 m_menuRevision = -1;
     FilePicker *m_filePicker;
+    QPointer<QFileDialog> m_exportDialog;
 };

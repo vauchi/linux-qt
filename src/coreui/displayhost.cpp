@@ -40,6 +40,10 @@ void QtDisplayHost::render(const QJsonArray &commands) {
             emitEvent({{"HardwareUnavailable", QJsonObject{{"transport", transport}}}});
             continue;
         }
+        if (command.contains("ExportFile")) {
+            exportFile(command);
+            continue;
+        }
         if (command.contains("PickFile")) {
             m_filePicker->pick(command.value("PickFile").toObject());
             continue;
