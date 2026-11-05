@@ -26,6 +26,18 @@ QJsonObject menu(int revision = 2, bool enabled = true,
                     {"items", QJsonArray{action("opaque-edit", "Downloaded edit")}}}});
 }
 
+QJsonObject shortcutMenu() {
+    QJsonArray items;
+    for (const QString &token : {QStringLiteral("back"), QStringLiteral("activate_primary"),
+                                QStringLiteral("undo"), QStringLiteral("import")}) {
+        auto item = action(token, token);
+        item.insert("shortcut", token);
+        items.append(item);
+    }
+    return scoped("SetApplicationMenu", 2, "menus", QJsonArray{QJsonObject{
+        {"role", "other"}, {"label", "Shortcuts"}, {"items", items}}});
+}
+
 QMenuBar *bar() {
     auto *result = window()->findChild<QMenuBar *>();
     assert(result != nullptr);
@@ -96,18 +108,38 @@ QList<Step> prepared() {
             nativeQuit();
         }},
         {{}, [] { assert(events == activation("first", "opaque-import")); }},
+        {{shortcutMenu()}, [] {
+            const auto menus = preparedMenus();
+            assert(menus.size() == 1);
+            const auto items = menus.first()->actions();
+            assert(items.size() == 4);
+            const QList<QKeySequence> expected{QKeySequence::Back,
+                QKeySequence(Qt::CTRL | Qt::Key_Return), QKeySequence::Undo,
+                QKeySequence(Qt::CTRL | Qt::Key_I)};
+            for (int index = 0; index < expected.size(); ++index)
+                assert(items.at(index)->shortcut() == expected.at(index));
+            nativeQuit();
+        }},
     };
 }
 
 QList<Step> accessibility() {
     return {
         {{surface("first", 2, "First"), profile("first"), menu()}, [] {
+            importAction();
             auto *popup = preparedMenus().first();
+            popup->popup(window()->mapToGlobal(QPoint(10, 10)));
+            popup->setActiveAction(importAction());
             auto *accessible = QAccessible::queryAccessibleInterface(popup);
             assert(accessible != nullptr);
             auto *item = accessible->child(0);
             assert(item && item->object() == importAction());
             assert(item->role() == QAccessible::MenuItem);
+            auto *owner = item;
+            while (owner && !owner->window()) owner = owner->parent();
+            assert(owner && owner->window() == popup->window()->windowHandle());
+            assert(item->state().focused);
+            assert(!item->state().invisible);
             assert(item->text(QAccessible::Name) == QStringLiteral("Import a contact file"));
             assert(!item->state().disabled);
             auto *actions = item->actionInterface();
