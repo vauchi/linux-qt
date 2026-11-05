@@ -119,6 +119,15 @@ add_test(NAME display_screen_settings_test COMMAND display_screen_settings_test)
 set_tests_properties(display_screen_settings_test PROPERTIES TIMEOUT 30
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
+add_executable(display_export_test tests/display_export_test.cpp)
+target_link_libraries(display_export_test PRIVATE qt_display)
+target_compile_options(display_export_test PRIVATE -UNDEBUG)
+foreach(case selection cancellation invalid replacement empty)
+    add_test(NAME display_export_${case} COMMAND display_export_test ${case})
+    set_tests_properties(display_export_${case} PROPERTIES TIMEOUT 30
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endforeach()
+
 if(QT_DISPLAY_ONLY)
     return()
 endif()
