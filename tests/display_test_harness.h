@@ -89,10 +89,8 @@ public:
         queueCheck();
     }
 protected:
-    bool eventFilter(QObject *, QEvent *event) override {
-        if (event->type() == QEvent::Resize || event->type() == QEvent::LayoutRequest
-            || event->type() == QEvent::Show || event->type() == QEvent::PolishRequest)
-            queueCheck();
+    bool eventFilter(QObject *receiver, QEvent *) override {
+        if (receiver != this) queueCheck();
         return false;
     }
 private:

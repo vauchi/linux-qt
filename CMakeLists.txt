@@ -74,6 +74,11 @@ target_include_directories(qt_display PUBLIC include PRIVATE src ${QRENCODE_INCL
 target_link_directories(qt_display PUBLIC ${QRENCODE_LIBRARY_DIRS})
 target_link_libraries(qt_display PUBLIC Qt6::Widgets Qt6::Core Qt6::Concurrent ${QRENCODE_LIBRARIES})
 
+if(Qt6DBus_FOUND)
+    target_link_libraries(qt_display PUBLIC Qt6::DBus)
+    target_compile_definitions(qt_display PUBLIC VAUCHI_HAS_PERMISSION_PORTAL)
+endif()
+
 enable_testing()
 add_executable(display_copy_test tests/display_copy_test.cpp)
 target_link_libraries(display_copy_test PRIVATE qt_display)
@@ -190,6 +195,20 @@ target_compile_options(display_theme_test PRIVATE -UNDEBUG)
 foreach(case appearance focus fallback reload invalid unsafe_font tones reset unicode_font active)
     add_test(NAME display_theme_${case} COMMAND display_theme_test ${case})
     set_tests_properties(display_theme_${case} PROPERTIES TIMEOUT 30
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endforeach()
+
+add_executable(display_permission_test tests/display_permission_test.cpp)
+target_link_libraries(display_permission_test PRIVATE qt_display)
+target_compile_options(display_permission_test PRIVATE -UNDEBUG)
+find_program(DBUS_RUN_SESSION dbus-run-session REQUIRED)
+set(permission_cases unavailable malformed)
+if(Qt6DBus_FOUND)
+    list(APPEND permission_cases granted denied failed duplicate wrong_path spoof reset vanished)
+endif()
+foreach(case IN LISTS permission_cases)
+    add_test(NAME display_permission_${case} COMMAND ${DBUS_RUN_SESSION} -- $<TARGET_FILE:display_permission_test> ${case})
+    set_tests_properties(display_permission_${case} PROPERTIES TIMEOUT 30
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endforeach()
 
