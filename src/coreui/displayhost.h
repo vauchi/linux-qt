@@ -37,6 +37,7 @@ private:
     void snapshotIfAsked();
     void applyOverlay(const QJsonObject &command);
     void closeOverlay();
+    void celebrate(const QJsonObject &feedback);
     bool applyNativeEffect(const QJsonObject &command);
     bool pickLegacyFile(const QJsonValue &command);
     void exportFile(const QJsonObject &command);
@@ -64,4 +65,5 @@ private:
     FilePicker *m_legacyPicker = nullptr;
     bool m_legacyImage = false;
     QPointer<QFileDialog> m_exportDialog;
+    QPointer<QWidget> m_celebration;
 };

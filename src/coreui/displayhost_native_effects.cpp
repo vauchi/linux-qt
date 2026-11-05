@@ -10,6 +10,10 @@
 #include <QUrl>
 
 bool QtDisplayHost::applyNativeEffect(const QJsonObject &command) {
+    if (command.contains("Celebrate")) {
+        celebrate(command.value("Celebrate").toObject());
+        return true;
+    }
     if (command.contains("ShowShareSheet")) {
         if (command.value("ShowShareSheet").toObject().value("url").isString())
             emitEvent({{"HardwareUnavailable", QJsonObject{{"transport", "share_sheet"}}}});

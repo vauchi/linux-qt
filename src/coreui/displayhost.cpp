@@ -36,6 +36,9 @@ void QtDisplayHost::render(const QJsonArray &commands) {
         }
         if (pickLegacyFile(value)) continue;
         const auto command = value.toObject();
+        // Owner decision #1073: prepared QR nodes are authoritative; one-shot output is terminal-only.
+        if (command.contains("QrDisplay") || command.contains("EmitDocument")
+            || command.contains("FinishInvocation")) continue;
         if (applyNativeEffect(command)) continue;
         const QString transport = command.contains("SetScreenBrightness") ? "screen_brightness"
             : command.contains("SetIdleTimerDisabled") ? "idle_timer"
