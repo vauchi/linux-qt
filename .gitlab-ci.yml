@@ -251,9 +251,9 @@ test:screen-catalog:
       mkdir -p build
       curl --fail-with-body --silent --show-error \
         --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
-        "${CI_API_V4_URL}/projects/vauchi%2Fcontract/repository/files/ci%2Ffetch-screen-catalog.py/raw?ref=5ff7c6fe7240a69c2a5b901f5f62745ee5626b5a" \
+        "${CI_API_V4_URL}/projects/vauchi%2Fcontract/repository/files/ci%2Ffetch-screen-catalog.py/raw?ref=84346ffe3214c5e842aded89081b28bbf5962ed2" \
         -o build/fetch-screen-catalog.py
-      python3 build/fetch-screen-catalog.py screen-catalog.json
+      python3 build/fetch-screen-catalog.py screen-catalog.json --assembly
     - mkdir -p build/screen-catalog
     - build/qvauchi --render-catalog screen-catalog.json build/screen-catalog 900 1400
     - echo "[screen-catalog] $(ls -1 build/screen-catalog | wc -l) PNG files in build/screen-catalog/"
@@ -264,6 +264,7 @@ test:screen-catalog:
     paths:
       - screen-catalog.json
       - screen-catalog.provenance.json
+      - screen-catalog.inventory.json
       - build/screen-catalog/
     expire_in: 30 days
   rules:
