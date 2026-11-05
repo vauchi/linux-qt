@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "presentationsurface.h"
+#include "thememanager.h"
 
 #include "navigationicons.h"
 #include "presentationaccessibility.h"
@@ -36,6 +37,7 @@ PresentationSurface::PresentationSurface(const QJsonObject &surface,
       m_surface(surface), m_contextBar(contextBar),
       m_sidebarShown(sidebarShown) {
     const QJsonObject tokens = surface.value(QStringLiteral("tokens")).toObject();
+    ThemeManager::applyPreparedTokens(tokens);
     m_minimumTargetSize = tokens.value(QStringLiteral("minimum_target_size"))
                               .toInt(m_minimumTargetSize);
     m_cornerRadius =

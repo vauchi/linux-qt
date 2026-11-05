@@ -76,7 +76,8 @@ public:
     static void applyDefaultLightTheme();
 
     /// Apply a theme from a JSON object (same schema as themes.json entries).
-    static void applyTheme(const QJsonObject &theme);
+    static void applyTheme(const QJsonObject &theme, bool preserveStyle = false);
+    static bool applyPreparedTokens(const QJsonObject &tokens);
 
     /// Load themes from a JSON file path and apply the first one.
     /// Returns true if a theme was successfully loaded and applied.
@@ -90,7 +91,8 @@ public:
     /// 700 per Tokens::FontWeight::BOLD) and monospace family (JetBrains
     /// Mono) for widgets carrying `textStyle="heading"`/`"monospace"` —
     /// see PresentationSurface::renderNode()'s Text case for the property.
-    static QString stylesheetFromColors(const QJsonObject &colors);
+    static QString stylesheetFromColors(const QJsonObject &colors,
+                                        const QJsonObject &fonts = {});
 
     /// Returns the default theme colors as a JSON object (Catppuccin Mocha).
     static QJsonObject defaultColors();

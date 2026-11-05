@@ -69,7 +69,7 @@ void ThemeManager::applyDefaultLightTheme() {
     applyTheme(QJsonObject{{"colors", defaultLightColors()}});
 }
 
-void ThemeManager::applyTheme(const QJsonObject &theme) {
+void ThemeManager::applyTheme(const QJsonObject &theme, bool preserveStyle) {
     QJsonObject colors = theme["colors"].toObject();
     if (colors.isEmpty()) return;
 
@@ -77,9 +77,9 @@ void ThemeManager::applyTheme(const QJsonObject &theme) {
 
     QPalette palette = paletteFromColors(colors);
     QApplication::setPalette(palette);
-    QApplication::setStyle(QStyleFactory::create("Fusion"));
+    if (!preserveStyle) QApplication::setStyle(QStyleFactory::create("Fusion"));
 
-    QString stylesheet = stylesheetFromColors(colors);
+    QString stylesheet = stylesheetFromColors(colors, theme.value("fonts").toObject());
     if (auto *app = qApp) {
         app->setStyleSheet(stylesheet);
     }
@@ -116,8 +116,8 @@ QPalette ThemeManager::paletteFromColors(const QJsonObject &colors) {
     // Window / base colors
     palette.setColor(QPalette::Window, bgPrimary);
     palette.setColor(QPalette::WindowText, textPrimary);
-    palette.setColor(QPalette::Base, bgSecondary);
-    palette.setColor(QPalette::AlternateBase, bgTertiary);
+    palette.setColor(QPalette::Base, QColor(colors.value("input").toString(bgSecondary.name())));
+    palette.setColor(QPalette::AlternateBase, QColor(colors.value("surface-muted").toString(bgTertiary.name())));
     palette.setColor(QPalette::Text, textPrimary);
     palette.setColor(QPalette::BrightText, textPrimary);
 
@@ -127,7 +127,7 @@ QPalette ThemeManager::paletteFromColors(const QJsonObject &colors) {
 
     // Selection / highlight
     palette.setColor(QPalette::Highlight, accent);
-    palette.setColor(QPalette::HighlightedText, bgPrimary);
+    palette.setColor(QPalette::HighlightedText, QColor(colors.value("text-on-accent").toString(bgPrimary.name())));
 
     // Links
     palette.setColor(QPalette::Link, accent);
@@ -137,7 +137,7 @@ QPalette ThemeManager::paletteFromColors(const QJsonObject &colors) {
     palette.setColor(QPalette::PlaceholderText, textSecondary);
 
     // Tooltips
-    palette.setColor(QPalette::ToolTipBase, bgTertiary);
+    palette.setColor(QPalette::ToolTipBase, QColor(colors.value("surface-elevated").toString(bgTertiary.name())));
     palette.setColor(QPalette::ToolTipText, textPrimary);
 
     // Mid / shadow / dark for frames and borders
@@ -150,60 +150,58 @@ QPalette ThemeManager::paletteFromColors(const QJsonObject &colors) {
     return palette;
 }
 
-QString ThemeManager::stylesheetFromColors(const QJsonObject &colors) {
-    QString bgPrimary = colors["bg-primary"].toString();
-    QString bgSecondary = colors["bg-secondary"].toString();
-    QString bgTertiary = colors["bg-tertiary"].toString();
-    QString textPrimary = colors["text-primary"].toString();
-    QString textSecondary = colors["text-secondary"].toString();
-    QString accent = colors["accent"].toString();
-    QString errorColor = colors["error"].toString();
-    QString warningColor = colors["warning"].toString();
-    QString border = colors["border"].toString();
+namespace {
+QString cssFontFamily(const QString &family) {
+    QString escaped;
+    for (QChar character : family) {
+        if (!character.isPrint()) continue;
+        if (character == '\\' || character == '"') escaped += '\\';
+        escaped += character;
+    }
+    return escaped;
+}
+}
 
-    // A QWidget base rule pins the font-family globally. The per-component
-    // `setStyleSheet("font-size: …")` calls would otherwise reset the
-    // family to Qt's style default (which QApplication::setFont cannot
-    // override once a widget stylesheet sets any font property) — the
-    // root cause of the snapshot font-drift
-    // (2026-06-05-linux-qt-snapshot-find-app-collision).
-    return QStringLiteral(
-        "QWidget { font-family: \"%7\"; }"
-        "QLabel[textStyle=\"heading\"], QLabel#screen_title { "
-        "  font-family: \"%12\"; font-weight: %13; }"
-        "QLabel[textStyle=\"monospace\"] { font-family: \"%14\"; }"
+QString ThemeManager::stylesheetFromColors(const QJsonObject &colors,
+                                           const QJsonObject &fonts) {
+    const QString background = colors.value("bg-primary").toString();
+    const QString text = colors.value("text-primary").toString();
+    const QString surface = colors.value("bg-secondary").toString();
+    const QString tertiary = colors.value("bg-tertiary").toString();
+    const QString accent = colors.value("accent").toString();
+    const QString input = colors.value("input").toString(surface);
+    const QString onAccent = colors.value("text-on-accent").toString(background);
+    const QString focus = colors.value("focus-ring").toString(accent);
+    QString sheet = QStringLiteral(
         "QMainWindow { background-color: %1; color: %2; }"
         "QLineEdit { border: 1px solid %4; background-color: %3; color: %2; }"
         "QLabel { color: %2; }"
         "QPushButton { background-color: %5; color: %2; border: 1px solid %4; "
-        "  padding: 6px 16px; border-radius: 4px; }"
+        " padding: 6px 16px; border-radius: 4px; }"
         "QPushButton:hover { background-color: %6; }"
-        "QPushButton#context-primary { background-color: %6; color: %1; "
-        "  min-height: 44px; padding: 10px 24px; font-weight: bold; }"
-        "QPushButton[tone=\"destructive\"] { background-color: %8; color: %1; }"
-        // Serious is a warning, not an irrevocable action: outlined in the
-        // warning colour so it never reads as the destructive red.
+        "QPushButton#context-primary { background-color: %6; color: %9; "
+        " min-height: 44px; padding: 10px 24px; font-weight: bold; }"
+        "QPushButton[tone=\"destructive\"] { background-color: %7; color: %1; }"
         "QPushButton[tone=\"serious\"] { background-color: transparent; "
-        "  color: %9; border: 2px solid %9; }"
-        // tokens.json's `focus` object names only ring_width/ring_offset,
-        // no colour — accent (the existing interactive-highlight colour)
-        // doubles as the focus-ring colour.
+        " color: %8; border: 2px solid %8; }"
         "QPushButton:focus, QToolButton:focus, QCheckBox:focus { "
-        "  outline: %10px solid %6; outline-offset: %11px; }"
-        // Checked, not selected: NavigationSidebar rows are autoExclusive
-        // QToolButtons, so Qt's own :checked pseudo-state already tracks
-        // which destination is current.
-        "QToolButton#navigation-sidebar-row:checked { "
-        "  background-color: %6; color: %1; }"
-    )
-        .arg(bgPrimary, textPrimary, bgSecondary, border, bgTertiary, accent,
-             uiFont().family(), errorColor)
-        .arg(warningColor)
-        .arg(Tokens::Focus::RING_WIDTH)
-        .arg(Tokens::Focus::RING_OFFSET)
-        .arg(QString::fromUtf8(Tokens::FontFamily::DISPLAY))
-        .arg(Tokens::FontWeight::BOLD)
-        .arg(QString::fromUtf8(Tokens::FontFamily::MONO));
+        " outline: %11px solid %10; outline-offset: %12px; }"
+        "QToolButton#navigation-sidebar-row:checked { background-color: %6; color: %9; }")
+        .arg(background, text, input, colors.value("border").toString(), tertiary,
+             accent, colors.value("error").toString(), colors.value("warning").toString(), onAccent)
+        .arg(focus).arg(Tokens::Focus::RING_WIDTH).arg(Tokens::Focus::RING_OFFSET);
+    if (colors.contains("surface-elevated")) {
+        sheet += QStringLiteral("QMenu, QMenuBar, QToolTip { background-color: %1; color: %2; }")
+            .arg(colors.value("surface-elevated").toString(), text);
+    }
+    const QString body = cssFontFamily(fonts.value("body").toString(uiFont().family()));
+    const QString display = cssFontFamily(fonts.value("display").toString(QString::fromUtf8(Tokens::FontFamily::DISPLAY)));
+    const QString mono = cssFontFamily(fonts.value("mono").toString(QString::fromUtf8(Tokens::FontFamily::MONO)));
+    // Font strings are appended after numeric formatting so percent signs stay literal (#1073).
+    return sheet + "QWidget { font-family: \"" + body + "\"; }"
+        + "QLabel[textStyle=\"heading\"], QLabel#screen_title { font-family: \""
+        + display + "\"; font-weight: " + QString::number(Tokens::FontWeight::BOLD) + "; }"
+        + "QLabel[textStyle=\"monospace\"] { font-family: \"" + mono + "\"; }";
 }
 
 QJsonObject ThemeManager::currentColors() {

@@ -3,6 +3,7 @@
 
 #include "display_test_harness.h"
 #include <QColor>
+#include <QEventLoop>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPalette>
@@ -66,12 +67,30 @@ QLabel *label(const QString &text) {
     return nullptr;
 }
 
+class GeometryReady : public QObject {
+public:
+    QWidget *widget;
+    QEventLoop completed;
+    bool eventFilter(QObject *, QEvent *event) override {
+        if (event->type() == QEvent::Resize && widget->width() > 0 && widget->height() > 0)
+            completed.quit();
+        return false;
+    }
+};
+
 void verifyColors(bool optional) {
     assert(QApplication::palette().color(QPalette::Window) == QColor("#102030"));
     assert(input()->palette().color(QPalette::Text) == QColor("#e0e1e2"));
     const QColor base(optional ? "#223344" : "#203040");
     assert(input()->palette().color(QPalette::Base) == base);
+    if (input()->width() == 0 || input()->height() == 0) {
+        GeometryReady ready;
+        ready.widget = input();
+        input()->installEventFilter(&ready);
+        ready.completed.exec();
+    }
     const auto pixels = input()->grab().toImage();
+    assert(!pixels.isNull());
     assert(pixels.pixelColor(pixels.width() - 8, pixels.height() / 2) == base);
     assert(QApplication::palette().color(QPalette::AlternateBase)
         == QColor(optional ? "#334455" : "#203040"));
@@ -95,6 +114,7 @@ QList<Step> appearance() {
 QList<Step> focusedUpdate() {
     auto changed = colors(); changed.insert("background", "#314159");
     return {{{themed(colors(), fonts()), profile("first")}, [] {
+        verifyColors(true);
         keptInput = input();
         input()->setFocus();
         input()->setSelection(5, 8);
@@ -125,6 +145,7 @@ QList<Step> fallback() {
 
 QList<Step> reload() {
     return {{{themed(colors(), fonts()), profile("first")}, [] {
+        verifyColors(true);
         keptInput = input();
         input()->setFocus();
         input()->setSelection(5, 8);

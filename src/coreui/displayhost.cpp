@@ -5,6 +5,7 @@
 #include "applicationmenubar.h"
 #include "navigationsidebar.h"
 #include "presentationsurface.h"
+#include "thememanager.h"
 #include "../platform/filepicker.h"
 #include <QCoreApplication>
 #include <QJsonArray>
@@ -30,6 +31,10 @@ void QtDisplayHost::render(const QJsonArray &commands) {
     if (reset) resetPresentation();
     bool changed = reset;
     for (const auto &value : commands) {
+        if (value.toString() == "ReloadTheme") {
+            changed = true;
+            continue;
+        }
         if (value.toString() == "PerformNativeBack") {
             QMetaObject::invokeMethod(qApp, &QCoreApplication::quit, Qt::QueuedConnection);
             continue;
@@ -110,6 +115,8 @@ void QtDisplayHost::applyApplicationMenu(const QJsonObject &payload) {
 void QtDisplayHost::renderPresentation() {
     const auto visible = m_state.visibleSurfaceIds();
     const auto active = m_state.activeSurfaceId();
+    const auto activeSurface = m_state.surface(active);
+    if (activeSurface) ThemeManager::applyPreparedTokens(activeSurface->value("tokens").toObject());
     const auto navigation = m_state.navigation();
     const bool sidebarShown = !navigation.value("items").toArray().isEmpty();
     if (navigation != m_navigation || active != m_navigationSurface) {

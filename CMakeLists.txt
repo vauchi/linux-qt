@@ -61,6 +61,7 @@ set(QT_DISPLAY_SOURCES
     src/coreui/presentationsurface_update.cpp
     src/coreui/presentationsurface_qr.cpp
     src/coreui/thememanager.cpp
+    src/coreui/thememanager_prepared.cpp
     src/coreui/navigationicons.cpp
 )
 set(VAUCHI_TOKENS_INCLUDE "${CMAKE_SOURCE_DIR}/../themes/generated" CACHE PATH "Path to generated design tokens")
@@ -217,6 +218,7 @@ set(QVAUCHI_SOURCES
     src/coreui/presentationsurface_update.cpp
     src/coreui/presentationsurface_qr.cpp
     src/coreui/thememanager.cpp
+    src/coreui/thememanager_prepared.cpp
     src/coreui/screencatalog.cpp
     src/rendercatalog.cpp
     src/coreui/navigationicons.cpp
@@ -479,6 +481,7 @@ set_tests_properties(file_picker_test PROPERTIES TIMEOUT 30)
 add_executable(theme_test
     tests/theme_test.cpp
     src/coreui/thememanager.cpp
+    src/coreui/thememanager_prepared.cpp
     resources/resources.qrc)
 target_include_directories(theme_test PRIVATE include ${VAUCHI_TOKENS_INCLUDE})
 target_link_libraries(theme_test PRIVATE Qt6::Widgets Qt6::Core)

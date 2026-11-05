@@ -9,6 +9,7 @@
 // caret, selection, input-method composition and the screen reader's place.
 
 #include "presentationsurface.h"
+#include "thememanager.h"
 
 #include <QApplication>
 #include <QBoxLayout>
@@ -20,12 +21,19 @@
 namespace {
 
 bool sameFrame(const QJsonObject &shown, const QJsonObject &next) {
-    for (const char *key : {"surface_id", "revision", "layout", "tokens"}) {
+    for (const char *key : {"surface_id", "revision", "layout"}) {
         const QString name = QString::fromLatin1(key);
         if (shown.value(name) != next.value(name)) {
             return false;
         }
     }
+    auto beforeTokens = shown.value("tokens").toObject();
+    auto afterTokens = next.value("tokens").toObject();
+    for (const char *key : {"colors", "fonts"}) {
+        beforeTokens.remove(key);
+        afterTokens.remove(key);
+    }
+    if (beforeTokens != afterTokens) return false;
     const auto hasSubtitle = [](const QJsonObject &surface) {
         return !surface.value(QStringLiteral("subtitle")).toString().isEmpty();
     };
@@ -42,6 +50,7 @@ bool PresentationSurface::update(const QJsonObject &surface,
     if (!sameFrame(m_surface, surface) || m_contentLayout == nullptr) {
         return false;
     }
+    ThemeManager::applyPreparedTokens(surface.value("tokens").toObject());
     if (contextBar != m_contextBar || sidebarShown != m_sidebarShown) {
         updateContextBar(contextBar, sidebarShown);
     }
