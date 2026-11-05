@@ -175,7 +175,6 @@ QString ThemeManager::stylesheetFromColors(const QJsonObject &colors,
     QString sheet = QStringLiteral(
         "QMainWindow { background-color: %1; color: %2; }"
         "QLineEdit { border: 1px solid %4; background-color: %3; color: %2; }"
-        "QLineEdit:focus { border: 2px solid %10; }"
         "QLabel { color: %2; }"
         "QPushButton { background-color: %5; color: %2; border: 1px solid %4; "
         " padding: 6px 16px; border-radius: 4px; }"
@@ -187,6 +186,7 @@ QString ThemeManager::stylesheetFromColors(const QJsonObject &colors,
         " color: %8; border: 2px solid %8; }"
         "QPushButton:focus, QToolButton:focus, QCheckBox:focus { "
         " outline: %11px solid %10; outline-offset: %12px; }"
+        "QLineEdit:focus { border: %11px solid %10; }"
         "QToolButton#navigation-sidebar-row:checked { background-color: %6; color: %9; }")
         .arg(background, text, input, colors.value("border").toString(), tertiary,
              accent, colors.value("error").toString(), colors.value("warning").toString(), onAccent)

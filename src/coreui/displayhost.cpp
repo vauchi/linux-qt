@@ -116,7 +116,6 @@ void QtDisplayHost::renderPresentation() {
     const auto visible = m_state.visibleSurfaceIds();
     const auto active = m_state.activeSurfaceId();
     const auto activeSurface = m_state.surface(active);
-    if (activeSurface) ThemeManager::applyPreparedTokens(activeSurface->value("tokens").toObject());
     const auto navigation = m_state.navigation();
     const bool sidebarShown = !navigation.value("items").toArray().isEmpty();
     if (navigation != m_navigation || active != m_navigationSurface) {
@@ -156,6 +155,7 @@ void QtDisplayHost::renderPresentation() {
             m_panes->insertWidget(static_cast<int>(index), widget);
         widget->show();
     }
+    if (activeSurface) ThemeManager::applyPreparedTokens(activeSurface->value("tokens").toObject());
 }
 
 PresentationSurface *QtDisplayHost::createSurface(const QJsonObject &surface,
