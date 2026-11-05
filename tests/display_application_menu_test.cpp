@@ -76,15 +76,36 @@ QAction *importAction() {
 const QJsonArray available{
     event("ApplicationMenuAvailabilityChanged", {{"available", true}})};
 
+void assertAccessibleQuitOwner(QWidget *owner) {
+    auto *accessible = QAccessible::queryAccessibleInterface(owner);
+    assert(accessible != nullptr);
+    auto *quit = nativeQuit();
+    QAccessibleInterface *found = nullptr;
+    for (int index = 0; index < accessible->childCount(); ++index) {
+        auto *child = accessible->child(index);
+        if (child && child->object() == quit) found = child;
+    }
+    assert(found != nullptr);
+    assert(found->parent() && found->parent()->object() == owner);
+}
+
 QList<Step> availability() {
     return {
         {{}, [] {
             assert(capabilities == available);
             assert(preparedMenus().isEmpty());
             nativeQuit();
+            assertAccessibleQuitOwner(bar());
         }},
         {{surface("first", 2, "First"), profile("first"), menu()}, [] {
             assert(capabilities == available);
+            assertAccessibleQuitOwner(preparedMenus().first());
+        }},
+        {{menu()}, [] {
+            assertAccessibleQuitOwner(preparedMenus().first());
+        }},
+        {{scoped("SetApplicationMenu", 2, "menus", QJsonArray{})}, [] {
+            assertAccessibleQuitOwner(bar());
         }},
     };
 }
