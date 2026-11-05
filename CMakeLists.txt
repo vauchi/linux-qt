@@ -168,6 +168,20 @@ foreach(case cached trailing dialogs queued)
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endforeach()
 
+add_executable(display_approved_effects_test tests/display_approved_effects_test.cpp)
+target_link_libraries(display_approved_effects_test PRIVATE qt_display)
+target_compile_options(display_approved_effects_test PRIVATE -UNDEBUG)
+foreach(case qr animation reduced disabled none reset)
+    add_test(NAME display_approved_effects_${case} COMMAND display_approved_effects_test ${case})
+    set_tests_properties(display_approved_effects_${case} PROPERTIES TIMEOUT 30
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endforeach()
+add_test(NAME display_approved_effects_invocation COMMAND ${CMAKE_COMMAND}
+    -DBIN=$<TARGET_FILE:display_approved_effects_test>
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_ignored_invocation.cmake)
+set_tests_properties(display_approved_effects_invocation PROPERTIES TIMEOUT 30
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
 if(QT_DISPLAY_ONLY)
     return()
 endif()
