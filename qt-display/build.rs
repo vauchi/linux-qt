@@ -54,6 +54,9 @@ fn main() {
     }
     println!("cargo:rustc-link-lib=stdc++");
     println!("cargo:rerun-if-changed=../src/display_abi.cpp");
+    println!("cargo:rerun-if-changed=../src/coreui");
+    println!("cargo:rerun-if-changed=../src/platform/filepicker.cpp");
+    println!("cargo:rerun-if-changed=../src/platform/filepicker.h");
     println!("cargo:rerun-if-changed=../include/qt_display.h");
     println!("cargo:rerun-if-changed=../CMakeLists.txt");
     println!("cargo:rerun-if-env-changed=VAUCHI_TOKENS_INCLUDE");
