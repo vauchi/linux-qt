@@ -158,6 +158,15 @@ foreach(case gesture share back)
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endforeach()
 
+add_executable(display_reset_test tests/display_reset_test.cpp)
+target_link_libraries(display_reset_test PRIVATE qt_display)
+target_compile_options(display_reset_test PRIVATE -UNDEBUG)
+foreach(case cached trailing dialogs queued)
+    add_test(NAME display_reset_${case} COMMAND display_reset_test ${case})
+    set_tests_properties(display_reset_${case} PROPERTIES TIMEOUT 30
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endforeach()
+
 if(QT_DISPLAY_ONLY)
     return()
 endif()
