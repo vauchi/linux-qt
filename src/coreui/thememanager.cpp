@@ -154,7 +154,7 @@ namespace {
 QString cssFontFamily(const QString &family) {
     QString escaped;
     for (QChar character : family) {
-        if (!character.isPrint()) continue;
+        if (character.category() == QChar::Other_Control) continue;
         if (character == '\\' || character == '"') escaped += '\\';
         escaped += character;
     }
@@ -175,6 +175,7 @@ QString ThemeManager::stylesheetFromColors(const QJsonObject &colors,
     QString sheet = QStringLiteral(
         "QMainWindow { background-color: %1; color: %2; }"
         "QLineEdit { border: 1px solid %4; background-color: %3; color: %2; }"
+        "QLineEdit:focus { border: 2px solid %10; }"
         "QLabel { color: %2; }"
         "QPushButton { background-color: %5; color: %2; border: 1px solid %4; "
         " padding: 6px 16px; border-radius: 4px; }"
@@ -193,6 +194,9 @@ QString ThemeManager::stylesheetFromColors(const QJsonObject &colors,
     if (colors.contains("surface-elevated")) {
         sheet += QStringLiteral("QMenu, QMenuBar, QToolTip { background-color: %1; color: %2; }")
             .arg(colors.value("surface-elevated").toString(), text);
+        for (const char *tone : {"accent", "success", "warning", "error"})
+            sheet += QStringLiteral("QLabel[tone=\"%1\"], QWidget[tone=\"%1\"] QLabel { color: %2; }")
+                .arg(QString::fromLatin1(tone), colors.value(tone).toString());
     }
     const QString body = cssFontFamily(fonts.value("body").toString(uiFont().family()));
     const QString display = cssFontFamily(fonts.value("display").toString(QString::fromUtf8(Tokens::FontFamily::DISPLAY)));

@@ -5,6 +5,7 @@
 #include "applicationmenubar.h"
 #include "navigationsidebar.h"
 #include "presentationsurface.h"
+#include "thememanager.h"
 #include <QApplication>
 #include <QDialog>
 #include <QToolTip>
@@ -46,4 +47,5 @@ void QtDisplayHost::resetPresentation() {
     m_menuSurface.clear();
     m_menuRevision = -1;
     setWindowTitle({});
+    ThemeManager::applyTheme(QJsonObject{{"colors", ThemeManager::defaultColors()}}, true);
 }
