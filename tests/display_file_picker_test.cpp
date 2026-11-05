@@ -74,6 +74,11 @@ QList<Step> availability() {
 }
 
 QList<Step> preparedDialog() {
+    auto mime = pick("mime-only");
+    auto payload = mime.value("PickFile").toObject();
+    payload.insert("accepted_extensions", QJsonArray{});
+    payload.insert("accepted_mime_types", QJsonArray{"application/json"});
+    mime.insert("PickFile", payload);
     return {
         {{pick(), pick()}, [] {
             auto *picker = dialog();
@@ -86,6 +91,15 @@ QList<Step> preparedDialog() {
         {{}, [] {
             assert(dialogs().isEmpty());
             assert((events == QJsonArray{completed("opaque-file", "cancelled")}));
+            events = {};
+        }},
+        {{mime}, [] {
+            auto *picker = dialog();
+            assert(picker->mimeTypeFilters() == QStringList{"application/json"});
+            picker->reject();
+        }},
+        {{}, [] {
+            assert((events == QJsonArray{completed("mime-only", "cancelled")}));
         }},
     };
 }
