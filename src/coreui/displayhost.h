@@ -27,6 +27,9 @@ protected:
 
 private:
     void renderPresentation();
+    void resetPresentation();
+    void resetApplicationMenu();
+    void resetFileEffects();
     PresentationSurface *createSurface(const QJsonObject &surface,
                                       const QJsonObject &bar, bool sidebar);
     void activate(const QString &surfaceId, const QString &interactionId);
@@ -56,7 +59,8 @@ private:
     ApplicationMenuBar *m_applicationMenu;
     QString m_menuSurface;
     qint64 m_menuRevision = -1;
-    FilePicker *m_filePicker;
+    quint64 m_generation = 0;
+    FilePicker *m_filePicker = nullptr;
     FilePicker *m_legacyPicker = nullptr;
     bool m_legacyImage = false;
     QPointer<QFileDialog> m_exportDialog;

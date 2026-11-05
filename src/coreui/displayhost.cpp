@@ -10,27 +10,25 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QSplitter>
+#include <algorithm>
 
 QtDisplayHost::QtDisplayHost(QtDisplayEventCallback onEvent, void *userData)
     : m_onEvent(onEvent), m_userData(userData),
       m_row(new QSplitter(Qt::Horizontal, this)),
       m_panes(new QSplitter(Qt::Horizontal, m_row)) {
     setCentralWidget(m_row);
-    m_filePicker = new FilePicker(this);
-    connect(m_filePicker, &FilePicker::eventReady, this, [this](const QByteArray &json) {
-        emitEvent(QJsonDocument::fromJson(json).object());
-    });
-    m_applicationMenu = new ApplicationMenuBar(this);
-    setMenuBar(m_applicationMenu);
-    connect(m_applicationMenu, &ApplicationMenuBar::actionActivated, this,
-        &QtDisplayHost::activate, Qt::QueuedConnection);
-    connect(m_applicationMenu, &ApplicationMenuBar::quitRequested, qApp,
-        &QCoreApplication::quit, Qt::QueuedConnection);
+    resetFileEffects();
+    resetApplicationMenu();
     resize(900, 700);
 }
 
 void QtDisplayHost::render(const QJsonArray &commands) {
-    bool changed = false;
+    const bool reset = std::any_of(commands.begin(), commands.end(), [](const auto &value) {
+        return value.toString() == "ResetApplication";
+    });
+    // Core appends ResetApplication after the replacement surface (#1073).
+    if (reset) resetPresentation();
+    bool changed = reset;
     for (const auto &value : commands) {
         if (value.toString() == "PerformNativeBack") {
             QMetaObject::invokeMethod(qApp, &QCoreApplication::quit, Qt::QueuedConnection);
@@ -116,7 +114,9 @@ void QtDisplayHost::renderPresentation() {
         if (sidebarShown) {
             m_sidebar = new NavigationSidebar(navigation);
             connect(m_sidebar, &NavigationSidebar::interactionReady, this,
-                [this, active](const QString &id) { activate(active, id); },
+                [this, active, generation = m_generation](const QString &id) {
+                    if (generation == m_generation) activate(active, id);
+                },
                 Qt::QueuedConnection);
             m_row->insertWidget(0, m_sidebar);
             m_row->setStretchFactor(0, 0);
@@ -152,21 +152,27 @@ PresentationSurface *QtDisplayHost::createSurface(const QJsonObject &surface,
                                                  const QJsonObject &bar,
                                                  bool sidebar) {
     auto *widget = new PresentationSurface(surface, bar, sidebar);
+    const auto generation = m_generation;
     connect(widget, &PresentationSurface::interactionReady, this,
-        &QtDisplayHost::activate, Qt::QueuedConnection);
+        [this, generation](const QString &id, const QString &interaction) {
+            if (generation == m_generation) activate(id, interaction);
+        }, Qt::QueuedConnection);
     connect(widget, &PresentationSurface::valueReady, this,
-        [this](const QString &id, const QString &binding, const QJsonValue &value) {
+        [this, generation](const QString &id, const QString &binding, const QJsonValue &value) {
+            if (generation != m_generation) return;
             emitEvent({{"SurfaceActivated", QJsonObject{{"surface_id", id}}}});
             emitEvent({{"ValueChanged", QJsonObject{{"surface_id", id},
                 {"binding_id", binding}, {"value", value}}}});
         }, Qt::QueuedConnection);
     connect(widget, &PresentationSurface::submitReady, this,
-        [this](const QString &id, const QString &binding) {
+        [this, generation](const QString &id, const QString &binding) {
+            if (generation != m_generation) return;
             emitEvent({{"InputSubmitted", QJsonObject{{"surface_id", id},
                 {"binding_id", binding}}}});
         }, Qt::QueuedConnection);
     connect(widget, &PresentationSurface::focusEndReady, this,
-        [this](const QString &id, const QString &binding) {
+        [this, generation](const QString &id, const QString &binding) {
+            if (generation != m_generation) return;
             emitEvent({{"InputFocusEnded", QJsonObject{{"surface_id", id},
                 {"binding_id", binding}}}});
         }, Qt::QueuedConnection);

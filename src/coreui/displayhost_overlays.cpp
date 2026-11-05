@@ -49,6 +49,7 @@ void QtDisplayHost::applyOverlay(const QJsonObject &command) {
         return;
     }
     closeOverlay();
+    const auto generation = m_generation;
     m_overlaySurface = id;
     m_overlayKind = kind;
     const auto title = overlay.value("title").toString();
@@ -89,7 +90,8 @@ void QtDisplayHost::applyOverlay(const QJsonObject &command) {
                 button->setEnabled(item.value("enabled").toBool(true));
                 button->setMinimumHeight(target);
                 layout->addWidget(button);
-                connect(button, &QPushButton::clicked, this, [this, dialog, id, item] {
+                connect(button, &QPushButton::clicked, this, [this, dialog, id, item, generation] {
+                    if (generation != m_generation) return;
                     dialog->setProperty("contract_silent", true);
                     dialog->accept();
                     activate(id, item.value("interaction_id").toString());
@@ -111,7 +113,8 @@ void QtDisplayHost::applyOverlay(const QJsonObject &command) {
         action->setEnabled(item.value("enabled").toBool(true));
         const auto icon = item.value("icon_token").toString();
         if (!icon.isEmpty()) action->setIcon(vauchi::navigationIcon(icon));
-        connect(action, &QAction::triggered, this, [this, menu, id, item] {
+        connect(action, &QAction::triggered, this, [this, menu, id, item, generation] {
+            if (generation != m_generation) return;
             menu->setProperty("contract_silent", true);
             activate(id, item.value("interaction_id").toString());
         });

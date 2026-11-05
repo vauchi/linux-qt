@@ -69,3 +69,19 @@ bool QtDisplayHost::pickLegacyFile(const QJsonValue &command) {
     m_legacyPicker->pick(payload);
     return true;
 }
+
+void QtDisplayHost::resetFileEffects() {
+    delete m_filePicker;
+    delete m_legacyPicker;
+    m_legacyPicker = nullptr;
+    m_legacyImage = false;
+    if (m_exportDialog) {
+        disconnect(m_exportDialog, nullptr, this, nullptr);
+        m_exportDialog->reject();
+        m_exportDialog = nullptr;
+    }
+    m_filePicker = new FilePicker(this);
+    connect(m_filePicker, &FilePicker::eventReady, this, [this](const QByteArray &json) {
+        emitEvent(QJsonDocument::fromJson(json).object());
+    });
+}
