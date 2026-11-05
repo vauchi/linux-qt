@@ -4,11 +4,17 @@
 #include "displayhost.h"
 #include <QDesktopServices>
 #include <QMessageBox>
+#include <QKeyEvent>
 #include <QTextDocument>
 #include <QToolTip>
 #include <QUrl>
 
 bool QtDisplayHost::applyNativeEffect(const QJsonObject &command) {
+    if (command.contains("ShowShareSheet")) {
+        if (command.value("ShowShareSheet").toObject().value("url").isString())
+            emitEvent({{"HardwareUnavailable", QJsonObject{{"transport", "share_sheet"}}}});
+        return true;
+    }
     if (command.contains("PresentAlert")) {
         const auto alert = command.value("PresentAlert").toObject().value("alert").toObject();
         const auto title = alert.value("title");
@@ -40,4 +46,17 @@ bool QtDisplayHost::applyNativeEffect(const QJsonObject &command) {
         return true;
     }
     return false;
+}
+
+void QtDisplayHost::keyPressEvent(QKeyEvent *event) {
+    if (event->key() == Qt::Key_Escape && !(event->modifiers() & Qt::AltModifier)) {
+        const auto surfaceId = m_state.activeSurfaceId();
+        if (!surfaceId.isEmpty()) {
+            emitEvent({{"SurfaceActivated", QJsonObject{{"surface_id", surfaceId}}}});
+            emitEvent({{"BackRequested", QJsonObject{{"surface_id", surfaceId}}}});
+        }
+        event->accept();
+        return;
+    }
+    QMainWindow::keyPressEvent(event);
 }

@@ -32,6 +32,10 @@ QtDisplayHost::QtDisplayHost(QtDisplayEventCallback onEvent, void *userData)
 void QtDisplayHost::render(const QJsonArray &commands) {
     bool changed = false;
     for (const auto &value : commands) {
+        if (value.toString() == "PerformNativeBack") {
+            QMetaObject::invokeMethod(qApp, &QCoreApplication::quit, Qt::QueuedConnection);
+            continue;
+        }
         if (pickLegacyFile(value)) continue;
         const auto command = value.toObject();
         if (applyNativeEffect(command)) continue;

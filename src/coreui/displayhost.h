@@ -14,12 +14,16 @@ class QSplitter;
 class ApplicationMenuBar;
 class FilePicker;
 class QFileDialog;
+class QKeyEvent;
 
 class QtDisplayHost : public QMainWindow {
 public:
     QtDisplayHost(QtDisplayEventCallback onEvent, void *userData);
     void render(const QJsonArray &commands);
     void reportCapabilities();
+
+protected:
+    void keyPressEvent(QKeyEvent *event) override;
 
 private:
     void renderPresentation();
