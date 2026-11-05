@@ -30,6 +30,7 @@ private:
     void snapshotIfAsked();
     void applyOverlay(const QJsonObject &command);
     void closeOverlay();
+    bool applyNativeEffect(const QJsonObject &command);
     bool pickLegacyFile(const QJsonValue &command);
     void exportFile(const QJsonObject &command);
     void applyApplicationMenu(const QJsonObject &payload);

@@ -34,6 +34,7 @@ void QtDisplayHost::render(const QJsonArray &commands) {
     for (const auto &value : commands) {
         if (pickLegacyFile(value)) continue;
         const auto command = value.toObject();
+        if (applyNativeEffect(command)) continue;
         const QString transport = command.contains("SetScreenBrightness") ? "screen_brightness"
             : command.contains("SetIdleTimerDisabled") ? "idle_timer"
             : command.contains("SetOrientationLock") ? "orientation_lock" : QString{};
