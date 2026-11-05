@@ -405,6 +405,11 @@ target_link_libraries(${controller_target} PRIVATE
     Qt6::Widgets Qt6::Core Qt6::Network Qt6::Concurrent ${QRENCODE_LIBRARIES} ${VAUCHI_CABI})
 endforeach()
 add_test(NAME presentation_controller_test COMMAND presentation_controller_test)
+foreach(renderer_target presentation_surface_test presentation_image_test
+        presentation_qr_placement_test presentation_controller_test presentation_copy_test)
+    target_link_libraries(${renderer_target} PRIVATE qt_display)
+endforeach()
+
 add_test(NAME presentation_profile_copy COMMAND presentation_copy_test profile)
 add_test(NAME presentation_capture_copy COMMAND presentation_copy_test capture)
 add_test(NAME presentation_overlay_copy COMMAND presentation_copy_test overlay)
@@ -547,7 +552,7 @@ target_include_directories(atspi_fixture_probe PRIVATE
     src ${QRENCODE_INCLUDE_DIRS})
 target_link_directories(atspi_fixture_probe PRIVATE
     ${QRENCODE_LIBRARY_DIRS})
-target_link_libraries(atspi_fixture_probe PRIVATE
+target_link_libraries(atspi_fixture_probe PRIVATE qt_display
     Qt6::Widgets Qt6::Core ${QRENCODE_LIBRARIES})
 
 # render-fixture catalog harness smoke: a golden fixture must render to a valid
