@@ -112,6 +112,13 @@ foreach(case availability dialog cancel selection limits replacement)
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endforeach()
 
+add_executable(display_screen_settings_test tests/display_screen_settings_test.cpp)
+target_link_libraries(display_screen_settings_test PRIVATE qt_display)
+target_compile_options(display_screen_settings_test PRIVATE -UNDEBUG)
+add_test(NAME display_screen_settings_test COMMAND display_screen_settings_test)
+set_tests_properties(display_screen_settings_test PROPERTIES TIMEOUT 30
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
 if(QT_DISPLAY_ONLY)
     return()
 endif()
