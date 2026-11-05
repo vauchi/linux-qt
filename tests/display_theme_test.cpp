@@ -3,7 +3,6 @@
 
 #include "display_test_harness.h"
 #include <QColor>
-#include <QEventLoop>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPalette>
@@ -13,6 +12,8 @@
 using namespace display_test;
 namespace {
 QPointer<QLineEdit> keptInput;
+QColor bootstrapBackground;
+QString bootstrapBody;
 
 QJsonObject colors(bool optional = true) {
     QJsonObject result{{"background", "#102030"}, {"surface", "#203040"},
@@ -67,28 +68,11 @@ QLabel *label(const QString &text) {
     return nullptr;
 }
 
-class GeometryReady : public QObject {
-public:
-    QWidget *widget;
-    QEventLoop completed;
-    bool eventFilter(QObject *, QEvent *event) override {
-        if (event->type() == QEvent::Resize && widget->width() > 0 && widget->height() > 0)
-            completed.quit();
-        return false;
-    }
-};
-
 void verifyColors(bool optional) {
     assert(QApplication::palette().color(QPalette::Window) == QColor("#102030"));
     assert(input()->palette().color(QPalette::Text) == QColor("#e0e1e2"));
     const QColor base(optional ? "#223344" : "#203040");
     assert(input()->palette().color(QPalette::Base) == base);
-    if (input()->width() == 0 || input()->height() == 0) {
-        GeometryReady ready;
-        ready.widget = input();
-        input()->installEventFilter(&ready);
-        ready.completed.exec();
-    }
     const auto pixels = input()->grab().toImage();
     assert(!pixels.isNull());
     assert(pixels.pixelColor(pixels.width() - 8, pixels.height() / 2) == base);
@@ -126,6 +110,9 @@ QList<Step> focusedUpdate() {
         assert(input()->selectionStart() == 5);
         assert(input()->selectedText() == "selected");
         assert(input()->cursorPosition() == 13);
+        const auto pixels = input()->grab().toImage();
+        assert(!pixels.isNull());
+        assert(pixels.pixelColor(1, pixels.height() / 2) == QColor("#a1b2c3"));
         assert(input()->font().family() == "DejaVu Serif");
         assert(label("Heading")->font().family() == "DejaVu Sans");
         assert(QApplication::palette().color(QPalette::Window) == QColor("#314159"));
@@ -184,6 +171,48 @@ QList<Step> unsafeFont() {
     }}};
 }
 
+QList<Step> tones() {
+    auto command = themed(colors(), fonts());
+    auto payload = command.value("ReplaceSurface").toObject();
+    auto value = payload.value("surface").toObject();
+    auto nodes = value.value("nodes").toArray();
+    for (const char *tone : {"accent", "success", "warning", "error"})
+        nodes.append(QJsonObject{{"Status", QJsonObject{{"title", tone}, {"tone", tone}}}});
+    value.insert("nodes", nodes); payload.insert("surface", value); command.insert("ReplaceSurface", payload);
+    return {{{command, profile("first")}, [] {
+        verifyColors(true);
+        for (const char *tone : {"accent", "success", "warning", "error"})
+            assert(label(tone)->palette().color(QPalette::WindowText) == QColor(colors().value(tone).toString()));
+    }}};
+}
+
+QList<Step> resetTheme() {
+    return {{{}, [] {
+        bootstrapBackground = QApplication::palette().color(QPalette::Window);
+        bootstrapBody = QApplication::font().family();
+    }}, {{themed(colors(), fonts(true)), profile("first")}, [] {
+        verifyColors(true); keptInput = input();
+        assert(input()->font().family() == "DejaVu Serif");
+    }}, {{"ResetApplication"}, [] {
+        assert(keptInput == nullptr);
+        assert(QApplication::palette().color(QPalette::Window) == bootstrapBackground);
+        assert(events.isEmpty());
+    }}, {{themed(colors()), profile("first")}, [] {
+        verifyColors(true);
+        assert(input()->font().family() == bootstrapBody);
+    }}};
+}
+
+QList<Step> unicodeFont() {
+    auto supplied = fonts();
+    const auto name = QString::fromUtf8("Metadata 🧪 Family");
+    supplied.insert("body", name);
+    return {{{themed(colors(), supplied), profile("first")}, [name] {
+        verifyColors(true);
+        assert(input()->font().family() == name);
+    }}};
+}
+
 void setup() { schedule(); }
 }
 Q_COREAPP_STARTUP_FUNCTION(setup)
@@ -197,7 +226,17 @@ int main(int argc, char **argv) {
     else if (name == "reload") steps = reload();
     else if (name == "invalid") steps = invalid();
     else if (name == "unsafe_font") steps = unsafeFont();
+    else if (name == "tones") steps = tones();
+    else if (name == "reset") steps = resetTheme();
+    else if (name == "unicode_font") steps = unicodeFont();
     else return 2;
+    for (qsizetype index = 0; index < steps.size(); ++index) {
+        if (name == "reset" && (index == 0 || index == 2)) continue;
+        steps[index].ready = [] {
+            const auto *field = window()->findChild<QLineEdit *>("theme-input");
+            return field && field->width() > 0 && field->height() > 0;
+        };
+    }
     const int result = qt_display_start(argc, argv, receive, &events);
     assert(result == 0);
     return result;

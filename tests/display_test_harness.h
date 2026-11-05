@@ -12,12 +12,14 @@
 #include <QTimer>
 #include <cassert>
 #include <functional>
+#include <utility>
 
 namespace display_test {
 
 struct Step {
     QJsonArray commands;
     std::function<void()> verify;
+    std::function<bool()> ready;
 };
 
 inline QList<Step> steps;
@@ -79,15 +81,50 @@ inline void receive(const char *json, void *context) {
     else events.append(value);
 }
 
+class ReadyWatcher : public QObject {
+public:
+    ReadyWatcher(std::function<bool()> ready, std::function<void()> finish)
+        : QObject(qApp), m_ready(std::move(ready)), m_finish(std::move(finish)) {
+        qApp->installEventFilter(this);
+        queueCheck();
+    }
+protected:
+    bool eventFilter(QObject *, QEvent *event) override {
+        if (event->type() == QEvent::Resize || event->type() == QEvent::LayoutRequest
+            || event->type() == QEvent::Show || event->type() == QEvent::PolishRequest)
+            queueCheck();
+        return false;
+    }
+private:
+    void queueCheck() {
+        if (m_scheduled) return;
+        m_scheduled = true;
+        QMetaObject::invokeMethod(this, [this] {
+            m_scheduled = false;
+            if (!m_ready()) return;
+            qApp->removeEventFilter(this);
+            deleteLater();
+            m_finish();
+        }, Qt::QueuedConnection);
+    }
+    std::function<bool()> m_ready;
+    std::function<void()> m_finish;
+    bool m_scheduled = false;
+};
+
 // @internal
 inline void runStep(int index) {
     const auto step = steps.at(index);
     const auto json = QJsonDocument(step.commands).toJson(QJsonDocument::Compact);
     assert(qt_display_render(json.constData(), static_cast<size_t>(json.size())) == 0);
     QMetaObject::invokeMethod(qApp, [step, index] {
-        step.verify();
-        if (index + 1 < steps.size()) runStep(index + 1);
-        else if (stopAfterLastStep) qt_display_stop();
+        const auto finish = [step, index] {
+            step.verify();
+            if (index + 1 < steps.size()) runStep(index + 1);
+            else if (stopAfterLastStep) qt_display_stop();
+        };
+        if (!step.ready || step.ready()) finish();
+        else new ReadyWatcher(step.ready, finish);
     }, Qt::QueuedConnection);
 }
 
