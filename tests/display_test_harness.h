@@ -22,6 +22,8 @@ struct Step {
 
 inline QList<Step> steps;
 inline QJsonArray events;
+inline QJsonArray capabilities;
+inline bool stopAfterLastStep = true;
 
 inline QJsonObject action(const QString &id, const QString &label) {
     return {{"interaction_id", id}, {"label", label},
@@ -70,7 +72,9 @@ inline QJsonArray activation(const QString &id, const QString &interaction) {
 
 inline void receive(const char *json, void *context) {
     assert(context == &events);
-    events.append(QJsonDocument::fromJson(json).object());
+    const auto value = QJsonDocument::fromJson(json).object();
+    if (value.contains("ApplicationMenuAvailabilityChanged")) capabilities.append(value);
+    else events.append(value);
 }
 
 // @internal
@@ -80,8 +84,8 @@ inline void runStep(int index) {
     assert(qt_display_render(json.constData(), static_cast<size_t>(json.size())) == 0);
     QMetaObject::invokeMethod(qApp, [step, index] {
         step.verify();
-        if (index + 1 == steps.size()) qt_display_stop();
-        else runStep(index + 1);
+        if (index + 1 < steps.size()) runStep(index + 1);
+        else if (stopAfterLastStep) qt_display_stop();
     }, Qt::QueuedConnection);
 }
 

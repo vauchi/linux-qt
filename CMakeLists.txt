@@ -91,6 +91,15 @@ foreach(case information navigation menu dismissal)
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endforeach()
 
+add_executable(display_application_menu_test tests/display_application_menu_test.cpp)
+target_link_libraries(display_application_menu_test PRIVATE qt_display)
+target_compile_options(display_application_menu_test PRIVATE -UNDEBUG)
+foreach(case availability prepared accessibility revisions replacement quit)
+    add_test(NAME display_application_menu_${case} COMMAND display_application_menu_test ${case})
+    set_tests_properties(display_application_menu_${case} PROPERTIES TIMEOUT 10
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endforeach()
+
 if(QT_DISPLAY_ONLY)
     return()
 endif()
