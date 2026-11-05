@@ -13,6 +13,7 @@ using namespace display_test;
 namespace {
 std::unique_ptr<QTemporaryDir> directory;
 QString destination;
+QString initialDirectory;
 
 QJsonObject exportCommand(const QJsonArray &bytes = {0, 255, 13, 10, 128},
                           const QString &name = "../prepared.bin") {
@@ -47,8 +48,12 @@ void choose() {
 
 // Feature: identity_management.feature @backup — native export writes Core's bytes unchanged.
 QList<Step> selection() {
-    return {{{exportCommand()}, [] {
+    return {{{}, [] {
+        QFileDialog probe(window());
+        initialDirectory = probe.directory().absolutePath();
+    }}, {{exportCommand({0, 255, 13, 10, 128}, directory->filePath("nested/prepared.bin"))}, [] {
         auto *picker = dialog();
+        assert(picker->directory().absolutePath() == initialDirectory);
         assert(picker->acceptMode() == QFileDialog::AcceptSave);
         assert(picker->fileMode() == QFileDialog::AnyFile);
         assert(QFileInfo(picker->selectedFiles().first()).fileName() == "prepared.bin");
@@ -113,6 +118,7 @@ int main(int argc, char **argv) {
     directory = std::make_unique<QTemporaryDir>();
     assert(directory->isValid());
     destination = directory->filePath("chosen.bin");
+    assert(QDir(directory->path()).mkdir("nested"));
     const QString name = argc > 1 ? QString::fromUtf8(argv[1]) : "selection";
     if (name == "selection") steps = selection();
     else if (name == "cancellation") steps = cancellation();
