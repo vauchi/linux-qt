@@ -46,6 +46,8 @@ set(QT_DISPLAY_SOURCES
     src/coreui/displayhost_feedback.cpp
     src/coreui/displayhost_reset.cpp
     src/coreui/displayhost_native_effects.cpp
+    src/coreui/displayhost_permissions.cpp
+    src/platform/permissionprompt.cpp
     src/coreui/displayhost_file_effects.cpp
     src/coreui/presentationeffectpayload.cpp
     src/coreui/applicationmenubar.cpp
@@ -204,7 +206,7 @@ target_compile_options(display_permission_test PRIVATE -UNDEBUG)
 find_program(DBUS_RUN_SESSION dbus-run-session REQUIRED)
 set(permission_cases unavailable malformed)
 if(Qt6DBus_FOUND)
-    list(APPEND permission_cases granted denied failed duplicate wrong_path spoof reset vanished)
+    list(APPEND permission_cases granted denied failed duplicate wrong_path spoof reset vanished alternate early)
 endif()
 foreach(case IN LISTS permission_cases)
     add_test(NAME display_permission_${case} COMMAND ${DBUS_RUN_SESSION} -- $<TARGET_FILE:display_permission_test> ${case})

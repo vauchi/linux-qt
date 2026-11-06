@@ -25,6 +25,7 @@ void QtDisplayHost::resetApplicationMenu() {
 void QtDisplayHost::resetPresentation() {
     ++m_generation;
     delete m_celebration;
+    resetPermissionPrompt();
     resetFileEffects();
     closeOverlay();
     for (auto *dialog : findChildren<QDialog *>()) {

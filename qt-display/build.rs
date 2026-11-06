@@ -37,15 +37,21 @@ fn main() {
         built.join("build").display()
     );
     println!("cargo:rustc-link-lib=static=qt_display");
-    for flag in pkg_config_libs(&[
+    let mut modules = vec![
         "Qt6Widgets",
         "Qt6Gui",
         "Qt6Core",
         "Qt6Concurrent",
         "libqrencode",
-    ])
-    .split_whitespace()
+    ];
+    if Command::new("pkg-config")
+        .args(["--exists", "Qt6DBus"])
+        .status()
+        .is_ok_and(|status| status.success())
     {
+        modules.push("Qt6DBus");
+    }
+    for flag in pkg_config_libs(&modules).split_whitespace() {
         if let Some(lib) = flag.strip_prefix("-l") {
             println!("cargo:rustc-link-lib={lib}");
         } else if let Some(dir) = flag.strip_prefix("-L") {
@@ -57,6 +63,8 @@ fn main() {
     println!("cargo:rerun-if-changed=../src/coreui");
     println!("cargo:rerun-if-changed=../src/platform/filepicker.cpp");
     println!("cargo:rerun-if-changed=../src/platform/filepicker.h");
+    println!("cargo:rerun-if-changed=../src/platform/permissionprompt.cpp");
+    println!("cargo:rerun-if-changed=../src/platform/permissionprompt.h");
     println!("cargo:rerun-if-changed=../include/qt_display.h");
     println!("cargo:rerun-if-changed=../CMakeLists.txt");
     println!("cargo:rerun-if-env-changed=VAUCHI_TOKENS_INCLUDE");

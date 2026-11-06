@@ -13,6 +13,7 @@ class PresentationSurface;
 class QSplitter;
 class ApplicationMenuBar;
 class FilePicker;
+class PermissionPrompt;
 class QFileDialog;
 class QKeyEvent;
 
@@ -30,6 +31,8 @@ private:
     void resetPresentation();
     void resetApplicationMenu();
     void resetFileEffects();
+    void resetPermissionPrompt();
+    void requestPermission(const QJsonObject &payload);
     PresentationSurface *createSurface(const QJsonObject &surface,
                                       const QJsonObject &bar, bool sidebar);
     void activate(const QString &surfaceId, const QString &interactionId);
@@ -61,6 +64,7 @@ private:
     QString m_menuSurface;
     qint64 m_menuRevision = -1;
     quint64 m_generation = 0;
+    PermissionPrompt *m_permissionPrompt = nullptr;
     FilePicker *m_filePicker = nullptr;
     FilePicker *m_legacyPicker = nullptr;
     bool m_legacyImage = false;
