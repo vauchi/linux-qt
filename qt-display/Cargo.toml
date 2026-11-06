@@ -15,3 +15,8 @@ path = "src/lib.rs"
 cmake = "0.1"
 
 [dependencies]
+
+[[test]]
+name = "poll_loop"
+path = "tests/poll_loop.rs"
+harness = false

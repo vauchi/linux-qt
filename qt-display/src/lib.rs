@@ -12,10 +12,11 @@ mod ffi {
     use super::*;
     pub type EventCallback = unsafe extern "C" fn(*const c_char, *mut c_void);
     extern "C" {
-        pub fn qt_display_start(
+        pub fn qt_display_start_with_poll(
             argc: c_int,
             argv: *mut *mut c_char,
             on_event: EventCallback,
+            on_poll: Option<unsafe extern "C" fn(*mut c_void)>,
             user_data: *mut c_void,
         ) -> c_int;
         pub fn qt_display_render(commands_json: *const c_char, len: usize) -> c_int;
@@ -24,33 +25,65 @@ mod ffi {
 }
 
 /// Receives each event the shell reports, JSON-encoded.
-pub type EventSink = Box<dyn FnMut(&str) + Send>;
+pub type EventSink = Box<dyn FnMut(&str)>;
+
+/// Drains app-owned observations on the calling thread without user input.
+pub type PollSink = Box<dyn FnMut()>;
+
+struct Callbacks {
+    event: EventSink,
+    poll: Option<PollSink>,
+}
 
 unsafe extern "C" fn trampoline(event_json: *const c_char, user_data: *mut c_void) {
-    // SAFETY: user_data is the Box<EventSink> that `run` keeps alive for
-    // the whole event loop, and event_json is valid for this call.
-    let sink = &mut *(user_data as *mut EventSink);
+    // SAFETY: run_callbacks keeps this state alive on Qt's thread until return.
+    let callbacks = &mut *(user_data as *mut Callbacks);
     if let Ok(text) = CStr::from_ptr(event_json).to_str() {
-        sink(text);
+        (callbacks.event)(text);
+    }
+}
+
+unsafe extern "C" fn poll_trampoline(user_data: *mut c_void) {
+    // SAFETY: Qt invokes both callbacks serially on run_callbacks' thread.
+    let callbacks = &mut *(user_data as *mut Callbacks);
+    if let Some(poll) = callbacks.poll.as_mut() {
+        poll();
     }
 }
 
 /// Runs the shell on the calling thread; returns Qt's exit code.
 pub fn run(args: &[String], on_event: EventSink) -> i32 {
+    run_callbacks(args, on_event, None)
+}
+
+/// Runs Qt with a GUI-thread host poll, initially and every 50 ms.
+/// The poll may render batches and stop the loop; it must not block the GUI.
+pub fn run_with_poll(args: &[String], on_event: EventSink, on_poll: PollSink) -> i32 {
+    run_callbacks(args, on_event, Some(on_poll))
+}
+
+fn run_callbacks(args: &[String], on_event: EventSink, on_poll: Option<PollSink>) -> i32 {
     let mut argv: Vec<CString> = args
         .iter()
         .map(|a| CString::new(a.as_str()).expect("argument without NUL"))
         .collect();
     let mut argv_ptrs: Vec<*mut c_char> =
         argv.iter_mut().map(|a| a.as_ptr() as *mut c_char).collect();
-    let mut sink: EventSink = on_event;
-    // SAFETY: argv outlives the call; the sink outlives the event loop.
+    let poll_callback = on_poll
+        .as_ref()
+        .map(|_| poll_trampoline as unsafe extern "C" fn(*mut c_void));
+    let mut callbacks = Callbacks {
+        event: on_event,
+        poll: on_poll,
+    };
+    // SAFETY: argv and callbacks outlive Qt's loop; callbacks stay on this thread.
     unsafe {
-        ffi::qt_display_start(
+        ffi::qt_display_start_with_poll(
             argv_ptrs.len() as c_int,
             argv_ptrs.as_mut_ptr(),
             trampoline,
-            &mut sink as *mut EventSink as *mut c_void,
+            poll_callback,
+            &mut callbacks as *mut Callbacks as *mut c_void,
         )
     }
 }

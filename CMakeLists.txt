@@ -90,6 +90,13 @@ add_test(NAME display_copy_test COMMAND display_copy_test)
 set_tests_properties(display_copy_test PROPERTIES TIMEOUT 30
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
+add_executable(display_poll_test tests/display_poll_test.cpp)
+target_link_libraries(display_poll_test PRIVATE qt_display)
+target_compile_options(display_poll_test PRIVATE -UNDEBUG)
+add_test(NAME display_poll_test COMMAND display_poll_test)
+set_tests_properties(display_poll_test PROPERTIES TIMEOUT 10
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
 add_executable(display_contract_test tests/display_contract_test.cpp)
 target_link_libraries(display_contract_test PRIVATE qt_display)
 target_compile_options(display_contract_test PRIVATE -UNDEBUG)

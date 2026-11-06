@@ -16,11 +16,21 @@ extern "C" {
 // One contract Event, JSON-encoded. The string lives for the call only.
 typedef void (*QtDisplayEventCallback)(const char *event_json, void *user_data);
 
+// Runs on the GUI thread so the app can drain its hardware and engine inboxes.
+typedef void (*QtDisplayPollCallback)(void *user_data);
+
+
 // Runs the Qt event loop on the calling thread until qt_display_stop or
 // the window closes; returns the process exit code. argv follows main's
 // convention and may carry Qt's own flags.
 int qt_display_start(int argc, char **argv, QtDisplayEventCallback on_event,
                      void *user_data);
+
+// Like start, with an initial and recurring (50 ms) host poll. Both callbacks
+// borrow user_data only until this call returns. A null on_poll disables it.
+int qt_display_start_with_poll(int argc, char **argv, QtDisplayEventCallback on_event,
+                              QtDisplayPollCallback on_poll, void *user_data);
+
 
 // Renders a JSON array of contract Commands. Safe from any thread once
 // qt_display_start runs: the batch is posted to the GUI thread. Returns

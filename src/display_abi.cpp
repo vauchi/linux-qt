@@ -17,6 +17,7 @@
 #include <QMetaObject>
 #include <QPointer>
 #include <QScrollArea>
+#include <QTimer>
 
 #include <atomic>
 
@@ -29,6 +30,12 @@ std::atomic<bool> g_running{false};
 
 extern "C" int qt_display_start(int argc, char **argv,
                                 QtDisplayEventCallback on_event, void *user_data) {
+    return qt_display_start_with_poll(argc, argv, on_event, nullptr, user_data);
+}
+
+extern "C" int qt_display_start_with_poll(int argc, char **argv,
+                                          QtDisplayEventCallback on_event,
+                                          QtDisplayPollCallback on_poll, void *user_data) {
     QApplication app(argc, argv);
     ThemeManager::registerBrandFonts();
     app.setFont(ThemeManager::uiFont());
@@ -38,6 +45,14 @@ extern "C" int qt_display_start(int argc, char **argv,
     host.show();
     g_running = true;
     host.reportCapabilities();
+    QTimer pollTimer;
+    if (on_poll) {
+        QObject::connect(&pollTimer, &QTimer::timeout, &host, [on_poll, user_data] {
+            on_poll(user_data);
+        });
+        pollTimer.start(50);
+        QTimer::singleShot(0, &host, [on_poll, user_data] { on_poll(user_data); });
+    }
     const int rc = app.exec();
     g_running = false;
     g_host = nullptr;
