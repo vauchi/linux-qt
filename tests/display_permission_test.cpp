@@ -34,13 +34,20 @@ const QString service = "org.freedesktop.portal.Desktop";
 const QString base = "/org/freedesktop/portal/desktop";
 const QString requestInterface = "org.freedesktop.portal.Request";
 QDBusConnection server() { return QDBusConnection("permission_test_portal"); }
-class FakeRequest : public QObject {
+class FakeRequest : public QObject, protected QDBusContext {
     Q_OBJECT
     Q_CLASSINFO("D-Bus Interface", "org.freedesktop.portal.Request")
 public:
     int closes = 0;
+    bool live = false;
+    bool released = false;
 public slots:
-    void Close() { ++closes; emit closed(); }
+    void Close() {
+        ++closes;
+        if (live) { live = false; released = true; }
+        server().unregisterObject(message().path());
+        emit closed();
+    }
 signals:
     void closed();
 };
@@ -57,6 +64,7 @@ public:
     bool early = false;
     bool foreign = false;
     bool oversized = false;
+    bool deferredCreation = false;
     bool flood = false;
     uint response = 0;
     QDBusMessage deferred;
@@ -83,6 +91,11 @@ public slots:
         path = actual;
         paths.append(path);
         assert(server().registerObject(path, &endpoint, QDBusConnection::ExportAllSlots));
+        endpoint.live = !deferredCreation;
+        if (deferredCreation) {
+            setDelayedReply(true);
+            deferred = message(); deferredPath = path;
+        }
         if (flood) {
             setDelayedReply(true);
             deferred = message(); deferredPath = path;
@@ -107,6 +120,13 @@ void serve() {
     portal = new FakePortal;
     QObject::connect(&portal->endpoint, &FakeRequest::closed, portal, [] {
         if (portal->deferred.type() == QDBusMessage::MethodCallMessage) {
+            if (portal->deferredCreation) {
+                portal->deferredCreation = false;
+                portal->endpoint.live = true;
+                portal->endpoint.released = false;
+                assert(server().registerObject(portal->deferredPath, &portal->endpoint,
+                    QDBusConnection::ExportAllSlots));
+            }
             const auto reply = portal->deferred.createReply(
                 QVariantList{QVariant::fromValue(QDBusObjectPath(portal->deferredPath))});
             assert(server().send(reply));
@@ -142,6 +162,15 @@ QList<Step> reset() {
             assert(portal->endpoint.closes == 1);
         }, [] { return !events.isEmpty() && portal->endpoint.closes == 1; }}};
 }
+QList<Step> deferredReset() {
+    serve(); portal->automatic = false; portal->deferredCreation = true;
+    return {{{request("camera")}, [] {}, [] { return portal->paths.size() == 1; }},
+        {{"ResetApplication"}, [] {
+            assert(!portal->endpoint.live);
+            assert(portal->endpoint.released);
+            assert(events.isEmpty());
+        }, [] { return portal->endpoint.released; }}};
+}
 QList<Step> vanished() {
     serve(); portal->automatic = false;
     return {{{request("camera")}, [] {
@@ -169,6 +198,7 @@ void setup() {
     else if (name == "wrong_path") { steps = result(1); portal->wrongPath = true; }
     else if (name == "spoof") { steps = result(1); portal->spoof = true; }
     else if (name == "reset") steps = reset();
+    else if (name == "deferred_reset") steps = deferredReset();
     else if (name == "vanished") steps = vanished();
 #endif
     else std::abort();
