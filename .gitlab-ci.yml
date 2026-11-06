@@ -108,6 +108,22 @@ test:unit:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
+test:rust-wrapper:
+  stage: test
+  needs: []
+  tags: [linux]
+  script:
+    - mkdir -p library-check
+    - git archive --output=library-check.tar HEAD
+    - tar -xf library-check.tar -C library-check
+    - env -u VAUCHI_TOKENS_INCLUDE
+        CARGO_TARGET_DIR=${CI_PROJECT_DIR}/qt-display/target
+        cargo test --manifest-path library-check/qt-display/Cargo.toml --test poll_loop --locked
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG
+
 # Coverage: build with gcov instrumentation, run tests, produce Cobertura XML.
 # CMakeLists.txt already supports -DCOVERAGE=ON for gcov/lcov flags.
 # Uses gcovr for Cobertura conversion and pushes metrics to Grafana Pushgateway.

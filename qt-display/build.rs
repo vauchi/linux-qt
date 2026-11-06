@@ -25,8 +25,12 @@ fn main() {
         .parent()
         .unwrap()
         .to_path_buf();
-    let tokens = std::env::var("VAUCHI_TOKENS_INCLUDE")
-        .unwrap_or_else(|_| repo.join("../themes/generated").display().to_string());
+    let tokens = std::env::var("VAUCHI_TOKENS_INCLUDE").unwrap_or_else(|_| {
+        std::path::Path::new(&manifest_dir)
+            .join("tokens")
+            .display()
+            .to_string()
+    });
     let built = cmake::Config::new(&repo)
         .define("QT_DISPLAY_ONLY", "ON")
         .define("VAUCHI_PERMISSION_TESTS", "OFF")
@@ -68,5 +72,6 @@ fn main() {
     println!("cargo:rerun-if-changed=../src/platform/permissionprompt.h");
     println!("cargo:rerun-if-changed=../include/qt_display.h");
     println!("cargo:rerun-if-changed=../CMakeLists.txt");
+    println!("cargo:rerun-if-changed=tokens/Tokens.h");
     println!("cargo:rerun-if-env-changed=VAUCHI_TOKENS_INCLUDE");
 }

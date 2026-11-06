@@ -1,0 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+Source: https://gitlab.com/vauchi/themes
+Revision: 4e8193037c229bb239c3a4247d62cab0f1b34f46
+Generator: scripts/generate.py
+Output: generated/Tokens.h
