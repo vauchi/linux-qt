@@ -56,6 +56,7 @@ public:
     bool alternate = false;
     bool early = false;
     bool foreign = false;
+    bool oversized = false;
     bool flood = false;
     uint response = 0;
     QDBusMessage deferred;
@@ -77,7 +78,9 @@ public slots:
         const QString token = options.value("handle_token").toString();
         assert(!token.isEmpty());
         QString sender = message().service(); sender.remove(0, 1); sender.replace('.', '_');
-        const QString path = base + "/request/" + (foreign ? "other_client" : sender) + "/" + token + (alternate ? "_actual" : "");
+        QString path = base + "/request/" + (foreign ? "other_client" : sender) + "/" + token + (alternate ? "_actual" : "");
+        const QString actual = oversized ? path + QString(4097, 'x') : path;
+        path = actual;
         paths.append(path);
         assert(server().registerObject(path, &endpoint, QDBusConnection::ExportAllSlots));
         if (flood) {
@@ -158,6 +161,7 @@ void setup() {
     else if (name == "failed") steps = result(2);
     else if (name == "duplicate") steps = result(0, true);
     else if (name == "alternate") { steps = result(0); portal->alternate = true; }
+    else if (name == "oversized") { steps = result(2); portal->oversized = true; portal->response = 0; }
     else if (name == "foreign") { steps = result(2); portal->foreign = true; portal->response = 0; }
     else if (name == "flood") { steps = result(2); portal->flood = true; portal->response = 1; }
     else if (name == "alternate_reset") { steps = reset(); portal->alternate = true; }
