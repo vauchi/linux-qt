@@ -4,6 +4,7 @@
 #include "display_test_harness.h"
 #ifdef VAUCHI_HAS_PERMISSION_PORTAL
 #include <QDBusConnection>
+#include <QDBusConnectionInterface>
 #include <QDBusContext>
 #include <QDBusMessage>
 #include <QDBusObjectPath>
@@ -182,6 +183,13 @@ QList<Step> vanished() {
 #endif
 QString name;
 void setup() {
+#ifdef VAUCHI_HAS_PERMISSION_PORTAL
+    const auto *bus = QDBusConnection::sessionBus().interface();
+    assert(bus);
+    const auto services = bus->activatableServiceNames();
+    assert(services.isValid());
+    for (const auto &service : services.value()) assert(service == "org.freedesktop.DBus");
+#endif
     if (name == "unavailable") steps = unavailable();
     else if (name == "malformed") steps = malformed();
 #ifdef VAUCHI_HAS_PERMISSION_PORTAL

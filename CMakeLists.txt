@@ -212,7 +212,9 @@ if(Qt6DBus_FOUND AND VAUCHI_PERMISSION_PORTAL)
     list(APPEND permission_cases granted denied failed duplicate wrong_path spoof reset vanished alternate early foreign flood alternate_reset oversized deferred_reset)
 endif()
 foreach(case IN LISTS permission_cases)
-    add_test(NAME display_permission_${case} COMMAND ${DBUS_RUN_SESSION} -- $<TARGET_FILE:display_permission_test> ${case})
+    add_test(NAME display_permission_${case} COMMAND ${DBUS_RUN_SESSION}
+        "--config-file=${CMAKE_CURRENT_SOURCE_DIR}/tests/permission_bus.conf"
+        -- $<TARGET_FILE:display_permission_test> ${case})
     set_tests_properties(display_permission_${case} PROPERTIES TIMEOUT 30
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endforeach()
