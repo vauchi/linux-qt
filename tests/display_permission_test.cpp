@@ -33,6 +33,7 @@ QList<Step> malformed() {
 const QString service = "org.freedesktop.portal.Desktop";
 const QString base = "/org/freedesktop/portal/desktop";
 const QString requestInterface = "org.freedesktop.portal.Request";
+QDBusConnection server() { return QDBusConnection("permission_test_portal"); }
 class FakeRequest : public QObject {
     Q_OBJECT
     Q_CLASSINFO("D-Bus Interface", "org.freedesktop.portal.Request")
@@ -59,24 +60,32 @@ public:
     uint response = 0;
     QDBusMessage deferred;
     QString deferredPath;
-    void send(const QString &path, uint code, const QDBusConnection &bus = QDBusConnection::sessionBus()) {
+    void send(const QString &path, uint code, const QDBusConnection &bus = server()) {
         auto message = QDBusMessage::createSignal(path, requestInterface, "Response");
         message << code << QVariantMap{};
         assert(bus.send(message));
     }
 public slots:
+    void assertFloodRejected() {
+        QMetaObject::invokeMethod(this, [] {
+            assert(events == answer("HardwareUnavailable"));
+        }, Qt::QueuedConnection);
+    }
     QDBusObjectPath AccessCamera(const QVariantMap &options) {
         assert(options.size() == 1);
+        assert(message().service() != server().baseService());
         const QString token = options.value("handle_token").toString();
         assert(!token.isEmpty());
         QString sender = message().service(); sender.remove(0, 1); sender.replace('.', '_');
         const QString path = base + "/request/" + (foreign ? "other_client" : sender) + "/" + token + (alternate ? "_actual" : "");
         paths.append(path);
-        assert(QDBusConnection::sessionBus().registerObject(path, &endpoint, QDBusConnection::ExportAllSlots));
+        assert(server().registerObject(path, &endpoint, QDBusConnection::ExportAllSlots));
         if (flood) {
             setDelayedReply(true);
             deferred = message(); deferredPath = path;
             for (int index = 0; index < 17; ++index) send(path + "_other" + QString::number(index), 0);
+            assert(server().send(QDBusMessage::createSignal(base + "/test",
+                "app.vauchi.PermissionTest", "FloodSent")));
         }
         if (automatic && early) send(path, response);
         else if (automatic) QMetaObject::invokeMethod(this, [this, path] {
@@ -97,13 +106,15 @@ void serve() {
         if (portal->deferred.type() == QDBusMessage::MethodCallMessage) {
             const auto reply = portal->deferred.createReply(
                 QVariantList{QVariant::fromValue(QDBusObjectPath(portal->deferredPath))});
-            assert(QDBusConnection::sessionBus().send(reply));
+            assert(server().send(reply));
             portal->deferred = {};
         }
     });
-    auto bus = QDBusConnection::sessionBus();
+    auto bus = QDBusConnection::connectToBus(QDBusConnection::SessionBus, "permission_test_portal");
     assert(bus.registerService(service));
     assert(bus.registerObject(base, portal, QDBusConnection::ExportAllSlots));
+    assert(QDBusConnection::sessionBus().connect(service, base + "/test",
+        "app.vauchi.PermissionTest", "FloodSent", portal, SLOT(assertFloodRejected())));
 }
 QList<Step> result(uint code, bool duplicate = false) {
     serve(); portal->response = code;
@@ -131,7 +142,7 @@ QList<Step> reset() {
 QList<Step> vanished() {
     serve(); portal->automatic = false;
     return {{{request("camera")}, [] {
-        assert(QDBusConnection::sessionBus().unregisterService(service));
+        assert(server().unregisterService(service));
     }, [] { return portal->paths.size() == 1; }}, {{}, [] {
         assert(events == answer("HardwareUnavailable"));
     }, [] { return !events.isEmpty(); }}};
