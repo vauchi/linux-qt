@@ -14,6 +14,7 @@
 #include <QDBusServiceWatcher>
 #include <QUuid>
 namespace {
+constexpr qsizetype maxRequestPath = 4096;
 const QString service = QStringLiteral("org.freedesktop.portal.Desktop");
 const QString base = QStringLiteral("/org/freedesktop/portal/desktop");
 const QString requestInterface = QStringLiteral("org.freedesktop.portal.Request");
@@ -60,13 +61,15 @@ void PermissionPrompt::request(const QString &transport) {
             watcher->deleteLater();
             const QString prefix = path.left(path.lastIndexOf('/') + 1);
             if (!owner || owner->m_path != path) {
-                if (!reply.isError() && reply.value().path() != path
+                if (!reply.isError() && reply.value().path().size() <= maxRequestPath
+                    && reply.value().path() != path
                     && reply.value().path().startsWith(prefix))
                     QDBusConnection::sessionBus().asyncCall(QDBusMessage::createMethodCall(service,
                         reply.value().path(), requestInterface, QStringLiteral("Close")));
                 return;
             }
-            if (reply.isError() || !reply.value().path().startsWith(prefix)) {
+            if (reply.isError() || reply.value().path().size() > maxRequestPath
+                || !reply.value().path().startsWith(prefix)) {
                 owner->cancel();
                 owner->finish(QStringLiteral("HardwareUnavailable"));
                 return;
@@ -92,6 +95,11 @@ void PermissionPrompt::response(uint code, const QVariantMap &, const QDBusMessa
     if (m_transport.isEmpty()) return;
     if (!m_confirmed) {
         if (!message.path().startsWith(m_path.left(m_path.lastIndexOf('/') + 1))) return;
+        if (message.path().size() > maxRequestPath) {
+            cancel();
+            finish(QStringLiteral("HardwareUnavailable"));
+            return;
+        }
         if (m_earlyResponses.size() >= 16 && !m_earlyResponses.contains(message.path())) {
             cancel();
             finish(QStringLiteral("HardwareUnavailable"));
