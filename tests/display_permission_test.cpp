@@ -21,7 +21,7 @@ QJsonArray answer(const QString &name, const QString &transport = "camera") {
 QList<Step> unavailable() {
     return {{{request("BLE")}, [] {
         assert(events == answer("HardwareUnavailable", "BLE")); events = {};
-    }}, {{request("camera")}, [] {
+    }, [] { return !events.isEmpty(); }}, {{request("camera")}, [] {
         assert(events == answer("HardwareUnavailable"));
     }, [] { return !events.isEmpty(); }}};
 }
@@ -50,6 +50,8 @@ public:
     bool automatic = true;
     bool wrongPath = false;
     bool spoof = false;
+    bool alternate = false;
+    bool early = false;
     uint response = 0;
     void send(const QString &path, uint code, const QDBusConnection &bus = QDBusConnection::sessionBus()) {
         auto message = QDBusMessage::createSignal(path, requestInterface, "Response");
@@ -62,10 +64,11 @@ public slots:
         const QString token = options.value("handle_token").toString();
         assert(!token.isEmpty());
         QString sender = message().service(); sender.remove(0, 1); sender.replace('.', '_');
-        const QString path = base + "/request/" + sender + "/" + token;
+        const QString path = base + "/request/" + sender + "/" + token + (alternate ? "_actual" : "");
         paths.append(path);
         assert(QDBusConnection::sessionBus().registerObject(path, &endpoint, QDBusConnection::ExportAllSlots));
-        if (automatic) QMetaObject::invokeMethod(this, [this, path] {
+        if (automatic && early) send(path, response);
+        else if (automatic) QMetaObject::invokeMethod(this, [this, path] {
             if (wrongPath) send(path + "_other", 0);
             if (spoof) {
                 auto impostor = QDBusConnection::connectToBus(QDBusConnection::SessionBus, "impostor");
@@ -124,6 +127,8 @@ void setup() {
     else if (name == "denied") steps = result(1);
     else if (name == "failed") steps = result(2);
     else if (name == "duplicate") steps = result(0, true);
+    else if (name == "alternate") { steps = result(0); portal->alternate = true; }
+    else if (name == "early") { steps = result(0); portal->early = true; }
     else if (name == "wrong_path") { steps = result(1); portal->wrongPath = true; }
     else if (name == "spoof") { steps = result(1); portal->spoof = true; }
     else if (name == "reset") steps = reset();
