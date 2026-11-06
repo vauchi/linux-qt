@@ -29,6 +29,7 @@ fn main() {
         .unwrap_or_else(|_| repo.join("../themes/generated").display().to_string());
     let built = cmake::Config::new(&repo)
         .define("QT_DISPLAY_ONLY", "ON")
+        .define("VAUCHI_PERMISSION_TESTS", "OFF")
         .define("VAUCHI_TOKENS_INCLUDE", &tokens)
         .build_target("qt_display")
         .build();

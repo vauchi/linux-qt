@@ -39,7 +39,9 @@ class FakeRequest : public QObject {
 public:
     int closes = 0;
 public slots:
-    void Close() { ++closes; }
+    void Close() { ++closes; emit closed(); }
+signals:
+    void closed();
 };
 class FakePortal : public QObject, protected QDBusContext {
     Q_OBJECT
@@ -52,7 +54,11 @@ public:
     bool spoof = false;
     bool alternate = false;
     bool early = false;
+    bool foreign = false;
+    bool flood = false;
     uint response = 0;
+    QDBusMessage deferred;
+    QString deferredPath;
     void send(const QString &path, uint code, const QDBusConnection &bus = QDBusConnection::sessionBus()) {
         auto message = QDBusMessage::createSignal(path, requestInterface, "Response");
         message << code << QVariantMap{};
@@ -64,9 +70,14 @@ public slots:
         const QString token = options.value("handle_token").toString();
         assert(!token.isEmpty());
         QString sender = message().service(); sender.remove(0, 1); sender.replace('.', '_');
-        const QString path = base + "/request/" + sender + "/" + token + (alternate ? "_actual" : "");
+        const QString path = base + "/request/" + (foreign ? "other_client" : sender) + "/" + token + (alternate ? "_actual" : "");
         paths.append(path);
         assert(QDBusConnection::sessionBus().registerObject(path, &endpoint, QDBusConnection::ExportAllSlots));
+        if (flood) {
+            setDelayedReply(true);
+            deferred = message(); deferredPath = path;
+            for (int index = 0; index < 17; ++index) send(path + "_other" + QString::number(index), 0);
+        }
         if (automatic && early) send(path, response);
         else if (automatic) QMetaObject::invokeMethod(this, [this, path] {
             if (wrongPath) send(path + "_other", 0);
@@ -82,6 +93,14 @@ public slots:
 FakePortal *portal = nullptr;
 void serve() {
     portal = new FakePortal;
+    QObject::connect(&portal->endpoint, &FakeRequest::closed, portal, [] {
+        if (portal->deferred.type() == QDBusMessage::MethodCallMessage) {
+            const auto reply = portal->deferred.createReply(
+                QVariantList{QVariant::fromValue(QDBusObjectPath(portal->deferredPath))});
+            assert(QDBusConnection::sessionBus().send(reply));
+            portal->deferred = {};
+        }
+    });
     auto bus = QDBusConnection::sessionBus();
     assert(bus.registerService(service));
     assert(bus.registerObject(base, portal, QDBusConnection::ExportAllSlots));
@@ -94,8 +113,8 @@ QList<Step> result(uint code, bool duplicate = false) {
     return {{commands, [outcome] {
         assert(events == answer(outcome));
         assert(portal->paths.size() == 1);
-        assert(portal->endpoint.closes == 0);
-    }, [] { return !events.isEmpty(); }}};
+        assert(portal->endpoint.closes == (portal->flood ? 1 : 0));
+    }, [] { return !events.isEmpty() && (!portal->flood || portal->endpoint.closes > 0); }}};
 }
 QList<Step> reset() {
     serve(); portal->automatic = false;
@@ -128,6 +147,9 @@ void setup() {
     else if (name == "failed") steps = result(2);
     else if (name == "duplicate") steps = result(0, true);
     else if (name == "alternate") { steps = result(0); portal->alternate = true; }
+    else if (name == "foreign") { steps = result(2); portal->foreign = true; portal->response = 0; }
+    else if (name == "flood") { steps = result(2); portal->flood = true; portal->response = 1; }
+    else if (name == "alternate_reset") { steps = reset(); portal->alternate = true; }
     else if (name == "early") { steps = result(0); portal->early = true; }
     else if (name == "wrong_path") { steps = result(1); portal->wrongPath = true; }
     else if (name == "spoof") { steps = result(1); portal->spoof = true; }
