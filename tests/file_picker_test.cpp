@@ -8,7 +8,6 @@
 #include <QJsonDocument>
 #include <QTemporaryDir>
 #include <QEventLoop>
-#include <QTimer>
 #include <QThreadPool>
 #include <QSemaphore>
 #include <cassert>
@@ -116,6 +115,7 @@ static void destroying_an_executor_does_not_wait_for_or_deliver_pending_work() {
 
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
+    app.setQuitOnLastWindowClosed(false);
     selected_file_preserves_bytes_and_only_the_basename();
     file_errors_are_not_cancellations();
     picker_uses_supplied_filters_and_reports_cancel_without_blocking();
@@ -129,7 +129,9 @@ int main(int argc, char *argv[]) {
     assert(file.write("raw") == 3);
     file.close();
     QWidget owner;
-    FilePicker picker(&owner);
+    QThreadPool pool;
+    pool.setMaxThreadCount(1);
+    FilePicker picker(&owner, &pool);
     QList<QJsonValue> events;
     QEventLoop loop;
     QObject::connect(&picker, &FilePicker::eventReady, &owner, [&](const QByteArray &event) {
@@ -142,8 +144,8 @@ int main(int argc, char *argv[]) {
     dialog->selectFile(path);
     assert(QMetaObject::invokeMethod(dialog, "accepted", Qt::DirectConnection));
     assert(events.isEmpty());
-    QTimer::singleShot(2000, &loop, &QEventLoop::quit);
-    loop.exec();
+    assert(pool.waitForDone());
+    if (events.isEmpty()) loop.exec();
     assert(events.size() == 1);
     assert(events[0].toObject().value("FilePickCompleted").toObject().value("request_id") == "opaque-first");
     assert(events[0].toObject().value("FilePickCompleted").toObject().value("outcome").toObject()
@@ -164,8 +166,11 @@ int main(int argc, char *argv[]) {
     assert(dialog);
     dialog->selectFile(path);
     assert(QMetaObject::invokeMethod(dialog, "accepted", Qt::DirectConnection));
-    QTimer::singleShot(2000, &loop, &QEventLoop::quit);
-    loop.exec();
+    assert(pool.waitForDone());
+    if (events.isEmpty()) loop.exec();
     assert(events.size() == 1);
-    assert(events[0].toObject().value("FilePickCompleted").toObject().value("request_id") == "replacement");
+    const QJsonObject replacement{{"FilePickCompleted", QJsonObject{
+        {"request_id", "replacement"}, {"outcome", QJsonObject{{"selected", QJsonObject{
+            {"bytes", QJsonArray{114, 97, 119}}, {"filename", "async.data"}}}}}}}};
+    assert(events == QList<QJsonValue>{replacement});
 }
