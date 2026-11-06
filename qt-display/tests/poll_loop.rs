@@ -5,7 +5,7 @@ use std::{cell::Cell, rc::Rc};
 
 // @internal — host callbacks may own thread-local engine and hardware state.
 fn main() {
-    assert_eq!(qt_display::render("[]"), Err(()));
+    assert_eq!(qt_display::render("[]"), Err(qt_display::RenderError));
     let polled = Rc::new(Cell::new(0));
     let observed = Rc::new(Cell::new(false));
     let events = observed.clone();
@@ -35,8 +35,8 @@ fn main() {
     );
     assert_eq!(result, 0);
     assert_eq!(polled.get(), 2);
-    assert_eq!(observed.get(), true);
+    assert!(observed.get());
     assert_eq!(Rc::strong_count(&polled), 1);
     assert_eq!(Rc::strong_count(&observed), 1);
-    assert_eq!(qt_display::render("[]"), Err(()));
+    assert_eq!(qt_display::render("[]"), Err(qt_display::RenderError));
 }

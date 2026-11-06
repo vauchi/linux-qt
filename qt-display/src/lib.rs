@@ -88,16 +88,28 @@ fn run_callbacks(args: &[String], on_event: EventSink, on_poll: Option<PollSink>
     }
 }
 
+/// The shell rejected a batch or was not running.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct RenderError;
+
+impl std::fmt::Display for RenderError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str("Qt display rejected the command batch")
+    }
+}
+
+impl std::error::Error for RenderError {}
+
 /// Renders a JSON array of contract `Command`s on the GUI thread.
 /// Fails while no shell runs or when the text is not a JSON array.
-pub fn render(commands_json: &str) -> Result<(), ()> {
-    let c = CString::new(commands_json).map_err(|_| ())?;
+pub fn render(commands_json: &str) -> Result<(), RenderError> {
+    let c = CString::new(commands_json).map_err(|_| RenderError)?;
     // SAFETY: the bytes are valid for the call; the shell copies them.
     let rc = unsafe { ffi::qt_display_render(c.as_ptr(), commands_json.len()) };
     if rc == 0 {
         Ok(())
     } else {
-        Err(())
+        Err(RenderError)
     }
 }
 
