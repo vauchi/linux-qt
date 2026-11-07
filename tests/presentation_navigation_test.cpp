@@ -159,6 +159,27 @@ void testSidebarActivationEmitsInteractionId() {
     assert(activated == QStringLiteral("nav.contacts"));
 }
 
+void testSidebarRowsFillTheSameWidthAfterResize() {
+    NavigationSidebar sidebar(QJsonObject{
+        {"items", QJsonArray{
+             navigationItem("nav.cards", "Cards", "folder", true, 0),
+             navigationItem("nav.contacts", "Contacts", "person.2", false, 23),
+             navigationItem("nav.settings", "Settings", "gear", false, 0),
+         }}});
+    sidebar.show();
+    const auto rows = sidebar.findChildren<QToolButton *>(
+        QStringLiteral("navigation-sidebar-row"));
+    assert(rows.size() == 3);
+    for (const int width : {240, 340}) {
+        sidebar.resize(width, 480);
+        QApplication::processEvents();
+        for (const auto *row : rows) {
+            assert(row->geometry().left() == 0);
+            assert(row->width() == sidebar.width());
+        }
+    }
+}
+
 void testSidebarEmptyItemsYieldNoRows() {
     NavigationSidebar sidebar(QJsonObject{{"items", QJsonArray{}}});
     assert(sidebar
@@ -181,6 +202,7 @@ int main(int argc, char **argv) {
     testSelectedNavigationRowFindsIndex();
     testSidebarBuildsOneRowPerItemWithIconLabelAndAccessibleName();
     testSidebarActivationEmitsInteractionId();
+    testSidebarRowsFillTheSameWidthAfterResize();
     testSidebarEmptyItemsYieldNoRows();
     return 0;
 }

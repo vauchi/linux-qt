@@ -53,6 +53,7 @@ NavigationSidebar::NavigationSidebar(const QJsonObject &navigation,
         // every row, and Qt applies an id-selector rule to every widget
         // carrying that objectName.
         button->setObjectName(QStringLiteral("navigation-sidebar-row"));
+        button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
         button->setIcon(vauchi::navigationIcon(row.iconToken));
         button->setText(row.badgeCount > 0
