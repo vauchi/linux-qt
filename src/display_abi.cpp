@@ -44,6 +44,7 @@ extern "C" int qt_display_start_with_poll(int argc, char **argv,
     g_host = &host;
     host.show();
     g_running = true;
+    host.reportEnvironment();
     host.reportCapabilities();
     QTimer pollTimer;
     if (on_poll) {

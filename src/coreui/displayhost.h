@@ -22,9 +22,11 @@ public:
     QtDisplayHost(QtDisplayEventCallback onEvent, void *userData);
     void render(const QJsonArray &commands);
     void reportCapabilities();
+    void reportEnvironment();
 
 protected:
     void keyPressEvent(QKeyEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
 
 private:
     void renderPresentation();
@@ -50,6 +52,7 @@ private:
 
     QtDisplayEventCallback m_onEvent;
     void *m_userData;
+    bool m_environmentReported = false;
     PresentationState m_state;
     QSplitter *m_row;
     QSplitter *m_panes;

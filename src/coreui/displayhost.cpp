@@ -10,6 +10,7 @@
 #include <QCoreApplication>
 #include <QJsonArray>
 #include <QJsonDocument>
+#include <QResizeEvent>
 #include <QSplitter>
 #include <algorithm>
 
@@ -104,6 +105,20 @@ void QtDisplayHost::render(const QJsonArray &commands) {
 void QtDisplayHost::reportCapabilities() {
     emitEvent({{"ApplicationMenuAvailabilityChanged", QJsonObject{{"available", true}}}});
     emitEvent({{"FilePickerCapabilitiesChanged", QJsonObject{{"correlated_results", true}}}});
+}
+
+void QtDisplayHost::reportEnvironment() {
+    m_environmentReported = true;
+    emitEvent({{"PresentationEnvironmentChanged", QJsonObject{
+        {"available_width", qMax(0, width())},
+        {"available_height", qMax(0, height())},
+        {"input_modes", QJsonArray{"pointer", "keyboard"}},
+        {"motion", qEnvironmentVariableIsSet("QT_REDUCE_MOTION") ? "reduced" : "full"}}}});
+}
+
+void QtDisplayHost::resizeEvent(QResizeEvent *event) {
+    QMainWindow::resizeEvent(event);
+    if (m_environmentReported) reportEnvironment();
 }
 
 void QtDisplayHost::applyApplicationMenu(const QJsonObject &payload) {

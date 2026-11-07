@@ -83,6 +83,16 @@ if(Qt6DBus_FOUND AND VAUCHI_PERMISSION_PORTAL)
 endif()
 
 enable_testing()
+
+add_executable(display_environment_test tests/display_environment_test.cpp)
+target_link_libraries(display_environment_test PRIVATE qt_display)
+target_compile_options(display_environment_test PRIVATE -UNDEBUG)
+add_test(NAME display_environment COMMAND display_environment_test)
+add_test(NAME display_environment_reduced_motion COMMAND display_environment_test)
+set_tests_properties(display_environment PROPERTIES TIMEOUT 30
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+set_tests_properties(display_environment_reduced_motion PROPERTIES TIMEOUT 30
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_REDUCE_MOTION=1")
 add_executable(display_copy_test tests/display_copy_test.cpp)
 target_link_libraries(display_copy_test PRIVATE qt_display)
 target_compile_options(display_copy_test PRIVATE -UNDEBUG)

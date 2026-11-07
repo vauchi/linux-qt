@@ -26,6 +26,7 @@ inline QList<Step> steps;
 inline QJsonArray events;
 inline QJsonArray capabilities;
 inline QJsonArray filePickerCapabilities;
+inline QJsonArray environments;
 inline bool stopAfterLastStep = true;
 
 inline QJsonObject action(const QString &id, const QString &label) {
@@ -78,6 +79,7 @@ inline void receive(const char *json, void *context) {
     const auto value = QJsonDocument::fromJson(json).object();
     if (value.contains("ApplicationMenuAvailabilityChanged")) capabilities.append(value);
     else if (value.contains("FilePickerCapabilitiesChanged")) filePickerCapabilities.append(value);
+    else if (value.contains("PresentationEnvironmentChanged")) environments.append(value);
     else events.append(value);
 }
 
