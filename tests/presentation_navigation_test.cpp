@@ -180,6 +180,23 @@ void testSidebarRowsFillTheSameWidthAfterResize() {
     }
 }
 
+void testSidebarRowsHaveComfortableTargetsAndGrowWithText() {
+    NavigationSidebar sidebar(QJsonObject{
+        {"items", QJsonArray{
+             navigationItem("nav.contacts", "Contacts", "person.2", true, 0),
+         }}});
+    const auto row = sidebar.findChildren<QToolButton *>(
+        QStringLiteral("navigation-sidebar-row")).first();
+    sidebar.show();
+    QApplication::processEvents();
+    assert(row->height() >= 48);
+    QFont large = row->font();
+    large.setPointSizeF(40);
+    row->setFont(large);
+    QApplication::processEvents();
+    assert(row->height() >= row->fontMetrics().height());
+}
+
 void testSidebarEmptyItemsYieldNoRows() {
     NavigationSidebar sidebar(QJsonObject{{"items", QJsonArray{}}});
     assert(sidebar
@@ -203,6 +220,7 @@ int main(int argc, char **argv) {
     testSidebarBuildsOneRowPerItemWithIconLabelAndAccessibleName();
     testSidebarActivationEmitsInteractionId();
     testSidebarRowsFillTheSameWidthAfterResize();
+    testSidebarRowsHaveComfortableTargetsAndGrowWithText();
     testSidebarEmptyItemsYieldNoRows();
     return 0;
 }

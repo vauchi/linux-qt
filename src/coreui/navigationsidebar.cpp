@@ -54,6 +54,8 @@ NavigationSidebar::NavigationSidebar(const QJsonObject &navigation,
         // carrying that objectName.
         button->setObjectName(QStringLiteral("navigation-sidebar-row"));
         button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        button->setMinimumHeight(48);
+        button->setIconSize(QSize(24, 24));
         button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
         button->setIcon(vauchi::navigationIcon(row.iconToken));
         button->setText(row.badgeCount > 0

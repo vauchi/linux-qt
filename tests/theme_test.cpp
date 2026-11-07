@@ -351,6 +351,20 @@ static void test_ui_font_is_pinned_proportional() {
     printf("  PASS: ui_font_is_pinned_proportional\n");
 }
 
+static void test_ui_font_readable_minimum_preserves_larger_desktop_text() {
+    const QFont original = QApplication::font();
+    for (const auto size : {9.0, 14.0, 20.0}) {
+        QFont desktopFont = original;
+        desktopFont.setPointSizeF(size);
+        QApplication::setFont(desktopFont);
+        const QFont font = ThemeManager::uiFont();
+        assert(font.pointSizeF() == qMax(14.0, size));
+        QApplication::setFont(font);
+        assert(ThemeManager::uiFont().pointSizeF() == font.pointSizeF());
+    }
+    QApplication::setFont(original);
+}
+
 // --- Test: registerBrandFonts() makes the three brand families available ---
 static void test_register_brand_fonts_adds_families() {
     bool ok = ThemeManager::registerBrandFonts();
@@ -394,6 +408,7 @@ int main(int argc, char *argv[]) {
     printf("ThemeManager tests:\n");
     test_register_brand_fonts_adds_families();
     test_ui_font_is_pinned_proportional();
+    test_ui_font_readable_minimum_preserves_larger_desktop_text();
     test_stylesheet_pins_heading_and_mono_families();
     test_default_colors();
     test_default_light_colors();

@@ -45,17 +45,9 @@ public:
     /// registered successfully.
     static bool registerBrandFonts();
 
-    /// The pinned UI font — brand family "Hanken Grotesk" once
-    /// registerBrandFonts() has run, falling back to the previous system
-    /// family ("DejaVu Sans", a hard transitive dependency of every Linux
-    /// desktop) if registration failed. qvauchi sets no `font-family` in
-    /// its component stylesheets, so without this every label would
-    /// inherit Qt's default application font — which on a developer host
-    /// can resolve to a monospace coding font (e.g. FiraCode Nerd Font),
-    /// reflowing all text and breaking the snapshot pixel gate. Pinning an
-    /// explicit proportional family (with a sans-serif fallback hint)
-    /// makes rendering deterministic across machines. Applied once at
-    /// startup via QApplication::setFont().
+    /// Brand body family with DejaVu Sans fallback. Keeps the current Qt
+    /// application font size when larger than the readable 14-point minimum.
+    /// Applied at startup via QApplication::setFont().
     static QFont uiFont();
 
     /// A `font-family: "…"; ` CSS declaration for the pinned UI font.

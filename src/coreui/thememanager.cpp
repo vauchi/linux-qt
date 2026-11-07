@@ -6,6 +6,7 @@
 #include <QApplication>
 #include <QFile>
 #include <QFontDatabase>
+#include <QFontInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QStyleFactory>
@@ -52,7 +53,11 @@ QFont ThemeManager::uiFont() {
     const QString family = registerBrandFonts()
         ? QString::fromUtf8(Tokens::FontFamily::BODY)
         : QStringLiteral("DejaVu Sans");
-    QFont font(family);
+    QFont font = QApplication::font();
+    const qreal pointSize = font.pointSizeF() > 0
+        ? font.pointSizeF() : QFontInfo(font).pointSizeF();
+    font.setFamily(family);
+    font.setPointSizeF(qMax(14.0, pointSize));
     font.setStyleHint(QFont::SansSerif);
     return font;
 }
@@ -187,6 +192,7 @@ QString ThemeManager::stylesheetFromColors(const QJsonObject &colors,
         "QPushButton:focus, QToolButton:focus, QCheckBox:focus { "
         " outline: %11px solid %10; outline-offset: %12px; }"
         "QLineEdit:focus { border: %11px solid %10; }"
+        "QToolButton#navigation-sidebar-row { padding: 8px 12px; }"
         "QToolButton#navigation-sidebar-row:checked { background-color: %6; color: %9; }")
         .arg(background, text, input, colors.value("border").toString(), tertiary,
              accent, colors.value("error").toString(), colors.value("warning").toString(), onAccent)
