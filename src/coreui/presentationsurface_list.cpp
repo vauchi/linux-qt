@@ -14,6 +14,53 @@
 #include <QVBoxLayout>
 #include <QWidgetAction>
 
+namespace {
+
+class RowAction : public QToolButton {
+public:
+    RowAction(QWidget *content, bool hasMenu) {
+        auto *box = new QHBoxLayout(this);
+        const int trailing = hasMenu ? style()->pixelMetric(QStyle::PM_MenuButtonIndicator) : 0;
+        box->setContentsMargins(8, 8, 8 + trailing, 8);
+        box->addWidget(content);
+        content->setAttribute(Qt::WA_TransparentForMouseEvents);
+        setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    }
+
+    QSize sizeHint() const override { return layout()->totalSizeHint(); }
+    QSize minimumSizeHint() const override { return layout()->totalMinimumSize(); }
+    bool hasHeightForWidth() const override { return true; }
+    int heightForWidth(int width) const override { return layout()->totalHeightForWidth(width); }
+};
+
+QWidget *rowCopy(const QJsonObject &row) {
+    auto *content = new QWidget;
+    auto *box = new QHBoxLayout(content);
+    box->setContentsMargins(0, 0, 0, 0);
+    const auto pictogram = vauchi::contentPictogram(row.value("icon_token").toString());
+    if (!pictogram.isNull()) {
+        auto *icon = new QLabel;
+        icon->setPixmap(pictogram.pixmap(vauchi::kPictogramSize, vauchi::kPictogramSize));
+        box->addWidget(icon);
+    }
+    auto *copy = new QVBoxLayout;
+    copy->setSpacing(2);
+    for (const char *key : {"title", "subtitle", "detail"}) {
+        const auto text = row.value(QLatin1String(key)).toString();
+        if (text.isEmpty()) continue;
+        auto *label = new QLabel(text);
+        label->setTextFormat(Qt::PlainText);
+        label->setWordWrap(true);
+        label->setAlignment(Qt::AlignLeading | Qt::AlignVCenter);
+        if (QLatin1String(key) != QLatin1String("title")) label->setProperty("tone", "muted");
+        copy->addWidget(label);
+    }
+    box->addLayout(copy, 1);
+    return content;
+}
+
+}
+
 QWidget *PresentationSurface::renderList(const QJsonObject &payload) {
     auto *group =
         new QGroupBox(payload.value(QStringLiteral("label")).toString());
@@ -21,38 +68,24 @@ QWidget *PresentationSurface::renderList(const QJsonObject &payload) {
     for (const auto &rowValue :
          payload.value(QStringLiteral("rows")).toArray()) {
         const QJsonObject row = rowValue.toObject();
-        auto *button = new QToolButton;
-        QString text = row.value(QStringLiteral("title")).toString();
-        const QString subtitle =
-            row.value(QStringLiteral("subtitle")).toString();
-        if (!subtitle.isEmpty()) {
-            text += QStringLiteral("\n") + subtitle;
-        }
-        button->setText(text);
-        const QIcon pictogram = vauchi::contentPictogram(
-            row.value(QStringLiteral("icon_token")).toString());
-        if (pictogram.isNull()) {
-            button->setToolButtonStyle(Qt::ToolButtonTextOnly);
-        } else {
-            button->setIcon(pictogram);
-            button->setIconSize(
-                QSize(vauchi::kPictogramSize, vauchi::kPictogramSize));
-            button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-        }
-        button->setEnabled(row.value(QStringLiteral("enabled")).toBool(true));
-        button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-        button->setMinimumHeight(m_minimumTargetSize);
-        button->setStyleSheet(targetSizeStyleSheet());
         const QJsonObject activation =
             row.value(QStringLiteral("activation")).toObject();
+        const QJsonArray secondary = row.value(QStringLiteral("secondary_actions")).toArray();
+        auto *copy = rowCopy(row);
+        QToolButton *button = nullptr;
+        if (!activation.isEmpty() || !secondary.isEmpty()) {
+            button = new RowAction(copy, !secondary.isEmpty());
+            button->setEnabled(row.value(QStringLiteral("enabled")).toBool(true));
+            button->setMinimumHeight(m_minimumTargetSize);
+            button->setStyleSheet(targetSizeStyleSheet());
+            applyAccessibility(button, row.value(QStringLiteral("accessibility")).toObject());
+        }
         if (!activation.isEmpty()) {
             button->setObjectName(
                 activation.value(QStringLiteral("interaction_id")).toString());
             connect(button, &QToolButton::clicked, this,
                     [this, activation]() { activate(activation); });
         }
-        const QJsonArray secondary =
-            row.value(QStringLiteral("secondary_actions")).toArray();
         if (!secondary.isEmpty()) {
             auto *menu = new QMenu(button);
             for (const auto &actionValue : secondary) {
@@ -88,11 +121,11 @@ QWidget *PresentationSurface::renderList(const QJsonObject &payload) {
             button->setMenu(menu);
             button->setPopupMode(QToolButton::MenuButtonPopup);
         }
-        applyAccessibility(
-            button, row.value(QStringLiteral("accessibility")).toObject());
-
         auto *rowWidget = new QWidget;
-        auto *rowLayout = new QHBoxLayout(rowWidget);
+        auto *rowContents = new QVBoxLayout(rowWidget);
+        rowContents->setContentsMargins(0, 0, 0, 0);
+        auto *line = new QWidget;
+        auto *rowLayout = new QHBoxLayout(line);
         rowLayout->setContentsMargins(0, 0, 0, 0);
         const QJsonArray avatar =
             row.value(QStringLiteral("image_data")).toArray();
@@ -114,13 +147,7 @@ QWidget *PresentationSurface::renderList(const QJsonObject &payload) {
         } else if (!initials.isEmpty()) {
             rowLayout->addWidget(new QLabel(initials));
         }
-        rowLayout->addWidget(button, 1);
-        const QString detail = row.value(QStringLiteral("detail")).toString();
-        if (!detail.isEmpty()) {
-            auto *detailLabel = new QLabel(detail);
-            detailLabel->setProperty("tone", "muted");
-            rowLayout->addWidget(detailLabel);
-        }
+        rowLayout->addWidget(button ? static_cast<QWidget *>(button) : copy, 1);
         // Explains this one item (vauchi/private#479); Core names it
         // "About <item>" so a screen reader says what the icon is for.
         const QJsonObject info = row.value(QStringLiteral("info")).toObject();
@@ -150,11 +177,14 @@ QWidget *PresentationSurface::renderList(const QJsonObject &payload) {
             applyAccessibility(
                 rowWidget, row.value(QStringLiteral("accessibility")).toObject());
         }
-        layout->addWidget(rowWidget);
-        for (const auto &control :
-             row.value(QStringLiteral("controls")).toArray()) {
-            layout->addWidget(renderNode(control));
+        const auto controls = row.value(QStringLiteral("controls")).toArray();
+        const bool inlineToggle = controls.size() == 1 && controls.first().toObject().contains("Toggle");
+        if (inlineToggle) rowLayout->addWidget(renderNode(controls.first()), 0, Qt::AlignVCenter);
+        rowContents->addWidget(line);
+        if (!inlineToggle) {
+            for (const auto &control : controls) rowContents->addWidget(renderNode(control));
         }
+        layout->addWidget(rowWidget);
     }
     applyAccessibility(
         group, payload.value(QStringLiteral("accessibility")).toObject());
