@@ -21,6 +21,11 @@
 
 #include <atomic>
 
+// rcc's initializer has C++ linkage, so it cannot be declared in the C ABI body.
+static void initializeBundledResources() {
+    Q_INIT_RESOURCE(resources);
+}
+
 namespace {
 
 QPointer<QtDisplayHost> g_host;
@@ -37,6 +42,7 @@ extern "C" int qt_display_start_with_poll(int argc, char **argv,
                                           QtDisplayEventCallback on_event,
                                           QtDisplayPollCallback on_poll, void *user_data) {
     QApplication app(argc, argv);
+    initializeBundledResources();
     ThemeManager::registerBrandFonts();
     app.setFont(ThemeManager::uiFont());
     ThemeManager::applyDefaultTheme();

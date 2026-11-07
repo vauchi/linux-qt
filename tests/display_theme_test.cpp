@@ -3,11 +3,15 @@
 
 #include "display_test_harness.h"
 #include <QColor>
+#include <QFontDatabase>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPalette>
 #include <QPointer>
 #include <QPushButton>
+#include <QStyle>
+#include <QToolButton>
+#include <QTemporaryDir>
 
 using namespace display_test;
 namespace {
@@ -225,6 +229,35 @@ QList<Step> activeTheme() {
     }}};
 }
 
+QList<Step> bundledNavigation() {
+    QJsonArray items;
+    int index = 0;
+    for (const char *token : {"person.2", "person.crop.rectangle", "qrcode", "laptopcomputer", "gearshape"}) {
+        const QString label = QString::number(index++);
+        items.append(QJsonObject{{"interaction_id", "nav." + label}, {"label", label},
+            {"icon_token", QString::fromLatin1(token)}, {"selected", false}});
+    }
+    return {{{themed(colors()), profile("first")}, [] {
+        static QTemporaryDir noIcons;
+        QIcon::setThemeSearchPaths({noIcons.path()});
+        QIcon::setFallbackSearchPaths({});
+        QIcon::setThemeName("vauchi-no-icons");
+        QIcon::setFallbackThemeName("vauchi-no-icons");
+    }}, {{scoped("SetNavigation", 1, "navigation", QJsonObject{{"items", items}})}, [] {
+        const auto rows = window()->findChildren<QToolButton *>("navigation-sidebar-row");
+        assert(rows.size() == 5);
+        const auto fallback = QApplication::style()->standardIcon(QStyle::SP_FileIcon).pixmap(24, 24).toImage();
+        QList<QImage> seen;
+        for (const auto *row : rows) {
+            const auto image = row->icon().pixmap(24, 24).toImage();
+            assert(!image.isNull() && image != fallback);
+            assert(!seen.contains(image));
+            seen.append(image);
+        }
+        assert(QFontDatabase::families().contains("Hanken Grotesk"));
+    }}};
+}
+
 void setup() { schedule(); }
 }
 Q_COREAPP_STARTUP_FUNCTION(setup)
@@ -233,6 +266,7 @@ int main(int argc, char **argv) {
     qunsetenv("QT_DISPLAY_SNAPSHOT");
     const QString name = argc > 1 ? QString::fromUtf8(argv[1]) : "appearance";
     if (name == "appearance") steps = appearance();
+    else if (name == "resources") steps = bundledNavigation();
     else if (name == "focus") steps = focusedUpdate();
     else if (name == "fallback") steps = fallback();
     else if (name == "reload") steps = reload();

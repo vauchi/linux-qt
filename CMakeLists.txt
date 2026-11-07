@@ -66,6 +66,7 @@ set(QT_DISPLAY_SOURCES
     src/coreui/thememanager.cpp
     src/coreui/thememanager_prepared.cpp
     src/coreui/navigationicons.cpp
+    resources/resources.qrc
 )
 set(VAUCHI_TOKENS_INCLUDE "${CMAKE_SOURCE_DIR}/../themes/generated" CACHE PATH "Path to generated design tokens")
 add_library(qt_display STATIC ${QT_DISPLAY_SOURCES})
@@ -223,7 +224,7 @@ set_tests_properties(display_approved_effects_invocation PROPERTIES TIMEOUT 30
 add_executable(display_theme_test tests/display_theme_test.cpp)
 target_link_libraries(display_theme_test PRIVATE qt_display)
 target_compile_options(display_theme_test PRIVATE -UNDEBUG)
-foreach(case appearance focus fallback reload invalid unsafe_font tones reset unicode_font active)
+foreach(case appearance focus fallback reload invalid unsafe_font tones reset unicode_font active resources)
     add_test(NAME display_theme_${case} COMMAND display_theme_test ${case})
     set_tests_properties(display_theme_${case} PROPERTIES TIMEOUT 30
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
