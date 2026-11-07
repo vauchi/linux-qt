@@ -102,6 +102,7 @@ PresentationSurface::PresentationSurface(const QJsonObject &surface,
 
     auto *content = new QWidget;
     auto *contentLayout = new QVBoxLayout(content);
+    contentLayout->setContentsMargins(0, 0, 0, 0);
     m_contentLayout = contentLayout;
     for (const auto &value : surface.value(QStringLiteral("nodes")).toArray()) {
         QWidget *widget = renderNode(value);

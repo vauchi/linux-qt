@@ -89,7 +89,7 @@ add_executable(display_list_layout_test tests/display_list_layout_test.cpp)
 target_include_directories(display_list_layout_test PRIVATE src)
 target_link_libraries(display_list_layout_test PRIVATE qt_display)
 target_compile_options(display_list_layout_test PRIVATE -UNDEBUG)
-foreach(case inline reflow large_text events disabled detail checkbox)
+foreach(case inline reflow large_text events disabled detail checkbox density)
     add_test(NAME display_list_${case} COMMAND display_list_layout_test ${case})
     set_tests_properties(display_list_${case} PROPERTIES TIMEOUT 30
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen")

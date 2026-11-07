@@ -6,6 +6,7 @@
 #include <QApplication>
 #include <QAccessible>
 #include <QCheckBox>
+#include <QGroupBox>
 #include <QJsonArray>
 #include <QScrollArea>
 #include <QScrollBar>
@@ -118,6 +119,28 @@ void visibleCheckbox() {
     }
 }
 
+void compactRowsKeepTargetsAndReadableDetails() {
+    auto prepared = preparedSurface();
+    auto list = prepared.value("nodes").toArray().first().toObject().value("List").toObject();
+    auto row = list.value("rows").toArray().first().toObject();
+    row.insert("subtitle", "");
+    QJsonArray rows;
+    for (int index = 0; index < 4; ++index) rows.append(row);
+    list.insert("rows", rows);
+    prepared.insert("nodes", QJsonArray{QJsonObject{{"List", list}}});
+    PresentationSurface surface(prepared);
+    settle(surface, 600);
+    const auto scroll = surface.findChild<QScrollArea *>();
+    const auto group = surface.findChild<QGroupBox *>();
+    assert(group->mapTo(scroll->widget(), QPoint{}).x() == 0);
+    const auto actions = surface.findChildren<QToolButton *>("activate-row");
+    assert(actions.size() == 4);
+    for (const auto action : actions) assert(action->height() >= 48);
+    const auto firstBottom = actions[0]->mapToGlobal(QPoint(0, actions[0]->height())).y();
+    const auto nextTop = actions[1]->mapToGlobal(QPoint{}).y();
+    assert(nextTop - firstBottom <= surface.fontMetrics().height() + 4);
+}
+
 bool accessibleText(QAccessibleInterface *node, const QString &text) {
     if (node->text(QAccessible::Name) == text) return true;
     for (int index = 0; index < node->childCount(); ++index) {
@@ -150,6 +173,7 @@ int main(int argc, char **argv) {
     } else if (test == "events") events();
     else if (test == "disabled") disabledControl();
     else if (test == "checkbox") visibleCheckbox();
+    else if (test == "density") compactRowsKeepTargetsAndReadableDetails();
     else if (test == "detail") rowDetail();
     else return 2;
 }

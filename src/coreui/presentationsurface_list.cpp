@@ -21,7 +21,7 @@ public:
     RowAction(QWidget *content, bool hasMenu) {
         auto *box = new QHBoxLayout(this);
         const int trailing = hasMenu ? style()->pixelMetric(QStyle::PM_MenuButtonIndicator) : 0;
-        box->setContentsMargins(8, 8, 8 + trailing, 8);
+        box->setContentsMargins(8, 4, 8 + trailing, 4);
         box->addWidget(content);
         content->setAttribute(Qt::WA_TransparentForMouseEvents);
         setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
@@ -65,6 +65,7 @@ QWidget *PresentationSurface::renderList(const QJsonObject &payload) {
     auto *group =
         new QGroupBox(payload.value(QStringLiteral("label")).toString());
     auto *layout = new QVBoxLayout(group);
+    layout->setSpacing(4);
     for (const auto &rowValue :
          payload.value(QStringLiteral("rows")).toArray()) {
         const QJsonObject row = rowValue.toObject();
@@ -124,6 +125,7 @@ QWidget *PresentationSurface::renderList(const QJsonObject &payload) {
         auto *rowWidget = new QWidget;
         auto *rowContents = new QVBoxLayout(rowWidget);
         rowContents->setContentsMargins(0, 0, 0, 0);
+        rowContents->setSpacing(4);
         auto *line = new QWidget;
         auto *rowLayout = new QHBoxLayout(line);
         rowLayout->setContentsMargins(0, 0, 0, 0);
