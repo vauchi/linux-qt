@@ -135,19 +135,20 @@ def compare_images(baseline_path: str, actual_path: str, diff_path: str) -> floa
 
 
 def check_against_baseline(filename: str, actual_path: str) -> str | None:
-    """Compare a capture with its baseline; create the baseline when absent.
+    """Compare against a reference; generate candidates only on explicit request.
 
-    Baselines are optional: a missing one is recorded from the capture
-    (as is every one when ``UPDATE_SNAPSHOTS=1``) and never fails. Returns
-    a failure message when an existing baseline diverges beyond
-    ``DIFF_THRESHOLD``, else ``None``.
+    Missing references report that no comparison took place. Candidate
+    generation with ``UPDATE_SNAPSHOTS=1`` is separate from design approval.
     """
     baseline_path = os.path.join(BASELINE_DIR, filename)
     updating = os.environ.get("UPDATE_SNAPSHOTS", "") == "1"
-    if updating or not os.path.exists(baseline_path):
+    if updating:
         os.makedirs(BASELINE_DIR, exist_ok=True)
         shutil.copy2(actual_path, baseline_path)
         return None
+
+    if not os.path.exists(baseline_path):
+        return f"Missing baseline for '{filename}'; visual comparison not performed."
 
     diff_path = os.path.join(DIFF_DIR, filename)
     diff_ratio = compare_images(baseline_path, actual_path, diff_path)

@@ -201,6 +201,22 @@ coverage:unit:
     - source .venv/bin/activate
     - uv pip install --quiet -r tests/atspi/requirements.txt
 
+test:snapshot-oracle:
+  stage: lint
+  needs: []
+  tags: [linux]
+  script:
+    - python3 tests/atspi/test_screenshot_oracle.py -v
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        compare_to: refs/heads/$CI_DEFAULT_BRANCH
+        paths:
+          - "tests/atspi/screenshot.py"
+          - "tests/atspi/test_screenshot_oracle.py"
+          - ".gitlab-ci.yml"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
 test:a11y:
   extends: .atspi-base
   script:
@@ -217,11 +233,12 @@ test:a11y:
 
 # Screenshot artifacts of every navigation destination and each onboarding
 # step, captured under Xvfb (mirrors linux-gtk's test:snapshots). Baselines
-# under tests/atspi/snapshots/baseline/ are optional: a missing baseline is
-# recorded, never failed on. Stays `allow_failure: true` until the captured
+# under tests/atspi/snapshots/baseline/ require explicit candidate generation;
+# missing references report that no comparison took place. The job stays
+# `allow_failure: true` until references are reviewed and the captured
 # set is deterministic (Contacts / My Card render the per-run random test
 # identity), so the job surfaces screenshots without blocking merges.
-# To regenerate: UPDATE_SNAPSHOTS=1 tests/atspi/run-tests.sh -k test_snapshots
+# Generate candidates: UPDATE_SNAPSHOTS=1 tests/atspi/run-tests.sh -k test_snapshots
 test:snapshots:
   extends: .atspi-base
   allow_failure: true
