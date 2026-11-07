@@ -3,6 +3,7 @@
 
 #include "coreui/presentationsurface.h"
 #include <QApplication>
+#include <QAccessible>
 #include <QCheckBox>
 #include <QJsonArray>
 #include <QScrollArea>
@@ -22,7 +23,7 @@ QJsonObject preparedSurface(bool enabled = true) {
     const auto row = QJsonObject{{"title", "Contact update alerts"},
         {"subtitle", "Show a notice when a friend edits a shared card. You can change this at any time. "
                      "This longer line must wrap when the window is narrow or the text is large."},
-        {"activation", action}, {"enabled", true}, {"controls", QJsonArray{toggle}},
+        {"detail", "Extra row detail"}, {"activation", action}, {"enabled", true}, {"controls", QJsonArray{toggle}},
         {"accessibility", QJsonObject{{"label", "Contact update alerts"}}}};
     return {{"surface_id", "layout-test"}, {"revision", 1}, {"title", "Preferences"},
         {"layout", "scroll"}, {"tokens", QJsonObject{{"minimum_target_size", 48}}},
@@ -87,6 +88,23 @@ void disabledControl() {
     control->click();
     assert(!control->isChecked());
 }
+
+bool accessibleText(QAccessibleInterface *node, const QString &text) {
+    if (node->text(QAccessible::Name) == text) return true;
+    for (int index = 0; index < node->childCount(); ++index) {
+        auto *child = node->child(index);
+        if (child && accessibleText(child, text)) return true;
+    }
+    return false;
+}
+
+// @internal — native buttons hide their descendants from the a11y tree (#1109).
+void rowDetail() {
+    PresentationSurface surface(preparedSurface());
+    settle(surface, 600);
+    auto *accessible = QAccessible::queryAccessibleInterface(&surface);
+    assert(accessible && accessibleText(accessible, "Extra row detail"));
+}
 }
 
 int main(int argc, char **argv) {
@@ -102,5 +120,6 @@ int main(int argc, char **argv) {
         reflow();
     } else if (test == "events") events();
     else if (test == "disabled") disabledControl();
+    else if (test == "detail") rowDetail();
     else return 2;
 }

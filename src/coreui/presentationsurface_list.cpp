@@ -45,7 +45,7 @@ QWidget *rowCopy(const QJsonObject &row) {
     }
     auto *copy = new QVBoxLayout;
     copy->setSpacing(2);
-    for (const char *key : {"title", "subtitle", "detail"}) {
+    for (const char *key : {"title", "subtitle"}) {
         const auto text = row.value(QLatin1String(key)).toString();
         if (text.isEmpty()) continue;
         auto *label = new QLabel(text);
@@ -147,7 +147,23 @@ QWidget *PresentationSurface::renderList(const QJsonObject &payload) {
         } else if (!initials.isEmpty()) {
             rowLayout->addWidget(new QLabel(initials));
         }
-        rowLayout->addWidget(button ? static_cast<QWidget *>(button) : copy, 1);
+        auto *textColumn = new QWidget;
+        auto *textLayout = new QVBoxLayout(textColumn);
+        textLayout->setContentsMargins(0, 0, 0, 0);
+        textLayout->setSpacing(0);
+        textLayout->addWidget(button ? static_cast<QWidget *>(button) : copy);
+        const auto detail = row.value(QStringLiteral("detail")).toString();
+        if (!detail.isEmpty()) {
+            // Native buttons hide descendants, so detail stays separately readable (#1109).
+            auto *label = new QLabel(detail);
+            label->setTextFormat(Qt::PlainText);
+            label->setWordWrap(true);
+            label->setAlignment(Qt::AlignLeading | Qt::AlignVCenter);
+            label->setProperty("tone", "muted");
+            if (button) label->setContentsMargins(8, 0, 8, 0);
+            textLayout->addWidget(label);
+        }
+        rowLayout->addWidget(textColumn, 1);
         // Explains this one item (vauchi/private#479); Core names it
         // "About <item>" so a screen reader says what the icon is for.
         const QJsonObject info = row.value(QStringLiteral("info")).toObject();
