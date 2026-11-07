@@ -225,11 +225,12 @@ QIcon navigationIcon(const QString &token) {
         }
     }
     static const QHash<QString, QString> bundled{
-        {"person.2", "contacts"}, {"person.crop.rectangle", "card"},
-        {"qrcode", "exchange"}, {"laptopcomputer", "devices"}, {"gearshape", "settings"}};
+        {"person.2", ":/navigation/contacts.svg"}, {"person.crop.rectangle", ":/navigation/card.svg"},
+        {"qrcode", ":/navigation/exchange.svg"}, {"laptopcomputer", ":/navigation/devices.svg"},
+        {"gearshape", ":/navigation/settings.svg"}};
     const auto destination = bundled.value(token.trimmed());
     if (!destination.isEmpty()) {
-        const auto icon = pictogramIcon(QStringLiteral(":/navigation/%1.svg").arg(destination));
+        const auto icon = pictogramIcon(destination);
         if (!icon.isNull()) return icon;
     }
     for (const auto &name : fallbackNames()) {
