@@ -5,6 +5,11 @@
         <file>vauchi.svg</file>
     </qresource>
     <qresource prefix="/">
+        <file>navigation/contacts.svg</file>
+        <file>navigation/card.svg</file>
+        <file>navigation/exchange.svg</file>
+        <file>navigation/devices.svg</file>
+        <file>navigation/settings.svg</file>
         <file>pictograms/exchange/bump.svg</file>
         <file>pictograms/exchange/cable.svg</file>
         <file>pictograms/exchange/glance.svg</file>

@@ -10,6 +10,7 @@
 #include <QPalette>
 #include <QSet>
 #include <QString>
+#include <QTemporaryDir>
 #include <cassert>
 #include <cstdio>
 
@@ -35,6 +36,42 @@ static const char *const kCoreNavigationTokens[] = {
     "house",
     "list.bullet.rectangle",
 };
+
+static void test_main_destinations_remain_distinct_without_an_icon_theme() {
+    const auto oldPaths = QIcon::themeSearchPaths();
+    const auto oldFallbackPaths = QIcon::fallbackSearchPaths();
+    const auto oldTheme = QIcon::themeName();
+    const auto oldFallbackTheme = QIcon::fallbackThemeName();
+    QTemporaryDir emptyTheme;
+    QIcon::setThemeSearchPaths({emptyTheme.path()});
+    QIcon::setFallbackSearchPaths({});
+    QIcon::setThemeName("vauchi-empty-test-theme");
+    QIcon::setFallbackThemeName("vauchi-empty-test-theme");
+    QList<QImage> seen;
+    const auto fallback = vauchi::navigationIcon("unknown-token").pixmap(24, 24).toImage();
+    for (const char *token : {"person.2", "person.crop.rectangle", "qrcode", "laptopcomputer", "gearshape"}) {
+        const auto icon = vauchi::navigationIcon(QString::fromLatin1(token));
+        const auto image = icon.pixmap(24, 24).toImage();
+        assert(!image.isNull() && image != fallback);
+        assert(!seen.contains(image));
+        seen.append(image);
+        const auto selected = icon.pixmap(QSize(24, 24), QIcon::Normal, QIcon::On).toImage();
+        int colored = 0;
+        for (int y = 0; y < selected.height(); ++y)
+            for (int x = 0; x < selected.width(); ++x) {
+                const QColor pixel = selected.pixelColor(x, y);
+                if (pixel.alpha() == 255) {
+                    assert(pixel == QApplication::palette().color(QPalette::HighlightedText));
+                    ++colored;
+                }
+            }
+        assert(colored > 4);
+    }
+    QIcon::setThemeSearchPaths(oldPaths);
+    QIcon::setFallbackSearchPaths(oldFallbackPaths);
+    QIcon::setThemeName(oldTheme);
+    QIcon::setFallbackThemeName(oldFallbackTheme);
+}
 
 /// The exchange pictograms Core names as `pictogram.exchange.<name>`,
 /// mirroring `assets/pictograms/exchange/`. This copy exists so the bundle can
@@ -279,6 +316,7 @@ int main(int argc, char **argv) {
     test_missing_pictogram_falls_back();
     test_malformed_pictogram_tokens_fall_back();
     test_content_pictogram_only_for_bundled_pictograms();
+    test_main_destinations_remain_distinct_without_an_icon_theme();
     printf("ALL TESTS PASSED\n");
     return 0;
 }

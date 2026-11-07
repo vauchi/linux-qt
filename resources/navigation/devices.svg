@@ -1,0 +1,7 @@
+<!-- SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me> -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M13 17H2V4h17v3M7 17v4M3 21h9"/>
+  <rect x="15" y="9" width="7" height="12" rx="1.5"/>
+  <path d="M18 18h1"/>
+</svg>

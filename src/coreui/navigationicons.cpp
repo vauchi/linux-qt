@@ -148,7 +148,7 @@ public:
     }
 
     QPixmap pixmap(const QSize &size, QIcon::Mode mode,
-                   QIcon::State /*state*/) override {
+                   QIcon::State state) override {
         QImageReader reader(path_);
         reader.setScaledSize(reader.size().scaled(size, Qt::KeepAspectRatio));
         QImage image =
@@ -158,7 +158,8 @@ public:
         }
         QPainter painter(&image);
         painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
-        painter.fillRect(image.rect(), textColor(mode));
+        painter.fillRect(image.rect(), textColor(
+            state == QIcon::On && mode != QIcon::Disabled ? QIcon::Selected : mode));
         painter.end();
         return QPixmap::fromImage(image);
     }
@@ -215,7 +216,6 @@ QIcon contentPictogram(const QString &token) {
 
 QIcon navigationIcon(const QString &token) {
     QStringList candidates = navigationIconNames(token);
-    candidates.append(fallbackNames());
     for (const QString &name : std::as_const(candidates)) {
         QIcon icon = name.startsWith(QStringLiteral(":/"))
                          ? pictogramIcon(name)
@@ -223,6 +223,18 @@ QIcon navigationIcon(const QString &token) {
         if (!icon.isNull()) {
             return icon;
         }
+    }
+    static const QHash<QString, QString> bundled{
+        {"person.2", "contacts"}, {"person.crop.rectangle", "card"},
+        {"qrcode", "exchange"}, {"laptopcomputer", "devices"}, {"gearshape", "settings"}};
+    const auto destination = bundled.value(token.trimmed());
+    if (!destination.isEmpty()) {
+        const auto icon = pictogramIcon(QStringLiteral(":/navigation/%1.svg").arg(destination));
+        if (!icon.isNull()) return icon;
+    }
+    for (const auto &name : fallbackNames()) {
+        const auto icon = QIcon::fromTheme(name);
+        if (!icon.isNull()) return icon;
     }
     // No icon theme is installed at all — a minimal container, or a session
     // built without one. The style always has this, so the label keeps a
