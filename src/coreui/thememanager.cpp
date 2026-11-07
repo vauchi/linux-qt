@@ -181,6 +181,7 @@ QString ThemeManager::stylesheetFromColors(const QJsonObject &colors,
         "QMainWindow { background-color: %1; color: %2; }"
         "QLineEdit { border: 1px solid %4; background-color: %3; color: %2; }"
         "QLabel { color: %2; }"
+        "QCheckBox::indicator { width: 22px; height: 22px; }"
         "QPushButton { background-color: %5; color: %2; border: 1px solid %4; "
         " padding: 6px 16px; border-radius: 4px; }"
         "QPushButton:hover { background-color: %6; }"

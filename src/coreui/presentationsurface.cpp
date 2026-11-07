@@ -6,6 +6,7 @@
 
 #include "navigationicons.h"
 #include "presentationaccessibility.h"
+#include "presentationcheckbox.h"
 
 #include <QCheckBox>
 #include <QEvent>
@@ -210,7 +211,7 @@ QWidget *PresentationSurface::renderNode(const QJsonValue &nodeValue) {
     if (node.contains(QStringLiteral("Toggle"))) {
         const QJsonObject payload =
             node.value(QStringLiteral("Toggle")).toObject();
-        auto *toggle = new QCheckBox(
+        auto *toggle = new PresentationCheckBox(
             payload.value(QStringLiteral("label")).toString());
         toggle->setChecked(payload.value(QStringLiteral("value")).toBool());
         toggle->setEnabled(payload.value(QStringLiteral("enabled")).toBool(true));

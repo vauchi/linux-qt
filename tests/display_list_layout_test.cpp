@@ -2,12 +2,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "coreui/presentationsurface.h"
+#include "coreui/thememanager.h"
 #include <QApplication>
 #include <QAccessible>
 #include <QCheckBox>
 #include <QJsonArray>
 #include <QScrollArea>
 #include <QScrollBar>
+#include <QStyleOptionButton>
 #include <QToolButton>
 #include <cassert>
 
@@ -89,6 +91,33 @@ void disabledControl() {
     assert(!control->isChecked());
 }
 
+void visibleCheckbox() {
+    for (const bool light : {false, true}) {
+        if (light) ThemeManager::applyDefaultLightTheme();
+        else ThemeManager::applyDefaultTheme();
+        PresentationSurface surface(preparedSurface());
+        settle(surface, 600);
+        auto *control = surface.findChild<QCheckBox *>("updates");
+        QStyleOptionButton option;
+        option.initFrom(control);
+        const auto indicator = control->style()->subElementRect(
+            QStyle::SE_CheckBoxIndicator, &option, control);
+        assert(indicator.width() >= 22 && indicator.height() >= 22);
+        const auto unchecked = control->grab().toImage();
+        assert(unchecked.pixelColor(indicator.left() + 1, indicator.center().y())
+            == control->palette().color(QPalette::Text));
+        control->click();
+        const auto checked = control->grab().toImage();
+        int checkPixels = 0;
+        for (int y = indicator.top(); y <= indicator.bottom(); ++y)
+            for (int x = indicator.left(); x <= indicator.right(); ++x)
+                if (checked.pixelColor(x, y) == control->palette().color(QPalette::HighlightedText))
+                    ++checkPixels;
+        assert(checkPixels >= 8);
+        assert(control->isChecked());
+    }
+}
+
 bool accessibleText(QAccessibleInterface *node, const QString &text) {
     if (node->text(QAccessible::Name) == text) return true;
     for (int index = 0; index < node->childCount(); ++index) {
@@ -120,6 +149,7 @@ int main(int argc, char **argv) {
         reflow();
     } else if (test == "events") events();
     else if (test == "disabled") disabledControl();
+    else if (test == "checkbox") visibleCheckbox();
     else if (test == "detail") rowDetail();
     else return 2;
 }
