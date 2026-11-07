@@ -16,7 +16,7 @@ import gi
 gi.require_version("Atspi", "2.0")
 from gi.repository import Atspi  # noqa: E402
 
-from helpers import click_button, find_all, find_app, wait_for_element
+from helpers import click_button, find_all, find_app, invoke_action, wait_for_element
 
 # Core labels the context bar's navigation launcher "More" in the test
 # locale (see test_contextual_surface.py).
@@ -149,7 +149,7 @@ def navigate_to(pid: int, name) -> bool:
     row = sidebar_row(app, name)
     if row is not None:
         try:
-            if row.get_action_iface().do_action(0):
+            if invoke_action(row):
                 return True
         except Exception:
             pass

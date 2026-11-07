@@ -95,6 +95,21 @@ def find_one(
     return matches[0] if matches else None
 
 
+def invoke_action(widget) -> bool:
+    """Activate a native control without confusing selection with a press."""
+    action = widget.get_action_iface()
+    if action is None:
+        return False
+    names = {
+        action.get_action_name(index).casefold(): index
+        for index in range(action.get_n_actions())
+    }
+    for gesture in ("press", "click", "activate", "toggle"):
+        if gesture in names:
+            return action.do_action(names[gesture])
+    return False
+
+
 def click_button(
     root: Atspi.Accessible,
     name: str,
@@ -107,8 +122,7 @@ def click_button(
         buttons.extend(find_all(root, role="button", name=name))
         for button in reversed(buttons):
             try:
-                action = button.get_action_iface()
-                if action and action.do_action(0):
+                if invoke_action(button):
                     return True
             except Exception:
                 continue

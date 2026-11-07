@@ -207,6 +207,7 @@ test:snapshot-oracle:
   tags: [linux]
   script:
     - python3 tests/atspi/test_screenshot_oracle.py -v
+    - python3 tests/atspi/test_action_dispatch.py -v
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes:
@@ -214,6 +215,9 @@ test:snapshot-oracle:
         paths:
           - "tests/atspi/screenshot.py"
           - "tests/atspi/test_screenshot_oracle.py"
+          - "tests/atspi/test_action_dispatch.py"
+          - "tests/atspi/helpers.py"
+          - "tests/atspi/navigation.py"
           - ".gitlab-ci.yml"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
