@@ -58,6 +58,7 @@ set(QT_DISPLAY_SOURCES
     src/coreui/presentationstate.cpp
     src/coreui/presentationaccessibility.cpp
     src/coreui/presentationsurface.cpp
+    src/coreui/presentationsurface_list.cpp
     src/coreui/presentationsurface_avatar.cpp
     src/coreui/presentationsurface_nodes.cpp
     src/coreui/presentationsurface_update.cpp
@@ -257,6 +258,7 @@ set(QVAUCHI_SOURCES
     src/coreui/presentationeffectpayload.cpp
     src/coreui/presentationaccessibility.cpp
     src/coreui/presentationsurface.cpp
+    src/coreui/presentationsurface_list.cpp
     src/coreui/presentationsurface_avatar.cpp
     src/coreui/presentationsurface_nodes.cpp
     src/coreui/presentationsurface_update.cpp
@@ -369,6 +371,7 @@ add_executable(presentation_surface_test
     src/coreui/navigationicons.cpp
     src/coreui/presentationaccessibility.cpp
     src/coreui/presentationsurface.cpp
+    src/coreui/presentationsurface_list.cpp
     src/coreui/presentationsurface_avatar.cpp
     src/coreui/presentationsurface_nodes.cpp
     src/coreui/presentationsurface_update.cpp
@@ -386,6 +389,7 @@ add_executable(presentation_image_test
     src/coreui/navigationicons.cpp
     src/coreui/presentationaccessibility.cpp
     src/coreui/presentationsurface.cpp
+    src/coreui/presentationsurface_list.cpp
     src/coreui/presentationsurface_avatar.cpp
     src/coreui/presentationsurface_nodes.cpp
     src/coreui/presentationsurface_update.cpp
@@ -407,6 +411,7 @@ add_executable(presentation_qr_placement_test
     src/coreui/navigationicons.cpp
     src/coreui/presentationaccessibility.cpp
     src/coreui/presentationsurface.cpp
+    src/coreui/presentationsurface_list.cpp
     src/coreui/presentationsurface_avatar.cpp
     src/coreui/presentationsurface_nodes.cpp
     src/coreui/presentationsurface_update.cpp
@@ -429,6 +434,7 @@ set(PRESENTATION_CONTROLLER_TEST_SOURCES
     src/coreui/presentationstate.cpp
     src/coreui/presentationaccessibility.cpp
     src/coreui/presentationsurface.cpp
+    src/coreui/presentationsurface_list.cpp
     src/coreui/presentationsurface_avatar.cpp
     src/coreui/presentationsurface_nodes.cpp
     src/coreui/presentationsurface_update.cpp
@@ -588,6 +594,7 @@ add_executable(atspi_fixture_probe
     src/coreui/navigationicons.cpp
     src/coreui/presentationaccessibility.cpp
     src/coreui/presentationsurface.cpp
+    src/coreui/presentationsurface_list.cpp
     src/coreui/presentationsurface_avatar.cpp
     src/coreui/presentationsurface_nodes.cpp
     src/coreui/presentationsurface_update.cpp
