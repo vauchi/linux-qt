@@ -54,6 +54,11 @@ QWidget *rowCopy(const QJsonObject &row) {
         label->setTextFormat(Qt::PlainText);
         label->setWordWrap(true);
         label->setAlignment(Qt::AlignLeading | Qt::AlignVCenter);
+        if (QLatin1String(key) == QLatin1String("title")) {
+            auto font = label->font();
+            font.setBold(true);
+            label->setFont(font);
+        }
         if (QLatin1String(key) != QLatin1String("title")) label->setProperty("tone", "muted");
         copy->addWidget(label);
     }

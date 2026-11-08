@@ -8,12 +8,14 @@
 #include <QCheckBox>
 #include <QGroupBox>
 #include <QJsonArray>
+#include <QLabel>
 #include <QPushButton>
 #include <QScrollArea>
 #include <QScrollBar>
 #include <QStyleOptionButton>
 #include <QToolButton>
 #include <cassert>
+#include <algorithm>
 
 namespace {
 
@@ -94,6 +96,11 @@ void commandButtons() {
     settle(surface, 360);
     auto *button = surface.findChild<QPushButton *>("activate-row");
     assert(button && !button->isFlat());
+    const auto labels = button->findChildren<QLabel *>();
+    auto title = std::find_if(labels.begin(), labels.end(), [](QLabel *label) {
+        return label->text() == QStringLiteral("Contact update alerts");
+    });
+    assert(title != labels.end() && (*title)->font().bold());
     assert(button->height() >= 48);
     QString interaction;
     QObject::connect(&surface, &PresentationSurface::interactionReady,
