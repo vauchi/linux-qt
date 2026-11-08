@@ -8,6 +8,7 @@
 #include <QCheckBox>
 #include <QGroupBox>
 #include <QJsonArray>
+#include <QPushButton>
 #include <QScrollArea>
 #include <QScrollBar>
 #include <QStyleOptionButton>
@@ -81,6 +82,25 @@ void events() {
     surface.findChild<QCheckBox *>("updates")->click();
     assert(surfaceId == "layout-test" && binding == "updates");
     assert(value == QJsonValue(QJsonObject{{"boolean", true}}));
+}
+
+// @scenario: generic_presentation_protocol.feature :: Every shell renders the same prepared presentation
+void commandButtons() {
+    auto prepared = preparedSurface();
+    auto list = prepared.value("nodes").toArray().first().toObject().value("List").toObject();
+    list.insert("style", "buttons");
+    prepared.insert("nodes", QJsonArray{QJsonObject{{"List", list}}});
+    PresentationSurface surface(prepared);
+    settle(surface, 360);
+    auto *button = surface.findChild<QPushButton *>("activate-row");
+    assert(button && !button->isFlat());
+    assert(button->height() >= 48);
+    QString interaction;
+    QObject::connect(&surface, &PresentationSurface::interactionReady,
+        [&](const QString &, const QString &action) { interaction = action; });
+    button->click();
+    assert(interaction == "activate-row");
+    assert(surface.findChild<QCheckBox *>("updates"));
 }
 
 // @internal — rearranging a row must preserve Core's disabled control state.
@@ -170,7 +190,7 @@ int main(int argc, char **argv) {
         font.setPointSizeF(font.pointSizeF() * 2);
         app.setFont(font);
         reflow();
-    } else if (test == "events") events();
+    } else if (test == "events") { events(); commandButtons(); }
     else if (test == "disabled") disabledControl();
     else if (test == "checkbox") visibleCheckbox();
     else if (test == "density") compactRowsKeepTargetsAndReadableDetails();

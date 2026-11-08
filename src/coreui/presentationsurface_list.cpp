@@ -9,6 +9,7 @@
 #include <QLabel>
 #include <QMenu>
 #include <QPixmap>
+#include <QPushButton>
 #include <QStyle>
 #include <QToolButton>
 #include <QVBoxLayout>
@@ -16,21 +17,22 @@
 
 namespace {
 
-class RowAction : public QToolButton {
+template <typename Button>
+class RowAction : public Button {
 public:
     RowAction(QWidget *content, bool hasMenu) {
         auto *box = new QHBoxLayout(this);
-        const int trailing = hasMenu ? style()->pixelMetric(QStyle::PM_MenuButtonIndicator) : 0;
+        const int trailing = hasMenu ? this->style()->pixelMetric(QStyle::PM_MenuButtonIndicator) : 0;
         box->setContentsMargins(8, 4, 8 + trailing, 4);
         box->addWidget(content);
         content->setAttribute(Qt::WA_TransparentForMouseEvents);
-        setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        this->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     }
 
-    QSize sizeHint() const override { return layout()->totalSizeHint(); }
-    QSize minimumSizeHint() const override { return layout()->totalMinimumSize(); }
+    QSize sizeHint() const override { return this->layout()->totalSizeHint(); }
+    QSize minimumSizeHint() const override { return this->layout()->totalMinimumSize(); }
     bool hasHeightForWidth() const override { return true; }
-    int heightForWidth(int width) const override { return layout()->totalHeightForWidth(width); }
+    int heightForWidth(int width) const override { return this->layout()->totalHeightForWidth(width); }
 };
 
 QWidget *rowCopy(const QJsonObject &row) {
@@ -73,9 +75,14 @@ QWidget *PresentationSurface::renderList(const QJsonObject &payload) {
             row.value(QStringLiteral("activation")).toObject();
         const QJsonArray secondary = row.value(QStringLiteral("secondary_actions")).toArray();
         auto *copy = rowCopy(row);
-        QToolButton *button = nullptr;
+        QAbstractButton *button = nullptr;
         if (!activation.isEmpty() || !secondary.isEmpty()) {
-            button = new RowAction(copy, !secondary.isEmpty());
+            if (payload.value(QStringLiteral("style")).toString() == QStringLiteral("buttons")
+                && secondary.isEmpty()) {
+                button = new RowAction<QPushButton>(copy, false);
+            } else {
+                button = new RowAction<QToolButton>(copy, !secondary.isEmpty());
+            }
             button->setEnabled(row.value(QStringLiteral("enabled")).toBool(true));
             button->setMinimumHeight(m_minimumTargetSize);
             button->setStyleSheet(targetSizeStyleSheet());
@@ -84,7 +91,7 @@ QWidget *PresentationSurface::renderList(const QJsonObject &payload) {
         if (!activation.isEmpty()) {
             button->setObjectName(
                 activation.value(QStringLiteral("interaction_id")).toString());
-            connect(button, &QToolButton::clicked, this,
+            connect(button, &QAbstractButton::clicked, this,
                     [this, activation]() { activate(activation); });
         }
         if (!secondary.isEmpty()) {
@@ -119,8 +126,9 @@ QWidget *PresentationSurface::renderList(const QJsonObject &payload) {
                             activate(action);
                         });
             }
-            button->setMenu(menu);
-            button->setPopupMode(QToolButton::MenuButtonPopup);
+            auto *menuButton = qobject_cast<QToolButton *>(button);
+            menuButton->setMenu(menu);
+            menuButton->setPopupMode(QToolButton::MenuButtonPopup);
         }
         auto *rowWidget = new QWidget;
         auto *rowContents = new QVBoxLayout(rowWidget);
