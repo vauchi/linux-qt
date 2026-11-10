@@ -375,6 +375,14 @@ target_include_directories(presentation_state_test PRIVATE ${VAUCHI_CABI_INCLUDE
 target_link_libraries(presentation_state_test PRIVATE Qt6::Core ${VAUCHI_CABI})
 add_test(NAME presentation_state_test COMMAND presentation_state_test)
 
+# Contract replay (ADR-078 D-11). Not a ctest case: it takes the fixtures of
+# the Core in core-ref as arguments, which the contract:replay job fetches.
+add_executable(contract_replay_test
+    tests/contract_replay_test.cpp
+    src/coreui/presentationstate.cpp)
+target_include_directories(contract_replay_test PRIVATE src)
+target_link_libraries(contract_replay_test PRIVATE Qt6::Core)
+
 # Generic presentation surface: native controls emit only opaque protocol
 # identifiers and generic values.
 add_executable(presentation_surface_test
