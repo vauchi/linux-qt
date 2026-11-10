@@ -108,6 +108,30 @@ test:unit:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
+# The presentation state replays the fixtures of the Core in core-ref with no
+# engine behind it (ADR-078 D-11). The fetch checks both files against Core's
+# published digests.
+contract:replay:
+  stage: test
+  needs: [build:qt]
+  tags: [linux]
+  script:
+    - |
+      mkdir -p build/contract-replay
+      curl --fail-with-body --silent --show-error \
+        --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+        "${CI_API_V4_URL}/projects/vauchi%2Fcontract/repository/files/ci%2Ffetch-screen-catalog.py/raw?ref=e80a2560d3cef20b5cd994a841232edca13261cb" \
+        -o build/contract-replay/fetch-screen-catalog.py
+      python3 build/contract-replay/fetch-screen-catalog.py \
+        build/contract-replay/screen-catalog.json --assembly \
+        --presentation-contract build/contract-replay/presentation-contract.json
+    - build/contract_replay_test
+        build/contract-replay/presentation-contract.json
+        build/contract-replay/screen-catalog.json
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
 test:rust-wrapper:
   stage: test
   needs: []
