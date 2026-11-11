@@ -57,6 +57,15 @@ QList<Step> nativeBack() {
     }}};
 }
 
+// @internal — assistive technology and the desktop find the app by these names.
+QList<Step> identity() {
+    return {{{}, [] {
+        assert(QCoreApplication::applicationName() == "vauchi");
+        assert(QCoreApplication::organizationName() == "vauchi");
+        assert(QGuiApplication::desktopFileName() == "app.vauchi.Vauchi");
+    }}};
+}
+
 void setup() { schedule(); }
 }
 Q_COREAPP_STARTUP_FUNCTION(setup)
@@ -67,6 +76,7 @@ int main(int argc, char **argv) {
     if (name == "gesture") steps = gesture();
     else if (name == "share") steps = share();
     else if (name == "back") steps = nativeBack();
+    else if (name == "identity") steps = identity();
     else return 2;
     const int result = qt_display_start(argc, argv, receive, &events);
     assert(result == 0);

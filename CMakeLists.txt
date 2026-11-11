@@ -202,7 +202,7 @@ endforeach()
 add_executable(display_desktop_effects_test tests/display_desktop_effects_test.cpp)
 target_link_libraries(display_desktop_effects_test PRIVATE qt_display)
 target_compile_options(display_desktop_effects_test PRIVATE -UNDEBUG)
-foreach(case gesture share back)
+foreach(case gesture share back identity)
     add_test(NAME display_desktop_effects_${case} COMMAND display_desktop_effects_test ${case})
     set_tests_properties(display_desktop_effects_${case} PROPERTIES TIMEOUT 10
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
