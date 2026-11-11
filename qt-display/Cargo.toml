@@ -20,3 +20,8 @@ cmake = "0.1"
 name = "poll_loop"
 path = "tests/poll_loop.rs"
 harness = false
+
+[[test]]
+name = "hand_off"
+path = "tests/hand_off.rs"
+harness = false
