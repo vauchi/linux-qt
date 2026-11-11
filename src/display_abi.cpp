@@ -45,6 +45,9 @@ extern "C" int qt_display_start_with_poll(int argc, char **argv,
                                           QtDisplayEventCallback on_event,
                                           QtDisplayPollCallback on_poll, void *user_data) {
     QApplication app(argc, argv);
+    QCoreApplication::setApplicationName(QStringLiteral("vauchi"));
+    QCoreApplication::setOrganizationName(QStringLiteral("vauchi"));
+    QGuiApplication::setDesktopFileName(QStringLiteral("app.vauchi.Vauchi"));
     initializeBundledResources();
     ThemeManager::registerBrandFonts();
     app.setFont(ThemeManager::uiFont());
