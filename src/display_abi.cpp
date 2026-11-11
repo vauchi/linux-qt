@@ -55,6 +55,7 @@ extern "C" int qt_display_start_with_poll(int argc, char **argv,
     QtDisplayHost host(on_event, user_data);
     g_host = &host;
     host.show();
+    host.activateWindow();
     g_running = true;
     host.reportEnvironment();
     host.reportCapabilities();
