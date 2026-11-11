@@ -47,6 +47,7 @@ fn main() {
         "Qt6Gui",
         "Qt6Core",
         "Qt6Concurrent",
+        "Qt6Network",
         "libqrencode",
     ];
     if Command::new("pkg-config")

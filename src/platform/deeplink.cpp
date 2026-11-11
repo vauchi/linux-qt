@@ -27,6 +27,9 @@ DeepLinkRelay::DeepLinkRelay(QString serverName, QObject *parent)
     : QObject(parent), m_serverName(std::move(serverName)) {}
 
 QString DeepLinkRelay::defaultServerName() {
+    // Tests run shells side by side; each case names its own socket.
+    if (const QString name = qEnvironmentVariable("VAUCHI_DEEP_LINK_SERVER"); !name.isEmpty())
+        return name;
     return QStringLiteral("vauchi-qt-%1").arg(getuid());
 }
 

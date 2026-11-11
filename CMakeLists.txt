@@ -48,6 +48,7 @@ set(QT_DISPLAY_SOURCES
     src/coreui/displayhost_native_effects.cpp
     src/coreui/displayhost_permissions.cpp
     src/platform/permissionprompt.cpp
+    src/platform/deeplink.cpp
     src/coreui/displayhost_file_effects.cpp
     src/coreui/presentationeffectpayload.cpp
     src/coreui/applicationmenubar.cpp
@@ -76,7 +77,7 @@ add_library(qt_display STATIC ${QT_DISPLAY_SOURCES})
 target_compile_options(qt_display PRIVATE -fno-lto)
 target_include_directories(qt_display PUBLIC include PRIVATE src ${QRENCODE_INCLUDE_DIRS} ${VAUCHI_TOKENS_INCLUDE})
 target_link_directories(qt_display PUBLIC ${QRENCODE_LIBRARY_DIRS})
-target_link_libraries(qt_display PUBLIC Qt6::Widgets Qt6::Core Qt6::Concurrent ${QRENCODE_LIBRARIES})
+target_link_libraries(qt_display PUBLIC Qt6::Widgets Qt6::Core Qt6::Concurrent Qt6::Network ${QRENCODE_LIBRARIES})
 
 option(VAUCHI_PERMISSION_PORTAL "Enable the camera permission portal" ON)
 if(Qt6DBus_FOUND AND VAUCHI_PERMISSION_PORTAL)

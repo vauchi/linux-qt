@@ -23,6 +23,7 @@ public:
     void render(const QJsonArray &commands);
     void reportCapabilities();
     void reportEnvironment();
+    void reportDeepLink(const QString &uri);
 
 protected:
     void keyPressEvent(QKeyEvent *event) override;

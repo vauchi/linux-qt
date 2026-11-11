@@ -107,6 +107,10 @@ void QtDisplayHost::reportCapabilities() {
     emitEvent({{"FilePickerCapabilitiesChanged", QJsonObject{{"correlated_results", true}}}});
 }
 
+void QtDisplayHost::reportDeepLink(const QString &uri) {
+    emitEvent({{"DeepLinkOpened", QJsonObject{{"uri", uri}}}});
+}
+
 void QtDisplayHost::reportEnvironment() {
     m_environmentReported = true;
     emitEvent({{"PresentationEnvironmentChanged", QJsonObject{

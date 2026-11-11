@@ -7,6 +7,7 @@
 
 #include "coreui/displayhost.h"
 #include "coreui/thememanager.h"
+#include "platform/deeplink.h"
 
 #include <QApplication>
 #include <QJsonArray>
@@ -20,6 +21,8 @@
 #include <QTimer>
 
 #include <atomic>
+#include <cstdio>
+#include <memory>
 
 // rcc's initializer has C++ linkage, so it cannot be declared in the C ABI body.
 static void initializeBundledResources() {
@@ -52,6 +55,16 @@ extern "C" int qt_display_start_with_poll(int argc, char **argv,
     g_running = true;
     host.reportEnvironment();
     host.reportCapabilities();
+    vauchi::DeepLinkRelay relay(vauchi::DeepLinkRelay::defaultServerName());
+    QObject::connect(&relay, &vauchi::DeepLinkRelay::linkReceived, &host,
+                     [&host](const QString &uri) {
+                         host.reportDeepLink(uri);
+                         host.raise();
+                         host.activateWindow();
+                     });
+    if (!relay.listen())
+        std::fprintf(stderr, "[vauchi] deep links from later launches unavailable\n");
+    for (const QString &uri : vauchi::deepLinkUris(app.arguments())) host.reportDeepLink(uri);
     QTimer pollTimer;
     if (on_poll) {
         QObject::connect(&pollTimer, &QTimer::timeout, &host, [on_poll, user_data] {
@@ -81,4 +94,18 @@ extern "C" int qt_display_render(const char *commands_json, size_t len) {
 extern "C" void qt_display_stop(void) {
     if (!g_running) return;
     QMetaObject::invokeMethod(qApp, [] { qApp->quit(); }, Qt::QueuedConnection);
+}
+
+extern "C" int qt_display_hand_off_links(int argc, char **argv) {
+    QStringList args;
+    for (int i = 0; i < argc; ++i) args.append(QString::fromLocal8Bit(argv[i]));
+    const QStringList links = vauchi::deepLinkUris(args);
+    if (links.isEmpty()) return 0;
+    // The app calls this before its engine and before Qt runs; the local
+    // socket needs an application object for the duration of the call.
+    int count = argc;
+    std::unique_ptr<QCoreApplication> app;
+    if (!QCoreApplication::instance()) app = std::make_unique<QCoreApplication>(count, argv);
+    vauchi::DeepLinkRelay relay(vauchi::DeepLinkRelay::defaultServerName());
+    return relay.handOff(links) ? 1 : 0;
 }

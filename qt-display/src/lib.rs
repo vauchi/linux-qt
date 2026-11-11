@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
 // SPDX-License-Identifier: GPL-3.0-or-later
-//! The Qt display shell behind three calls (ADR-078 step 2.2, D1 B).
+//! The Qt display shell behind four calls (ADR-078 step 2.2, D1 B).
 //!
 //! The app owns the engine and the main thread: [`run`] hands the thread
 //! to Qt until [`stop`] or the window closes, [`render`] posts a batch of
@@ -21,6 +21,7 @@ mod ffi {
         ) -> c_int;
         pub fn qt_display_render(commands_json: *const c_char, len: usize) -> c_int;
         pub fn qt_display_stop();
+        pub fn qt_display_hand_off_links(argc: c_int, argv: *mut *mut c_char) -> c_int;
     }
 }
 
@@ -111,6 +112,20 @@ pub fn render(commands_json: &str) -> Result<(), RenderError> {
     } else {
         Err(RenderError)
     }
+}
+
+/// Hands this launch's `vauchi://` links to a running shell. Call it before
+/// starting the engine: on `true` the running shell has them and this
+/// launch should exit; `false` when there is no link or no running shell.
+pub fn hand_off_links(args: &[String]) -> bool {
+    let mut argv: Vec<CString> = args
+        .iter()
+        .map(|a| CString::new(a.as_str()).expect("argument without NUL"))
+        .collect();
+    let mut argv_ptrs: Vec<*mut c_char> =
+        argv.iter_mut().map(|a| a.as_ptr() as *mut c_char).collect();
+    // SAFETY: argv outlives the call; the shell copies what it keeps.
+    unsafe { ffi::qt_display_hand_off_links(argv_ptrs.len() as c_int, argv_ptrs.as_mut_ptr()) == 1 }
 }
 
 /// Asks the running shell to quit; [`run`] then returns.
