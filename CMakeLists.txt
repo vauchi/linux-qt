@@ -156,6 +156,15 @@ foreach(case availability prepared accessibility revisions replacement quit)
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endforeach()
 
+add_executable(display_status_item_test tests/display_status_item_test.cpp)
+target_link_libraries(display_status_item_test PRIVATE qt_display)
+target_compile_options(display_status_item_test PRIVATE -UNDEBUG)
+foreach(case availability prepared accessibility show_window revisions replacement reset quit)
+    add_test(NAME display_status_item_${case} COMMAND display_status_item_test ${case})
+    set_tests_properties(display_status_item_${case} PROPERTIES TIMEOUT 10
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endforeach()
+
 add_executable(display_file_picker_test tests/display_file_picker_test.cpp)
 target_link_libraries(display_file_picker_test PRIVATE qt_display)
 target_compile_options(display_file_picker_test PRIVATE -UNDEBUG)
