@@ -259,6 +259,24 @@ foreach(case IN LISTS permission_cases)
 endforeach()
 endif()
 
+# Catalog and fixture renders on the library the apps assemble, for VRT and
+# test:screen-catalog without the legacy qvauchi or Core (private#1029).
+add_executable(qt_display_render tools/qt_display_render.cpp src/coreui/screencatalog.cpp)
+target_include_directories(qt_display_render PRIVATE src)
+target_link_libraries(qt_display_render PRIVATE qt_display)
+add_test(NAME display_render_fixture_smoke
+    COMMAND ${CMAKE_COMMAND}
+        -DBIN=$<TARGET_FILE:qt_display_render>
+        -DFIXTURE=${CMAKE_SOURCE_DIR}/tests/fixtures/generic_surface.json
+        -DPNG_OUT=${CMAKE_CURRENT_BINARY_DIR}/display_render_fixture_smoke.png
+        -P ${CMAKE_SOURCE_DIR}/tests/render_fixture_smoke.cmake)
+add_test(NAME display_render_catalog_smoke
+    COMMAND ${CMAKE_COMMAND}
+        -DBIN=$<TARGET_FILE:qt_display_render>
+        -DCATALOG=${CMAKE_SOURCE_DIR}/tests/fixtures/catalog_smoke.json
+        -DOUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/display_render_catalog_smoke
+        -P ${CMAKE_SOURCE_DIR}/tests/render_catalog_smoke.cmake)
+
 if(QT_DISPLAY_ONLY)
     return()
 endif()
