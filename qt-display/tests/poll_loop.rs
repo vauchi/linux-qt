@@ -23,6 +23,7 @@ fn main() {
             assert!([
                 r#"{"ApplicationMenuAvailabilityChanged":{"available":true}}"#,
                 r#"{"FilePickerCapabilitiesChanged":{"correlated_results":true}}"#,
+                r#"{"StatusItemAvailabilityChanged":{"available":false}}"#,
                 r#"{"PresentationEnvironmentChanged":{"available_height":700,"available_width":900,"input_modes":["pointer","keyboard"],"motion":"full"}}"#,
             ]
             .contains(&event));
