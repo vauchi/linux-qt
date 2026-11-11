@@ -39,6 +39,10 @@ int qt_display_render(const char *commands_json, size_t len);
 
 // Asks the running event loop to quit; qt_display_start then returns.
 void qt_display_stop(void);
+// Before an app starts its engine: hands this launch's vauchi:// links to a
+// running shell and returns 1, so the caller exits; returns 0 when there is
+// no link or no running shell. Call it before qt_display_start.
+int qt_display_hand_off_links(int argc, char **argv);
 
 #ifdef __cplusplus
 }

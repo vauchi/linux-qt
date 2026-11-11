@@ -119,6 +119,15 @@ add_test(NAME display_poll_test COMMAND display_poll_test)
 set_tests_properties(display_poll_test PROPERTIES TIMEOUT 10
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
+add_executable(display_launch_link_test tests/display_launch_link_test.cpp)
+target_link_libraries(display_launch_link_test PRIVATE qt_display)
+target_compile_options(display_launch_link_test PRIVATE -UNDEBUG)
+foreach(case launch relay alone)
+    add_test(NAME display_launch_link_${case} COMMAND display_launch_link_test ${case})
+    set_tests_properties(display_launch_link_${case} PROPERTIES TIMEOUT 20
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;VAUCHI_DEEP_LINK_SERVER=vauchi-qt-test-${case}")
+endforeach()
+
 add_executable(display_contract_test tests/display_contract_test.cpp)
 target_link_libraries(display_contract_test PRIVATE qt_display)
 target_compile_options(display_contract_test PRIVATE -UNDEBUG)
