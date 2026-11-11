@@ -300,15 +300,16 @@ test:snapshots:
 # no navigation driven) to build/screen-catalog/ on every MR and main
 # pipeline, in dark, light, and large-text variants. The full catalog is
 # resolved from core-ref's contract dependency, with revision and hash
-# preserved alongside the rendered artifacts.
+# preserved alongside the rendered artifacts. qt_display_render draws them
+# on the qt_display library the apps assemble, without Core; the legacy
+# qvauchi it replaces goes with private#1029's retirement.
 test:screen-catalog:
   stage: test
-  needs: [build:qt, build:cabi]
+  needs: [build:qt]
   tags: [linux]
   allow_failure: false
   variables:
     QT_QPA_PLATFORM: offscreen
-    LD_LIBRARY_PATH: "${CI_PROJECT_DIR}/cabi-lib"
     VRT_PLATFORM: linux-qt
     VRT_SCREENSHOT_DIR: build/screen-catalog
   script:
@@ -320,7 +321,7 @@ test:screen-catalog:
         -o build/fetch-screen-catalog.py
       python3 build/fetch-screen-catalog.py screen-catalog.json --assembly
     - mkdir -p build/screen-catalog
-    - build/qvauchi --render-catalog screen-catalog.json build/screen-catalog 900 1400
+    - build/qt_display_render --render-catalog screen-catalog.json build/screen-catalog 900 1400
     - echo "[screen-catalog] $(ls -1 build/screen-catalog | wc -l) PNG files in build/screen-catalog/"
   after_script:
     - !reference [.vrt-upload-script, script]
