@@ -217,6 +217,17 @@ foreach(case gesture share back identity)
     set_tests_properties(display_desktop_effects_${case} PROPERTIES TIMEOUT 10
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endforeach()
+# Offscreen activates every shown window by itself; only an X server with no
+# window manager, as in the AT-SPI jobs, shows whether the display does.
+find_program(XVFB_RUN xvfb-run)
+if(XVFB_RUN)
+    add_test(NAME display_desktop_effects_active_x11
+             COMMAND ${XVFB_RUN} -a $<TARGET_FILE:display_desktop_effects_test> active)
+    set_tests_properties(display_desktop_effects_active_x11 PROPERTIES TIMEOUT 30
+        ENVIRONMENT "QT_QPA_PLATFORM=xcb")
+elseif(DEFINED ENV{CI})
+    message(FATAL_ERROR "xvfb-run is required in CI for display_desktop_effects_active_x11")
+endif()
 
 add_executable(display_reset_test tests/display_reset_test.cpp)
 target_link_libraries(display_reset_test PRIVATE qt_display)

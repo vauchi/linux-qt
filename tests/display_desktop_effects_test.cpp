@@ -66,6 +66,12 @@ QList<Step> identity() {
     }}};
 }
 
+// @internal — keyboard users reach commands only in an active window; a
+// session without a window manager never activates it for us.
+QList<Step> active() {
+    return {{{}, [] { assert(QApplication::activeWindow() == window()); }}};
+}
+
 void setup() { schedule(); }
 }
 Q_COREAPP_STARTUP_FUNCTION(setup)
@@ -77,6 +83,7 @@ int main(int argc, char **argv) {
     else if (name == "share") steps = share();
     else if (name == "back") steps = nativeBack();
     else if (name == "identity") steps = identity();
+    else if (name == "active") steps = active();
     else return 2;
     const int result = qt_display_start(argc, argv, receive, &events);
     assert(result == 0);
