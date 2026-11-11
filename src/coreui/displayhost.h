@@ -12,6 +12,7 @@ class NavigationSidebar;
 class PresentationSurface;
 class QSplitter;
 class ApplicationMenuBar;
+class StatusItemTray;
 class FilePicker;
 class PermissionPrompt;
 class QFileDialog;
@@ -33,6 +34,7 @@ private:
     void renderPresentation();
     void resetPresentation();
     void resetApplicationMenu();
+    void resetStatusItem();
     void resetFileEffects();
     void resetPermissionPrompt();
     void requestPermission(const QJsonObject &payload);
@@ -48,6 +50,8 @@ private:
     bool pickLegacyFile(const QJsonValue &command);
     void exportFile(const QJsonObject &command);
     void applyApplicationMenu(const QJsonObject &payload);
+    void applyStatusItem(const QJsonObject &payload);
+    void raiseWindow();
     void overlayDismissed(QWidget *widget, const QString &surfaceId,
                           const QString &kind);
 
@@ -67,6 +71,9 @@ private:
     ApplicationMenuBar *m_applicationMenu;
     QString m_menuSurface;
     qint64 m_menuRevision = -1;
+    StatusItemTray *m_statusItem = nullptr;
+    QString m_statusSurface;
+    qint64 m_statusRevision = -1;
     quint64 m_generation = 0;
     PermissionPrompt *m_permissionPrompt = nullptr;
     FilePicker *m_filePicker = nullptr;

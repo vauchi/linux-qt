@@ -53,6 +53,7 @@ set(QT_DISPLAY_SOURCES
     src/coreui/presentationeffectpayload.cpp
     src/coreui/applicationmenubar.cpp
     src/coreui/applicationmenuaccessibility.cpp
+    src/coreui/statusitemtray.cpp
     src/platform/filepicker.cpp
     src/coreui/displayhost_overlays.cpp
     src/coreui/navigationsidebar.cpp

@@ -124,8 +124,9 @@ QList<Step> showWindow() {
     return {
         {{surface("first", 2, "First"), profile("first"), statusItem()}, [] {
             auto *host = window();
+            auto *show = entry("Downloaded show");
             host->hide();
-            entry("Downloaded show")->trigger();
+            show->trigger();
             assert(host->isVisible());
             assert(events.isEmpty());
         }},

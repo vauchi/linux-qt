@@ -5,6 +5,7 @@
 #include "applicationmenubar.h"
 #include "navigationsidebar.h"
 #include "presentationsurface.h"
+#include "statusitemtray.h"
 #include "thememanager.h"
 #include "../platform/filepicker.h"
 #include <QCoreApplication>
@@ -21,6 +22,7 @@ QtDisplayHost::QtDisplayHost(QtDisplayEventCallback onEvent, void *userData)
     setCentralWidget(m_row);
     resetFileEffects();
     resetApplicationMenu();
+    resetStatusItem();
     resize(900, 700);
 }
 
@@ -73,6 +75,10 @@ void QtDisplayHost::render(const QJsonArray &commands) {
             applyApplicationMenu(command.value("SetApplicationMenu").toObject());
             continue;
         }
+        if (command.contains("SetStatusItem")) {
+            applyStatusItem(command.value("SetStatusItem").toObject());
+            continue;
+        }
         if (command.contains("PresentOverlay") || command.contains("DismissOverlay")) {
             applyOverlay(command);
             continue;
@@ -92,6 +98,11 @@ void QtDisplayHost::render(const QJsonArray &commands) {
                 m_menuSurface.clear();
                 m_menuRevision = -1;
             }
+            if (id == m_statusSurface && m_state.surface(id)->value("revision").toInteger() != m_statusRevision) {
+                m_statusItem->withdrawPreparedItems();
+                m_statusSurface.clear();
+                m_statusRevision = -1;
+            }
         }
         if (command.contains("SetPresentationProfile")) {
             const auto title = m_state.profile().value("window_title");
@@ -105,6 +116,7 @@ void QtDisplayHost::render(const QJsonArray &commands) {
 void QtDisplayHost::reportCapabilities() {
     emitEvent({{"ApplicationMenuAvailabilityChanged", QJsonObject{{"available", true}}}});
     emitEvent({{"FilePickerCapabilitiesChanged", QJsonObject{{"correlated_results", true}}}});
+    emitEvent({{"StatusItemAvailabilityChanged", QJsonObject{{"available", StatusItemTray::available()}}}});
 }
 
 void QtDisplayHost::reportDeepLink(const QString &uri) {
@@ -133,6 +145,22 @@ void QtDisplayHost::applyApplicationMenu(const QJsonObject &payload) {
     m_applicationMenu->apply(payload);
     m_menuSurface = id;
     m_menuRevision = revision;
+}
+
+void QtDisplayHost::applyStatusItem(const QJsonObject &payload) {
+    const auto id = payload.value("surface_id").toString();
+    const auto surface = m_state.surface(id);
+    const auto revision = payload.value("revision").toInteger(-1);
+    if (!surface || revision != surface->value("revision").toInteger()) return;
+    m_statusItem->apply(payload);
+    m_statusSurface = id;
+    m_statusRevision = revision;
+}
+
+void QtDisplayHost::raiseWindow() {
+    showNormal();
+    raise();
+    activateWindow();
 }
 
 void QtDisplayHost::renderPresentation() {
