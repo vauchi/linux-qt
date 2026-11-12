@@ -1,0 +1,9 @@
+# SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The contract release this shell renders — the only copy of the pin
+# (ADR-078 decision 6), like core-ref above. qt-display renders the
+# contract from C++ and has no Cargo manifest naming vauchi-contract,
+# so the presentation checks read the tag from this ref file.
+v0.98.0
